@@ -1,0 +1,15 @@
+module services
+singleton AudioService 1.0 AudioService.qml
+singleton SystemState 1.0 SystemState.qml
+singleton DisplayService 1.0 DisplayService.qml
+singleton WeatherService 1.0 WeatherService.qml
+singleton ClipboardService 1.0 ClipboardService.qml
+singleton NotesService 1.0 NotesService.qml
+singleton FeatureSupport 1.0 FeatureSupport.qml
+singleton LauncherService 1.0 LauncherService.qml
+singleton NetworkService 1.0 NetworkService.qml
+singleton PowerService 1.0 PowerService.qml
+singleton ConfigService 1.0 ConfigService.qml
+singleton NotificationService 1.0 NotificationService.qml
+singleton MediaService 1.0 MediaService.qml
+singleton DashboardService 1.0 DashboardService.qml

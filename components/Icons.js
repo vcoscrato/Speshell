@@ -1,0 +1,82 @@
+.pragma library
+
+// App-owned semantic names map to a pinned, vendored Tabler outline icon.
+// External application and system-tray identity icons intentionally bypass
+// this map and continue to use their native icon sources.
+var files = ({
+    "alert": "alert-triangle",
+    "apps": "apps",
+    "audio-input": "microphone",
+    "audio-input-muted": "microphone-off",
+    "audio-output": "volume",
+    "audio-output-high": "volume",
+    "audio-output-low": "volume-2",
+    "audio-output-muted": "volume-off",
+    "back": "arrow-back-up",
+    "battery": "battery",
+    "battery-charging": "battery-charging",
+    "battery-empty": "battery",
+    "battery-low": "battery-1",
+    "battery-medium": "battery-2",
+    "battery-high": "battery-3",
+    "battery-full": "battery-4",
+    "bell": "bell",
+    "bell-off": "bell-off",
+    "bell-clear": "bell-x",
+    "bluetooth": "bluetooth",
+    "brightness": "brightness-up",
+    "calculator": "calculator",
+    "calendar": "calendar",
+    "check": "check",
+    "chevron-down": "chevron-down",
+    "chevron-left": "chevron-left",
+    "chevron-right": "chevron-right",
+    "chevron-up": "chevron-up",
+    "clipboard": "clipboard-text",
+    "close": "x",
+    "config": "adjustments-horizontal",
+    "copy": "copy",
+    "dashboard": "layout-dashboard",
+    "display": "device-desktop",
+    "file": "file-text",
+    "folder-open": "folder-open",
+    "github": "brand-github",
+    "info": "info-circle",
+    "loader": "loader-2",
+    "lock": "shield-lock",
+    "logout": "logout",
+    "media": "music",
+    "media-next": "player-track-next",
+    "media-pause": "player-pause",
+    "media-play": "player-play",
+    "media-previous": "player-track-prev",
+    "missing": "help-circle",
+    "notes": "pencil",
+    "photo-missing": "photo-off",
+    "plug": "plug",
+    "power": "power",
+    "refresh": "refresh",
+    "restart": "reload",
+    "search": "search",
+    "sleep": "moon",
+    "swap": "arrows-exchange",
+    "terminal": "terminal",
+    "timer": "clock",
+    "tray-fallback": "circle-dashed",
+    "trash": "trash",
+    "web-search": "world-search",
+    "wifi": "wifi",
+    "wifi-empty": "wifi-0",
+    "wifi-low": "wifi-1",
+    "wifi-medium": "wifi-2",
+    "wifi-off": "wifi-off"
+});
+
+function fileFor(name) {
+    var requested = String(name || "");
+    return Object.prototype.hasOwnProperty.call(files, requested) ? files[requested] : files.missing;
+}
+
+function isKnown(name) {
+    return Object.prototype.hasOwnProperty.call(files, String(name || ""));
+}

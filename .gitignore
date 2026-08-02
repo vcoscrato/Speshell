@@ -1,0 +1,10 @@
+config.jsonc
+.qt/
+.DS_Store
+*.qmlc
+*.jsc
+.codex
+*.pkg.tar.*
+pkg/
+src/
+/speshell/

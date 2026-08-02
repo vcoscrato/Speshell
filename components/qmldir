@@ -1,0 +1,15 @@
+module components
+ActionButton 1.0 ActionButton.qml
+AppIcon 1.0 AppIcon.qml
+Card 1.0 Card.qml
+DeviceRow 1.0 DeviceRow.qml
+DeviceSection 1.0 DeviceSection.qml
+IconButton 1.0 IconButton.qml
+InlineActionChip 1.0 InlineActionChip.qml
+RefreshButton 1.0 RefreshButton.qml
+SelectRow 1.0 SelectRow.qml
+SidebarIcon 1.0 SidebarIcon.qml
+SpeshellMarkButton 1.0 SpeshellMarkButton.qml
+StatusBadge 1.0 StatusBadge.qml
+StyledSlider 1.0 StyledSlider.qml
+ToggleSwitch 1.0 ToggleSwitch.qml

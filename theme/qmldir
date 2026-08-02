@@ -1,0 +1,3 @@
+module theme
+singleton Theme 1.0 Theme.qml
+singleton Palettes 1.0 Palettes.qml
