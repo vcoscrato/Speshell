@@ -26,7 +26,7 @@ The Arch `PKGBUILD` uses the Git repository source, so plain `makepkg -si` is fo
 
 The package owns `/usr/share/speshell` and `/usr/bin/speshell`. User config and data live under:
 
-- `~/.config/speshell/config.jsonc`
+- `~/.config/speshell/config.ini`
 - `~/.local/share/speshell`
 
 Package upgrades and removal should not overwrite those user files.

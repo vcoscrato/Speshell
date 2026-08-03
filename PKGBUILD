@@ -47,7 +47,7 @@ package() {
   cd speshell
 
   install -d "$pkgdir/usr/share/speshell"
-  install -m644 shell.qml config.example.jsonc "$pkgdir/usr/share/speshell/"
+  install -m644 shell.qml config.example.ini "$pkgdir/usr/share/speshell/"
   cp -r assets components core services theme widgets "$pkgdir/usr/share/speshell/"
 
   install -Dm644 README.md "$pkgdir/usr/share/doc/speshell/README.md"
@@ -64,7 +64,7 @@ readonly config_root="${XDG_CONFIG_HOME:-$HOME/.config}"
 readonly data_root="${XDG_DATA_HOME:-$HOME/.local/share}"
 readonly config_dir="$config_root/speshell"
 readonly data_dir="$data_root/speshell"
-readonly config_file="$config_dir/config.jsonc"
+readonly config_file="$config_dir/config.ini"
 
 if [[ ! -r "$app_dir/shell.qml" ]]; then
   printf 'speshell: shell.qml not found in %s\n' "$app_dir" >&2
@@ -75,7 +75,7 @@ install -d -m755 "$config_root" "$data_root"
 install -d -m755 "$config_dir" "$data_dir"
 
 if [[ ! -e "$config_file" && ! -L "$config_file" ]]; then
-  install -m644 "$app_dir/config.example.jsonc" "$config_file"
+  install -m644 "$app_dir/config.example.ini" "$config_file"
 fi
 
 if [[ "${1:-}" == "launcher" ]]; then

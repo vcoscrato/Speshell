@@ -9,7 +9,7 @@ import "../core/Config.js" as Config
 Singleton {
     id: root
 
-    readonly property string bundledExamplePath: Qt.resolvedUrl("../config.example.jsonc").toString().replace(/^file:\/\//, "")
+    readonly property string bundledExamplePath: Qt.resolvedUrl("../config.example.ini").toString().replace(/^file:\/\//, "")
     property string status: "idle"
     property var config: null
     property var errors: []
@@ -50,12 +50,15 @@ Singleton {
                 + "data_root=\"${XDG_DATA_HOME:-$HOME/.local/share}\"; "
                 + "config_dir=\"$config_root/speshell\"; "
                 + "data_dir=\"$data_root/speshell\"; "
-                + "config_file=\"$config_dir/config.jsonc\"; "
+                + "ini_file=\"$config_dir/config.ini\"; "
                 + "mkdir -p \"$config_root\" \"$data_root\" || exit 20; "
                 + "mkdir -p \"$config_dir\" \"$data_dir\" || exit 20; "
                 + "printf '%s\\n%s\\n' \"$config_dir\" \"$data_dir\"; "
-                + "if [ -e \"$config_file\" ] || [ -L \"$config_file\" ]; then "
-                + "cat \"$config_file\" || exit 21; "
+                + "if [ ! -e \"$ini_file\" ] && [ ! -L \"$ini_file\" ]; then "
+                + "cp " + root.shellQuote(root.bundledExamplePath) + " \"$ini_file\" 2>/dev/null || true; "
+                + "fi; "
+                + "if [ -e \"$ini_file\" ] || [ -L \"$ini_file\" ]; then "
+                + "cat \"$ini_file\" || exit 21; "
                 + "else cat " + root.shellQuote(root.bundledExamplePath) + " || exit 22; fi"
         ];
         configLoadProc.running = true;
@@ -74,7 +77,7 @@ Singleton {
         if (nl1 >= 0 && nl2 >= 0) {
             var configDir = output.substring(0, nl1);
             root.dataDir = output.substring(nl1 + 1, nl2);
-            root.configPath = configDir + "/config.jsonc";
+            root.configPath = configDir + "/config.ini";
         }
 
         if (exitCode !== 0) {
@@ -87,8 +90,8 @@ Singleton {
             return;
         }
 
-        var jsonc = output.substring(nl2 + 1);
-        var result = Config.parseAndValidate(jsonc);
+        var iniContent = output.substring(nl2 + 1);
+        var result = Config.parseAndValidate(iniContent);
         if (!result.ok) {
             root.config = null;
             root.errors = result.errors;
@@ -97,94 +100,28 @@ Singleton {
         }
 
         root.errors = [];
-        root.sourceText = jsonc;
+        root.sourceText = iniContent;
         root.config = result.config;
         root.status = "valid";
     }
 
-    function withColorScheme(configValue, colorScheme) {
-        var result = ({});
-        var keys = Object.keys(configValue || ({}));
-        for (var i = 0; i < keys.length; i++)
-            result[keys[i]] = configValue[keys[i]];
-        result.colorScheme = colorScheme;
-        return result;
-    }
-
-    function stringEnd(text, start) {
-        for (var i = start + 1; i < text.length; i++) {
-            if (text[i] === "\\") {
-                i++;
-                continue;
-            }
-            if (text[i] === "\"")
-                return i;
-        }
-        return -1;
-    }
-
-    function topLevelStringPropertyRange(text, propertyName) {
-        var stripped = Config.stripComments(String(text || ""));
-        var expectedName = JSON.stringify(propertyName);
-        var depth = 0;
-        for (var i = 0; i < stripped.length; i++) {
-            if (stripped[i] === "\"") {
-                var nameEnd = root.stringEnd(stripped, i);
-                if (nameEnd < 0)
-                    return null;
-                if (depth === 1 && stripped.substring(i, nameEnd + 1) === expectedName) {
-                    var cursor = nameEnd + 1;
-                    while (/\s/.test(stripped[cursor] || "")) cursor++;
-                    if (stripped[cursor] === ":") cursor++;
-                    while (/\s/.test(stripped[cursor] || "")) cursor++;
-                    if (stripped[cursor] === "\"") {
-                        var valueEnd = root.stringEnd(stripped, cursor);
-                        return valueEnd >= 0 ? { start: cursor, end: valueEnd + 1 } : null;
-                    }
-                }
-                i = nameEnd;
-            } else if (stripped[i] === "{") {
-                depth++;
-            } else if (stripped[i] === "}") {
-                depth--;
-            }
-        }
-        return null;
-    }
-
-    function replaceColorScheme(text, colorScheme) {
-        var source = String(text || "");
-        var propertyRange = root.topLevelStringPropertyRange(source, "colorScheme");
-        if (propertyRange)
-            return source.substring(0, propertyRange.start)
-                + JSON.stringify(colorScheme)
-                + source.substring(propertyRange.end);
-
-        var rootStart = Config.stripComments(source).indexOf("{");
-        if (rootStart < 0)
-            return "";
-        return source.substring(0, rootStart + 1)
-            + "\n    \"colorScheme\": " + JSON.stringify(colorScheme) + ","
-            + source.substring(rootStart + 1);
-    }
-
-    function setColorScheme(colorScheme) {
-        var requested = String(colorScheme || "");
-        if (!root.valid || root.savingConfig || !Config.isPaletteName(requested))
+    function setProperty(section, key, value) {
+        if (!root.valid || root.savingConfig)
             return false;
-        if (root.config.colorScheme === requested)
-            return true;
 
-        var currentText = configFile.text();
+        var currentText = root.sourceText;
         if (String(currentText || "").trim() === "")
-            currentText = root.sourceText;
-        var updatedText = root.replaceColorScheme(currentText, requested);
+            currentText = configFile.text();
+
+        var updatedText = Config.setIniProperty(currentText, section, key, value);
         var parsed = Config.parseAndValidate(updatedText);
         if (!parsed.ok) {
             root.operationFailed = true;
-            root.operationMessage = "The config changed on disk and must be fixed before saving the theme.";
+            root.operationMessage = "Could not apply setting: " + (parsed.errors[0] ? parsed.errors[0].message : "invalid configuration");
             return false;
         }
+        if (updatedText === currentText)
+            return true;
 
         root.previousConfig = root.config;
         root.pendingConfig = parsed.config;
@@ -193,10 +130,58 @@ Singleton {
         root.operationFailed = false;
         root.operationMessage = "";
 
-        // Apply immediately; a failed write restores the previous config.
-        root.config = root.withColorScheme(root.config, requested);
-        configFile.setText(root.writeText);
+        // Optimistically apply new config state
+        root.config = parsed.config;
+
+        // Persist directly to disk via save process
+        configSaveProc.command = [
+            "sh", "-c",
+            "printf '%s' " + root.shellQuote(root.writeText) + " > " + root.shellQuote(root.configPath)
+        ];
+        configSaveProc.running = true;
         return true;
+    }
+
+    function setColorScheme(colorScheme) {
+        if (!Config.isPaletteName(colorScheme)) return false;
+        return setProperty("Appearance", "colorScheme", colorScheme);
+    }
+
+    function setPanelWidth(width) {
+        return setProperty("Appearance", "panelWidth", width);
+    }
+
+    function setPanelMargin(margin) {
+        return setProperty("Appearance", "panelMargin", margin);
+    }
+
+    function setAudioPanelMode(mode) {
+        if (mode !== "combined" && mode !== "separate") return false;
+        return setProperty("Audio", "panelMode", mode);
+    }
+
+    function setAudioScrollStep(step) {
+        return setProperty("Audio", "scrollStep", step);
+    }
+
+    function setWeatherEnabled(enabled) {
+        return setProperty("Weather", "enabled", enabled ? "true" : "false");
+    }
+
+    function setWeatherLocation(location) {
+        return setProperty("Weather", "location", location);
+    }
+
+    function setMaxVisibleNotification(count) {
+        return setProperty("Notifications", "maxVisible", count);
+    }
+
+    function setLauncherRows(rows) {
+        return setProperty("Launcher", "visibleRows", rows);
+    }
+
+    function setLauncherWidth(width) {
+        return setProperty("Launcher", "width", width);
     }
 
     function finishConfigWrite(succeeded) {
@@ -217,7 +202,7 @@ Singleton {
         } else {
             root.config = oldConfig;
             root.operationFailed = true;
-            root.operationMessage = "Could not save the theme to the config file.";
+            root.operationMessage = "Could not save settings to config.ini.";
         }
     }
 
@@ -239,7 +224,7 @@ Singleton {
         var lines = [
             "Speshell configuration error",
             "Version: " + SystemState.appVersion,
-            "File: " + (root.configPath || "~/.config/speshell/config.jsonc"),
+            "File: " + (root.configPath || "~/.config/speshell/config.ini"),
             ""
         ];
         for (var i = 0; i < root.errors.length; i++)
@@ -252,7 +237,7 @@ Singleton {
             return;
         var pathAssignment = root.configPath !== ""
             ? "path=" + root.shellQuote(root.configPath) + "; "
-            : "path=\"${XDG_CONFIG_HOME:-$HOME/.config}/speshell/config.jsonc\"; ";
+            : "path=\"${XDG_CONFIG_HOME:-$HOME/.config}/speshell/config.ini\"; ";
         root.operationMessage = "";
         root.operationFailed = false;
         openConfigProc.command = [
@@ -291,14 +276,20 @@ Singleton {
         }
     }
 
+    Process {
+        id: configSaveProc
+        running: false
+        onExited: function(exitCode) {
+            root.finishConfigWrite(exitCode === 0);
+        }
+    }
+
     FileView {
         id: configFile
         path: root.configPath
         blockLoading: true
         atomicWrites: false
         printErrors: false
-        onSaved: root.finishConfigWrite(true)
-        onSaveFailed: root.finishConfigWrite(false)
     }
 
     Process {

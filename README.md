@@ -63,7 +63,7 @@ speshell --no-duplicate --daemonize
 
 The package installs immutable app files under `/usr/share/speshell` and seeds your user config on first launch:
 
-- `~/.config/speshell/config.jsonc`
+- `~/.config/speshell/config.ini`
 - `~/.local/share/speshell`
 
 Package upgrades do not replace your config or runtime data.
@@ -72,12 +72,11 @@ Package upgrades do not replace your config or runtime data.
 
 Set the Speshell workspace and panel geometry:
 
-```jsonc
-{
-  "panelWorkspace": "special:dash",
-  "panelWidth": 420,
-  "panelMargin": 16
-}
+```ini
+[Appearance]
+panelWorkspace = special:dash
+panelWidth = 420
+panelMargin = 16
 ```
 
 Configure the matching special workspace, keybinds, and startup hook in Hyprland Lua:
@@ -105,19 +104,22 @@ Hyprland gap values use CSS order: top, right, bottom, left. The panel itself is
 
 ## Configuration
 
-Edit `~/.config/speshell/config.jsonc`. The file is JSONC, so comments and trailing commas are allowed. The bundled `config.example.jsonc` is the canonical self-documenting reference and the file used to bootstrap a new config.
+Edit `~/.config/speshell/config.ini`. The bundled `config.example.ini` is the canonical self-documenting reference and the file used to bootstrap a new config.
 
-Gruvbox is the default color scheme. Catppuccin, Nord, Dracula, Tokyo Night, Rosé Pine, Solarized Dark, and Everforest remain available. The Settings panel switches themes live and persists the selection to `config.jsonc`.
+The INI format intentionally replaces the earlier `config.jsonc` format without an automatic migration. If you have an old config, copy the settings you still want into `config.ini`; the old file is left untouched and ignored.
 
-Configuration is strict. Unknown properties, wrong types, out-of-range numbers, and malformed URL templates stop the normal runtime and open a diagnostic window. Correct the file and select **Retry**. Important numeric constraints are:
+Gruvbox is the default color scheme. Catppuccin, Nord, Dracula, Tokyo Night, Rosé Pine, Solarized Dark, and Everforest remain available. The Settings panel switches themes live and persists selections to `config.ini`.
 
-| Property | Valid values |
+Speshell validates malformed lines and the settings that can put the runtime into a bad state: enums, booleans, numeric ranges, URL templates, and launcher bangs. Other entries are ignored. Validation failures open a line-aware diagnostic window; correct the file and select **Retry**. Comments use `#` or `;` on their own line. Important numeric constraints are:
+
+| INI property | Valid values |
 |---|---|
-| `panelWidth` | `240`–`1200` |
-| `panelMargin` | `0`–`128` |
-| `launcher.width` | `280`–`1200` |
-| `launcher.visibleRows` | `1`–`20` |
-| `maxVisibleNotification` | `-1` or `1`–`50` |
+| `[Appearance] panelWidth` | `240`–`1200` |
+| `[Appearance] panelMargin` | `0`–`128` |
+| `[Audio] scrollStep` | `1`–`100` |
+| `[Launcher] width` | `280`–`1200` |
+| `[Launcher] visibleRows` | `1`–`20` |
+| `[Notifications] maxVisible` | `-1` or `1`–`50` |
 
 ### Layout
 
@@ -135,11 +137,11 @@ The dashboard owns its layout. This keeps the surface stable as features evolve 
 └───────┴────────────────────┘
 ```
 
-The upper rail order is Audio output, Microphone, Displays, Battery, Notes, Clipboard, Network, and Bluetooth. Unsupported entries hide automatically, so Battery does not appear on a desktop without one. System tray items stay centered in the free rail area.
+The upper rail starts with Audio, followed by Displays, Battery, Notes, Clipboard, Network, and Bluetooth. Audio combines speaker and microphone controls by default; set `[Audio] panelMode = separate` to restore separate output and microphone icons. Unsupported entries hide automatically, so Battery does not appear on a desktop without one. System tray items stay centered in the free rail area.
 
 The Speshell mark opens Home, which contains Now Playing and Notifications. Calendar, Settings, About, and Power always occupy the lower rail and share the exclusive bottom area. Calendar is selected by default; selecting another utility replaces it, and selecting the active utility again returns to Calendar.
 
-The former `topAnchor`, `bottomAnchor`, `sidebar`, and `sidebarSystemTray` properties are accepted for upgrade compatibility but ignored. They can be removed from existing configs. The old `configPanel` navigation alias still opens Settings.
+The former JSONC layout properties have no INI equivalents. The old `configPanel` navigation alias still opens Settings.
 
 Available panel destinations:
 
@@ -172,7 +174,7 @@ Open it with `speshell launcher`; `speshell launcher close` and `speshell launch
 | `= expression` | Force calculator mode |
 | Unambiguous expression | Calculate without the `=` prefix |
 | `!name` | Open an available Speshell panel or use a web bang |
-| `? query` | Search with `launcher.searchUrl` |
+| `? query` | Search with `[Launcher] searchUrl` |
 
 ```text
 2 * (8 + 4)       calculate and copy the result
@@ -201,43 +203,57 @@ Keyboard controls are **Up/Down** to select, **Tab** to complete a bang, **Enter
 
 Configure web search and custom bangs with HTTPS URL templates containing exactly one `{query}` placeholder. Bang names use lowercase letters, digits, and hyphens; built-in panel aliases are reserved.
 
-```jsonc
-{
-  "launcher": {
-    "width": 540,
-    "visibleRows": 5,
-    "searchUrl": "https://duckduckgo.com/?q={query}",
-    "bangs": {
-      "gh": "https://github.com/search?q={query}",
-      "yt": "https://www.youtube.com/results?search_query={query}"
-    }
-  }
-}
+```ini
+[Launcher]
+width = 540
+visibleRows = 5
+searchUrl = https://duckduckgo.com/?q={query}
+
+[Launcher.Bangs]
+gh = https://github.com/search?q={query}
+yt = https://www.youtube.com/results?search_query={query}
 ```
 
-Unknown bangs are passed intact to `launcher.searchUrl`, which enables provider-native bangs when the selected search engine supports them.
+Unknown bangs are passed intact to `[Launcher] searchUrl`, which enables provider-native bangs when the selected search engine supports them.
 
 ### Integrations and power
 
-Audio quick-switch settings match substrings against PipeWire/Pulse device names:
+Audio quick-switch settings match case-insensitive substrings against PipeWire/Pulse device names and descriptions. Add numbered entries in display order; empty sections show every device. Dedicated map sections rename matching PipeWire names or descriptions:
+
+```ini
+[Audio.QuickSwitch]
+1 = Built-in Audio
+2 = Display, HDMI
+
+[Audio.InputQuickSwitch]
+1 = Microphone
+
+[Audio.DeviceNames]
+alsa_output.pci-0000_00_1f.3.analog-stereo = Speakers
+
+[Audio.InputDeviceNames]
+alsa_input.pci-0000_00_1f.3.analog-stereo = Desk Microphone
+```
+
+Discover the available identifiers with:
 
 ```bash
 pactl list sinks | grep -E "Name:|Description:"
 pactl list sources | grep -E "Name:|Description:"
 ```
 
-On systems with multiple entries in `/sys/class/backlight`, set `backlightDevice` to the device that Speshell should read and pass to `brightnessctl`.
+On systems with multiple entries in `/sys/class/backlight`, set `[Backlight] device` to the device that Speshell should read and pass to `brightnessctl`.
 
-Weather lookup is disabled by default. Set `weatherEnabled` to `true`; `weatherLocation` controls the label and query. Leaving the location empty allows wttr.in to infer an approximate location from the request.
+Weather lookup is disabled by default. Set `[Weather] enabled` to `true`; `location` controls the label and query. Leaving the location empty allows wttr.in to infer an approximate location from the request.
 
-The power menu uses `hyprlock` by default. Lock runs immediately; Sleep, Log out, Restart, and Power off require confirmation. Sleep starts the locker, verifies that it remains active, and only then asks systemd to suspend. To use another blocking Wayland locker, provide its executable and arguments as an array:
+The power menu uses `hyprlock` by default. Lock runs immediately; Sleep, Log out, Restart, and Power off require confirmation. Sleep starts the locker, verifies that it remains active, and only then asks systemd to suspend. To use another blocking Wayland locker, set its executable and add optional numbered arguments:
 
-```jsonc
-{
-  "powerMenu": {
-    "lockCommand": ["gtklock"]
-  }
-}
+```ini
+[Power]
+lockCommand = gtklock
+
+[Power.Arguments]
+1 = --daemonize
 ```
 
 The locker process must remain running for the duration of the locked session. Lock and Sleep are disabled when the configured executable cannot be found. Action failures are shown inline in the power panel.

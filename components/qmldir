@@ -8,6 +8,7 @@ IconButton 1.0 IconButton.qml
 InlineActionChip 1.0 InlineActionChip.qml
 RefreshButton 1.0 RefreshButton.qml
 SelectRow 1.0 SelectRow.qml
+SelectMenuRow 1.0 SelectMenuRow.qml
 SidebarIcon 1.0 SidebarIcon.qml
 SpeshellMarkButton 1.0 SpeshellMarkButton.qml
 StatusBadge 1.0 StatusBadge.qml

@@ -637,6 +637,11 @@ Components.Card {
                             root.brightnessPercent = root.pendingBrightnessPercent;
                             brightnessSetDebounce.restart();
                         }
+                        onWheelAdjusted: function(nextValue) {
+                            root.pendingBrightnessPercent = root.clampBrightnessPercent(nextValue);
+                            root.brightnessPercent = root.pendingBrightnessPercent;
+                            brightnessSetDebounce.restart();
+                        }
                         onPressedChanged: if (!pressed && brightnessSetDebounce.running) {
                             brightnessSetDebounce.stop();
                             root.commitBrightness();

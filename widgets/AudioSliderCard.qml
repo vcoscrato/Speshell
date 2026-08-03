@@ -11,35 +11,16 @@ Components.Card {
     property bool dashboardActive: true
     property var quickSwitchDevices: []
     property var deviceDisplayNames: ({})
+    property var inputQuickSwitchDevices: []
+    property var inputDeviceDisplayNames: ({})
 
-    // "output" = speaker/sink control, "input" = mic/source control
+    // "output" = speaker, "input" = mic, "combined" = both speaker & mic in one card
     property string mode: "output"
 
-    readonly property bool isOutput: mode === "output"
+    readonly property bool isCombined: mode === "combined"
+    readonly property bool isOutput: mode === "output" || isCombined
 
-    // ── Service properties (resolve once based on mode) ────
-    readonly property var defaultDevice: isOutput
-        ? Services.AudioService.defaultSink
-        : Services.AudioService.defaultSource
-
-    readonly property int serviceVolumePercent: isOutput
-        ? Services.AudioService.outputVolumePercent
-        : Services.AudioService.inputVolumePercent
-
-    readonly property bool serviceHasVolume: isOutput
-        ? Services.AudioService.hasOutputVolume
-        : Services.AudioService.hasInputVolume
-
-    readonly property bool serviceMuted: isOutput
-        ? Services.AudioService.outputMuted
-        : Services.AudioService.inputMuted
-
-    // ── Local dragging state (preserves external volume sync) ──
-    property bool localDragging: false
-    property int localVolumePercent: 0
-
-    // ── Node list ──────────────────────────────────────────
-    readonly property var deviceEntries: {
+    function buildNodeList(isOut) {
         if (!root.dashboardActive || !Pipewire.nodes || !Pipewire.nodes.values)
             return [];
 
@@ -49,308 +30,333 @@ Components.Card {
             var node = values[i];
             if (!node)
                 continue;
-            if (root.isOutput) {
+            if (isOut) {
                 if ((node.isSink || false) && !node.isStream) {
-                    var outputEntry = root.buildDeviceEntry(node);
-                    if (outputEntry)
-                        result.push(outputEntry);
+                    var outEntry = root.buildDeviceEntry(node, true);
+                    if (outEntry)
+                        result.push(outEntry);
                 }
             } else {
                 if (root.isSourceNode(node)) {
-                    var inputEntry = root.buildDeviceEntry(node);
-                    if (inputEntry)
-                        result.push(inputEntry);
+                    var inEntry = root.buildDeviceEntry(node, false);
+                    if (inEntry)
+                        result.push(inEntry);
                 }
             }
         }
 
-        if (root.quickSwitchDevices && root.quickSwitchDevices.length > 0) {
+        var configuredDevices = root.quickSwitchFor(isOut);
+        if (configuredDevices.length > 0) {
             result.sort(function(a, b) {
                 if (a.matchIndex !== b.matchIndex)
                     return a.matchIndex - b.matchIndex;
                 return a.rawLabel.localeCompare(b.rawLabel);
             });
         }
-
         return result;
     }
 
-    // ── Filtering ──────────────────────────────────────────
-    // Output uses exact substring match; Input uses case-insensitive match.
-    // Display-name overrides win over quick-switch labels, which win over raw names.
     function rawDeviceLabel(node) {
         return node.description || node.name || "Unknown";
     }
 
-    function pushDeviceNameCandidate(candidates, value) {
-        if (value === undefined || value === null)
-            return;
-
-        var text = String(value);
-        if (text !== "" && candidates.indexOf(text) === -1)
-            candidates.push(text);
-
-        var trimmed = text.trim();
-        if (trimmed !== "" && candidates.indexOf(trimmed) === -1)
-            candidates.push(trimmed);
+    function quickSwitchFor(isOut) {
+        var configured = isOut || !root.isCombined
+            ? root.quickSwitchDevices
+            : root.inputQuickSwitchDevices;
+        return Array.isArray(configured) ? configured : [];
     }
 
-    function deviceNameCandidates(node, rawLabel) {
+    function displayNamesFor(isOut) {
+        var configured = isOut || !root.isCombined
+            ? root.deviceDisplayNames
+            : root.inputDeviceDisplayNames;
+        return configured && typeof configured === "object" ? configured : ({});
+    }
+
+    function nameCandidates(node) {
         var candidates = [];
-        if (node) {
-            root.pushDeviceNameCandidate(candidates, node.name);
-            root.pushDeviceNameCandidate(candidates, node.description);
+        var values = [node ? node.name : "", node ? node.description : ""];
+        for (var i = 0; i < values.length; i++) {
+            var value = String(values[i] || "").trim();
+            if (value !== "" && candidates.indexOf(value) < 0)
+                candidates.push(value);
         }
-        root.pushDeviceNameCandidate(candidates, rawLabel);
         return candidates;
     }
 
-    function mappedDeviceLabel(node, rawLabel) {
-        var names = root.deviceDisplayNames;
-        if (!names || typeof names !== "object")
-            return "";
-
-        var candidates = root.deviceNameCandidates(node, rawLabel);
+    function mappedDeviceLabel(node, isOut) {
+        var names = root.displayNamesFor(isOut);
+        var candidates = root.nameCandidates(node);
         for (var i = 0; i < candidates.length; i++) {
-            var key = candidates[i];
-            if (key in names) {
-                var mapped = names[key];
-                if (mapped !== undefined && mapped !== null && String(mapped).trim() !== "")
-                    return String(mapped);
+            if (Object.prototype.hasOwnProperty.call(names, candidates[i])) {
+                var mapped = String(names[candidates[i]] || "").trim();
+                if (mapped !== "")
+                    return mapped;
             }
         }
-
         return "";
     }
 
-    function displayLabel(node, rawLabel, fallbackLabel) {
-        var mapped = root.mappedDeviceLabel(node, rawLabel);
-        if (mapped !== "")
-            return mapped;
-        return fallbackLabel || rawLabel;
+    function matchIndex(node, isOut) {
+        var configured = root.quickSwitchFor(isOut);
+        if (configured.length === 0)
+            return -1;
+
+        var candidates = root.nameCandidates(node);
+        for (var configuredIndex = 0; configuredIndex < configured.length; configuredIndex++) {
+            var needle = String(configured[configuredIndex] || "").trim().toLowerCase();
+            if (needle === "")
+                continue;
+            for (var candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
+                if (candidates[candidateIndex].toLowerCase().indexOf(needle) >= 0)
+                    return configuredIndex;
+            }
+        }
+        return -2;
     }
 
-    function deviceMatch(node) {
+    function buildDeviceEntry(node, isOut) {
         var rawLabel = root.rawDeviceLabel(node);
-
-        if (!root.quickSwitchDevices || root.quickSwitchDevices.length === 0)
-            return { matches: true, label: root.displayLabel(node, rawLabel, rawLabel), matchIndex: -1 };
-
-        if (root.isOutput) {
-            var desc = node.description || "";
-            for (var i = 0; i < root.quickSwitchDevices.length; i++) {
-                var outputLabel = (root.quickSwitchDevices[i] || "").toString();
-                if (outputLabel !== "" && desc.indexOf(outputLabel) !== -1)
-                    return { matches: true, label: root.displayLabel(node, rawLabel, outputLabel), matchIndex: i };
-            }
-            return { matches: false, label: "", matchIndex: -1 };
-        }
-
-        // Input: case-insensitive with trim
-        var descLower = (node.description || node.name || "").toLowerCase();
-        for (var j = 0; j < root.quickSwitchDevices.length; j++) {
-            var needle = (root.quickSwitchDevices[j] || "").toString().trim().toLowerCase();
-            if (needle !== "") {
-                var inputLabel = (root.quickSwitchDevices[j] || "").toString().trim();
-                if (descLower.indexOf(needle) !== -1)
-                    return { matches: true, label: root.displayLabel(node, rawLabel, inputLabel || rawLabel), matchIndex: j };
-            }
-        }
-        return { matches: false, label: "", matchIndex: -1 };
-    }
-
-    function buildDeviceEntry(node) {
-        var match = root.deviceMatch(node);
-        if (!match.matches)
+        var matchedIndex = root.matchIndex(node, isOut);
+        if (matchedIndex === -2)
             return null;
-
-        var rawLabel = root.rawDeviceLabel(node);
+        var mappedLabel = root.mappedDeviceLabel(node, isOut);
         return {
             node: node,
-            label: match.label || rawLabel,
+            label: mappedLabel !== "" ? mappedLabel : rawLabel,
             rawLabel: rawLabel,
-            matchIndex: match.matchIndex
+            matchIndex: matchedIndex
         };
     }
 
-    // Source node detection — only used for input mode.
-    // Preserves the exact heuristics from the original AudioInputControl.
     function isSourceNode(node) {
         if (!node)
             return false;
-
         if (Boolean(node.isSource))
             return true;
-
         var mediaClass = typeof node.mediaClass === "string" ? node.mediaClass : "";
         if (mediaClass.indexOf("Audio/Source") === 0)
             return true;
-
         var name = typeof node.name === "string" ? node.name : "";
         if (name.indexOf(".monitor") !== -1)
             return false;
         if (name.indexOf("alsa_input.") === 0 || name.indexOf(".input.") !== -1)
             return true;
-
-        var nodeDesc = typeof node.description === "string" ? node.description : "";
-        if (nodeDesc.indexOf("Monitor of ") === 0)
+        var description = typeof node.description === "string" ? node.description : "";
+        if (description.indexOf("Monitor of ") === 0)
             return false;
-
         return false;
     }
 
-    // ── Service interaction ────────────────────────────────
-    function setVolumePercent(pct) {
-        if (root.isOutput)
-            Services.AudioService.setOutputVolumePercent(pct);
-        else
-            Services.AudioService.setInputVolumePercent(pct);
-    }
-
-    function toggleMute() {
-        if (root.isOutput)
-            Services.AudioService.toggleOutputMute();
-        else
-            Services.AudioService.toggleInputMute();
-    }
-
-    function setDefaultDevice(node) {
-        if (root.isOutput) {
-            if (!node.isStream)
-                Pipewire.preferredDefaultAudioSink = node;
-        } else {
-            Pipewire.preferredDefaultAudioSource = node;
-        }
-    }
-
-    // ── Sync from AudioService (respects local dragging) ──
-    Component.onCompleted: {
-        localVolumePercent = root.serviceVolumePercent;
-    }
-
-    Connections {
-        target: Services.AudioService
-        function onOutputVolumePercentChanged() {
-            if (root.isOutput && !root.localDragging)
-                root.localVolumePercent = Services.AudioService.outputVolumePercent;
-        }
-        function onInputVolumePercentChanged() {
-            if (!root.isOutput && !root.localDragging)
-                root.localVolumePercent = Services.AudioService.inputVolumePercent;
-        }
-    }
-
-    // ── UI ─────────────────────────────────────────────────
     Column {
         width: parent.width
-        spacing: ThemeModule.Theme.spacingMedium
+        spacing: ThemeModule.Theme.spacingLarge
 
-        // ── Volume slider ────────────────────────
-        Row {
-            width: parent.width
-            spacing: ThemeModule.Theme.spacingSmall
-
-            Components.IconButton {
-                iconName: root.serviceMuted
-                    ? (root.isOutput ? "audio-output-muted" : "audio-input-muted")
-                    : (root.isOutput ? "audio-output" : "audio-input")
-                size: 32
-                anchors.verticalCenter: parent.verticalCenter
-                tooltipText: root.serviceMuted
-                    ? (root.isOutput ? "Unmute output" : "Unmute input")
-                    : (root.isOutput ? "Mute output" : "Mute input")
-                onClicked: root.toggleMute()
-            }
-
-            Components.StyledSlider {
-                width: parent.width - 88 // 32 (icon) + 8 (spacing) + 8 (spacing) + 40 (text) = 88
-                anchors.verticalCenter: parent.verticalCenter
-                value: root.localDragging ? root.localVolumePercent : (root.serviceHasVolume ? root.serviceVolumePercent : 0)
-                enabled: root.defaultDevice && root.serviceHasVolume
-                onMoved: {
-                    root.localVolumePercent = Math.round(value);
-                    root.setVolumePercent(root.localVolumePercent);
-                }
-                onPressedChanged: {
-                    root.localDragging = pressed;
-                    if (!pressed)
-                        root.setVolumePercent(root.localVolumePercent);
-                }
-            }
-
-            Text {
-                text: !root.defaultDevice
-                    ? "—"
-                    : (root.serviceHasVolume
-                        ? root.serviceVolumePercent + "%"
-                        : "…")
-                font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                font.family: ThemeModule.Theme.fontFamily
-                color: ThemeModule.Theme.subtext
-                width: 40
-                horizontalAlignment: Text.AlignRight
-                anchors.verticalCenter: parent.verticalCenter
-            }
-        }
-
-        // ── Device list ────────────────────────────
+        // ── OUTPUT CONTROL SECTION ────────────────────────
         Column {
             width: parent.width
-            spacing: ThemeModule.Theme.spacingTiny
+            spacing: ThemeModule.Theme.spacingSmall
+            visible: root.mode === "output" || root.mode === "combined"
 
-            Repeater {
-                model: root.deviceEntries
+            Text {
+                visible: root.isCombined
+                text: "Volume"
+                font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                font.family: ThemeModule.Theme.fontFamily
+                font.bold: true
+                color: ThemeModule.Theme.text
+            }
 
-                delegate: Rectangle {
-                    id: deviceDelegate
-                    required property var modelData
-                    property var entry: deviceDelegate.modelData
-                    property var node: deviceDelegate.entry.node
-                    width: parent.width
-                    height: 32
-                    radius: ThemeModule.Theme.borderRadiusSmall
-                    color: deviceMouse.containsMouse ? ThemeModule.Theme.cardHover : "transparent"
+            Row {
+                width: parent.width
+                spacing: ThemeModule.Theme.spacingSmall
 
-                    Behavior on color {
-                        ColorAnimation { duration: ThemeModule.Theme.animDuration }
+                Components.IconButton {
+                    iconName: Services.AudioService.outputMuted ? "audio-output-muted" : "audio-output"
+                    size: 32
+                    anchors.verticalCenter: parent.verticalCenter
+                    tooltipText: Services.AudioService.outputMuted ? "Unmute output" : "Mute output"
+                    onClicked: Services.AudioService.toggleOutputMute()
+                }
+
+                Components.StyledSlider {
+                    width: parent.width - 88
+                    anchors.verticalCenter: parent.verticalCenter
+                    value: Services.AudioService.hasOutputVolume ? Services.AudioService.outputVolumePercent : 0
+                    enabled: Services.AudioService.defaultSink && Services.AudioService.hasOutputVolume
+                    stepSize: (Services.ConfigService.config && Services.ConfigService.config.audioScrollStep)
+                        ? Services.ConfigService.config.audioScrollStep
+                        : 5
+                    onMoved: {
+                        Services.AudioService.setOutputVolumePercent(Math.round(value));
                     }
+                    onWheelAdjusted: function(nextValue) {
+                        Services.AudioService.setOutputVolumePercent(Math.round(nextValue));
+                    }
+                }
 
-                    Row {
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
-                        anchors.leftMargin: ThemeModule.Theme.spacingSmall
-                        spacing: ThemeModule.Theme.spacingSmall
+                Text {
+                    text: !Services.AudioService.defaultSink ? "—" : (Services.AudioService.hasOutputVolume ? Services.AudioService.outputVolumePercent + "%" : "…")
+                    font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                    font.family: ThemeModule.Theme.fontFamily
+                    color: ThemeModule.Theme.subtext
+                    width: 40
+                    horizontalAlignment: Text.AlignRight
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
 
-                        Rectangle {
-                            width: 14
-                            height: 14
-                            radius: 7
+            // Output Devices List
+            Column {
+                width: parent.width
+                spacing: ThemeModule.Theme.spacingTiny
+
+                Repeater {
+                    model: root.buildNodeList(true)
+
+                    delegate: Rectangle {
+                        id: outDevDelegate
+                        required property var modelData
+                        width: parent.width
+                        height: 32
+                        radius: ThemeModule.Theme.borderRadiusSmall
+                        color: outDevMouse.containsMouse ? ThemeModule.Theme.cardHover : "transparent"
+
+                        Row {
                             anchors.verticalCenter: parent.verticalCenter
-                            border.width: 2
-                            border.color: ThemeModule.Theme.accent
-                            color: (root.defaultDevice === deviceDelegate.node) ? ThemeModule.Theme.accent : "transparent"
+                            anchors.left: parent.left
+                            anchors.leftMargin: ThemeModule.Theme.spacingSmall
+                            spacing: ThemeModule.Theme.spacingSmall
 
-                            Behavior on color {
-                                ColorAnimation { duration: ThemeModule.Theme.animDuration }
+                            Rectangle {
+                                width: 14; height: 14; radius: 7
+                                anchors.verticalCenter: parent.verticalCenter
+                                border.width: 2
+                                border.color: ThemeModule.Theme.accent
+                                color: (Services.AudioService.defaultSink === outDevDelegate.modelData.node) ? ThemeModule.Theme.accent : "transparent"
+                            }
+
+                            Text {
+                                text: outDevDelegate.modelData.label
+                                font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                                font.family: ThemeModule.Theme.fontFamily
+                                color: ThemeModule.Theme.text
+                                anchors.verticalCenter: parent.verticalCenter
                             }
                         }
 
-                        Text {
-                            text: deviceDelegate.entry.label
-                            font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                            font.family: ThemeModule.Theme.fontFamily
-                            color: ThemeModule.Theme.text
-                            anchors.verticalCenter: parent.verticalCenter
+                        MouseArea {
+                            id: outDevMouse
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            hoverEnabled: true
+                            onClicked: Pipewire.preferredDefaultAudioSink = outDevDelegate.modelData.node
                         }
                     }
+                }
+            }
+        }
 
-                    MouseArea {
-                        id: deviceMouse
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        hoverEnabled: true
-                        onClicked: {
-                            root.setDefaultDevice(deviceDelegate.node);
+        // ── INPUT / MICROPHONE CONTROL SECTION ────────────────────────
+        Column {
+            width: parent.width
+            spacing: ThemeModule.Theme.spacingSmall
+            visible: root.mode === "input" || root.mode === "combined"
+
+            Text {
+                visible: root.isCombined
+                text: "Microphone"
+                font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                font.family: ThemeModule.Theme.fontFamily
+                font.bold: true
+                color: ThemeModule.Theme.text
+            }
+
+            Row {
+                width: parent.width
+                spacing: ThemeModule.Theme.spacingSmall
+
+                Components.IconButton {
+                    iconName: Services.AudioService.inputMuted ? "audio-input-muted" : "audio-input"
+                    size: 32
+                    anchors.verticalCenter: parent.verticalCenter
+                    tooltipText: Services.AudioService.inputMuted ? "Unmute input" : "Mute input"
+                    onClicked: Services.AudioService.toggleInputMute()
+                }
+
+                Components.StyledSlider {
+                    width: parent.width - 88
+                    anchors.verticalCenter: parent.verticalCenter
+                    value: Services.AudioService.hasInputVolume ? Services.AudioService.inputVolumePercent : 0
+                    enabled: Services.AudioService.defaultSource && Services.AudioService.hasInputVolume
+                    stepSize: (Services.ConfigService.config && Services.ConfigService.config.audioScrollStep)
+                        ? Services.ConfigService.config.audioScrollStep
+                        : 5
+                    onMoved: {
+                        Services.AudioService.setInputVolumePercent(Math.round(value));
+                    }
+                    onWheelAdjusted: function(nextValue) {
+                        Services.AudioService.setInputVolumePercent(Math.round(nextValue));
+                    }
+                }
+
+                Text {
+                    text: !Services.AudioService.defaultSource ? "—" : (Services.AudioService.hasInputVolume ? Services.AudioService.inputVolumePercent + "%" : "…")
+                    font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                    font.family: ThemeModule.Theme.fontFamily
+                    color: ThemeModule.Theme.subtext
+                    width: 40
+                    horizontalAlignment: Text.AlignRight
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+
+            // Input Devices List
+            Column {
+                width: parent.width
+                spacing: ThemeModule.Theme.spacingTiny
+
+                Repeater {
+                    model: root.buildNodeList(false)
+
+                    delegate: Rectangle {
+                        id: inDevDelegate
+                        required property var modelData
+                        width: parent.width
+                        height: 32
+                        radius: ThemeModule.Theme.borderRadiusSmall
+                        color: inDevMouse.containsMouse ? ThemeModule.Theme.cardHover : "transparent"
+
+                        Row {
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.left: parent.left
+                            anchors.leftMargin: ThemeModule.Theme.spacingSmall
+                            spacing: ThemeModule.Theme.spacingSmall
+
+                            Rectangle {
+                                width: 14; height: 14; radius: 7
+                                anchors.verticalCenter: parent.verticalCenter
+                                border.width: 2
+                                border.color: ThemeModule.Theme.accent
+                                color: (Services.AudioService.defaultSource === inDevDelegate.modelData.node) ? ThemeModule.Theme.accent : "transparent"
+                            }
+
+                            Text {
+                                text: inDevDelegate.modelData.label
+                                font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                                font.family: ThemeModule.Theme.fontFamily
+                                color: ThemeModule.Theme.text
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        MouseArea {
+                            id: inDevMouse
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            hoverEnabled: true
+                            onClicked: Pipewire.preferredDefaultAudioSource = inDevDelegate.modelData.node
                         }
                     }
                 }

@@ -1,4 +1,4 @@
-config.jsonc
+config.ini
 .qt/
 .DS_Store
 *.qmlc

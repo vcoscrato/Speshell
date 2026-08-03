@@ -124,7 +124,7 @@ PanelWindow {
                     Text {
                         anchors.fill: parent
                         anchors.margins: 10
-                        text: Services.ConfigService.configPath || "~/.config/speshell/config.jsonc"
+                        text: Services.ConfigService.configPath || "~/.config/speshell/config.ini"
                         color: "#c6d0dc"
                         font.family: "monospace"
                         font.pixelSize: 11

@@ -63,7 +63,7 @@ Singleton {
             return;
         if (!weatherProc.running) {
             var loc = String(root.location || "").trim();
-            var url = loc !== "" ? ("wttr.in/" + encodeURIComponent(loc) + "?format=%c+%t") : "wttr.in/?format=%c+%t";
+            var url = loc !== "" ? ("wttr.in/" + encodeURIComponent(loc) + "?format=%c+%t+%l") : "wttr.in/?format=%c+%t+%l";
             weatherProc.command = ["curl", "-fsS", "--max-time", "8", url];
             weatherProc.running = true;
         } else {
@@ -73,7 +73,7 @@ Singleton {
 
     Process {
         id: weatherProc
-        command: ["curl", "-fsS", "--max-time", "8", "wttr.in/?format=%c+%t"]
+        command: ["curl", "-fsS", "--max-time", "8", "wttr.in/?format=%c+%t+%l"]
         running: false
 
         property string output: ""

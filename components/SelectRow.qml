@@ -11,12 +11,34 @@ Rectangle {
     signal activated()
 
     width: parent ? parent.width : 300
-    height: 38
+    height: 32
     radius: ThemeModule.Theme.borderRadiusSmall
+    activeFocusOnTab: root.enabled
     opacity: root.enabled ? 1.0 : 0.45
     color: selectMouse.containsMouse && root.enabled
         ? Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.14)
         : "transparent"
+    border.width: root.activeFocus ? 2 : 0
+    border.color: ThemeModule.Theme.accent
+
+    Accessible.role: Accessible.Button
+    Accessible.name: root.label
+    Accessible.description: root.value
+    Accessible.onPressAction: {
+        if (root.enabled)
+            root.activated();
+    }
+
+    Keys.onPressed: function(event) {
+        if (!root.enabled || event.isAutoRepeat)
+            return;
+        if (event.key === Qt.Key_Return
+                || event.key === Qt.Key_Enter
+                || event.key === Qt.Key_Space) {
+            root.activated();
+            event.accepted = true;
+        }
+    }
 
     Text {
         text: root.label
@@ -59,6 +81,9 @@ Rectangle {
         enabled: root.enabled
         hoverEnabled: true
         cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-        onClicked: root.activated()
+        onClicked: {
+            root.forceActiveFocus();
+            root.activated();
+        }
     }
 }

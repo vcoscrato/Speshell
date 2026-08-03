@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls as Controls
 import Quickshell
 import "../components" as Components
 import "../services" as Services
@@ -9,27 +8,50 @@ Components.Card {
     id: root
 
     property bool relaunching: false
-    readonly property var themeOptions: [
-        { name: "gruvbox", label: "Gruvbox" },
-        { name: "catppuccin-mocha", label: "Catppuccin Mocha" },
-        { name: "catppuccin-macchiato", label: "Catppuccin Macchiato" },
-        { name: "catppuccin-frappe", label: "Catppuccin Frappé" },
-        { name: "catppuccin-latte", label: "Catppuccin Latte" },
-        { name: "nord", label: "Nord" },
-        { name: "dracula", label: "Dracula" },
-        { name: "tokyo-night", label: "Tokyo Night" },
-        { name: "rose-pine", label: "Rosé Pine" },
-        { name: "solarized-dark", label: "Solarized Dark" },
-        { name: "everforest", label: "Everforest" }
-    ]
 
-    function themeLabel(themeName) {
-        for (var i = 0; i < root.themeOptions.length; i++) {
-            if (root.themeOptions[i].name === themeName)
-                return root.themeOptions[i].label;
-        }
-        return themeName;
-    }
+    readonly property var settingsConfig: Services.ConfigService.config || ({})
+    readonly property var launcherConfig: root.settingsConfig.launcher || ({})
+    readonly property var themeOptions: [
+        { value: "gruvbox", label: "Gruvbox" },
+        { value: "catppuccin-mocha", label: "Catppuccin Mocha" },
+        { value: "catppuccin-macchiato", label: "Catppuccin Macchiato" },
+        { value: "catppuccin-frappe", label: "Catppuccin Frappé" },
+        { value: "catppuccin-latte", label: "Catppuccin Latte" },
+        { value: "nord", label: "Nord" },
+        { value: "dracula", label: "Dracula" },
+        { value: "tokyo-night", label: "Tokyo Night" },
+        { value: "rose-pine", label: "Rosé Pine" },
+        { value: "solarized-dark", label: "Solarized Dark" },
+        { value: "everforest", label: "Everforest" }
+    ]
+    readonly property var audioModeOptions: [
+        { value: "combined", label: "Speaker + Mic" },
+        { value: "separate", label: "Separate Icons" }
+    ]
+    readonly property var scrollStepOptions: [
+        { value: 2, label: "Precise (2%)" },
+        { value: 5, label: "Standard (5%)" },
+        { value: 10, label: "Fast (10%)" }
+    ]
+    readonly property var notificationOptions: [
+        { value: 1, label: "1 Toast" },
+        { value: 3, label: "3 Toasts" },
+        { value: 5, label: "5 Toasts" },
+        { value: 10, label: "10 Toasts" },
+        { value: -1, label: "Unlimited" }
+    ]
+    readonly property var launcherRowOptions: [
+        { value: 3, label: "3 Rows" },
+        { value: 5, label: "5 Rows" },
+        { value: 7, label: "7 Rows" },
+        { value: 10, label: "10 Rows" }
+    ]
+    readonly property var searchEngineOptions: [
+        { value: "https://duckduckgo.com/?q={query}", label: "DuckDuckGo" },
+        { value: "https://www.google.com/search?q={query}", label: "Google" },
+        { value: "https://searx.be/search?q={query}", label: "SearXNG" },
+        { value: "https://www.bing.com/search?q={query}", label: "Bing" }
+    ]
 
     function shellQuote(value) {
         return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
@@ -58,56 +80,108 @@ Components.Card {
 
     Column {
         width: parent.width
-        spacing: ThemeModule.Theme.spacingMedium
+        spacing: ThemeModule.Theme.spacingSmall
 
-        Column {
+        Components.SelectMenuRow {
+            enabled: !Services.ConfigService.savingConfig
+            label: "Theme"
+            options: root.themeOptions
+            currentValue: ThemeModule.Theme.paletteName
+            onValueSelected: function(value) {
+                Services.ConfigService.setColorScheme(value);
+            }
+        }
+
+        Components.SelectMenuRow {
+            enabled: !Services.ConfigService.savingConfig
+            label: "Audio Panel"
+            options: root.audioModeOptions
+            currentValue: root.settingsConfig.audioPanelMode || "combined"
+            onValueSelected: function(value) {
+                Services.ConfigService.setAudioPanelMode(value);
+            }
+        }
+
+        Components.SelectMenuRow {
+            enabled: !Services.ConfigService.savingConfig
+            label: "Volume Scroll"
+            options: root.scrollStepOptions
+            currentValue: root.settingsConfig.audioScrollStep !== undefined
+                ? root.settingsConfig.audioScrollStep
+                : 5
+            fallbackLabel: currentValue + "%"
+            onValueSelected: function(value) {
+                Services.ConfigService.setAudioScrollStep(value);
+            }
+        }
+
+        Components.SelectMenuRow {
+            enabled: !Services.ConfigService.savingConfig
+            label: "Toasts"
+            options: root.notificationOptions
+            currentValue: root.settingsConfig.maxVisibleNotification !== undefined
+                ? root.settingsConfig.maxVisibleNotification
+                : 3
+            fallbackLabel: currentValue === -1 ? "Unlimited" : currentValue + " Toasts"
+            onValueSelected: function(value) {
+                Services.ConfigService.setMaxVisibleNotification(value);
+            }
+        }
+
+        Components.SelectMenuRow {
+            enabled: !Services.ConfigService.savingConfig
+            label: "Launcher Height"
+            options: root.launcherRowOptions
+            currentValue: root.launcherConfig.visibleRows !== undefined
+                ? root.launcherConfig.visibleRows
+                : 5
+            fallbackLabel: currentValue + " Rows"
+            onValueSelected: function(value) {
+                Services.ConfigService.setLauncherRows(value);
+            }
+        }
+
+        Components.SelectMenuRow {
+            enabled: !Services.ConfigService.savingConfig
+            label: "Search Engine"
+            options: root.searchEngineOptions
+            currentValue: root.launcherConfig.searchUrl || "https://duckduckgo.com/?q={query}"
+            fallbackLabel: "Custom"
+            onValueSelected: function(value) {
+                Services.ConfigService.setProperty("Launcher", "searchUrl", value);
+            }
+        }
+
+        Item {
             width: parent.width
-            spacing: ThemeModule.Theme.spacingSmall
+            height: 32
 
             Text {
-                text: "Appearance"
+                text: "Weather"
                 font.pixelSize: ThemeModule.Theme.fontSizeSmall
                 font.family: ThemeModule.Theme.fontFamily
-                font.bold: true
-                color: ThemeModule.Theme.text
+                color: ThemeModule.Theme.subtext
+                anchors.left: parent.left
+                anchors.leftMargin: ThemeModule.Theme.spacingSmall
+                anchors.verticalCenter: parent.verticalCenter
             }
 
-            Components.SelectRow {
-                id: themeRow
-
+            Components.ToggleSwitch {
+                anchors.right: parent.right
+                anchors.rightMargin: ThemeModule.Theme.spacingSmall
+                anchors.verticalCenter: parent.verticalCenter
+                checked: root.settingsConfig.weatherEnabled || false
                 enabled: !Services.ConfigService.savingConfig
-                label: "Theme"
-                value: root.themeLabel(ThemeModule.Theme.paletteName)
-                valueMaxWidth: 210
-                onActivated: themeMenu.open()
-
-                Controls.Menu {
-                    id: themeMenu
-                    y: themeRow.height
-                    width: themeRow.width
-
-                    Instantiator {
-                        model: root.themeOptions
-
-                        delegate: Controls.MenuItem {
-                            required property var modelData
-
-                            text: modelData.label
-                            checkable: true
-                            checked: ThemeModule.Theme.paletteName === modelData.name
-                            enabled: !Services.ConfigService.savingConfig
-                            onTriggered: Services.ConfigService.setColorScheme(modelData.name)
-                        }
-
-                        onObjectAdded: function(index, object) {
-                            themeMenu.insertItem(index, object);
-                        }
-                        onObjectRemoved: function(index, object) {
-                            themeMenu.removeItem(object);
-                        }
-                    }
+                tooltipText: checked ? "Disable weather" : "Enable weather"
+                onToggled: function(newState) {
+                    Services.ConfigService.setWeatherEnabled(newState);
                 }
             }
+        }
+
+        Item {
+            width: 1
+            height: ThemeModule.Theme.spacingSmall
         }
 
         Column {
@@ -115,18 +189,10 @@ Components.Card {
             spacing: ThemeModule.Theme.spacingSmall
 
             Text {
-                text: "Configuration"
-                font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                font.family: ThemeModule.Theme.fontFamily
-                font.bold: true
-                color: ThemeModule.Theme.text
-            }
-
-            Text {
                 width: parent.width
                 text: Services.ConfigService.configPath !== ""
                     ? Services.ConfigService.configPath
-                    : "~/.config/speshell/config.jsonc"
+                    : "~/.config/speshell/config.ini"
                 font.pixelSize: ThemeModule.Theme.fontSizeSmall
                 font.family: ThemeModule.Theme.fontFamily
                 color: ThemeModule.Theme.subtext
@@ -175,7 +241,7 @@ Components.Card {
             color: ThemeModule.Theme.error
             font.pixelSize: ThemeModule.Theme.fontSizeSmall
             font.family: ThemeModule.Theme.fontFamily
-            wrapMode: Text.WordWrap
+            wrapMode: Text.WrapAnywhere
         }
     }
 }

@@ -1,6 +1,9 @@
 import QtQuick
 import "." as Widgets
+import "../services" as Services
 
 Widgets.AudioSliderCard {
-    mode: "output"
+    mode: (Services.ConfigService.config && Services.ConfigService.config.audioPanelMode === "separate")
+        ? "output"
+        : "combined"
 }

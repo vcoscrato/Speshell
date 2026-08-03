@@ -207,26 +207,53 @@ Components.Card {
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
 
-                    Text {
+                    Item { height: ThemeModule.Theme.spacingTiny; width: 1 }
+
+                    Rectangle {
+                        id: weatherBadge
                         anchors.horizontalCenter: parent.horizontalCenter
-                        readonly property string locationLabel: Services.WeatherService.location.trim() !== ""
-                            ? ("  " + Services.WeatherService.location.trim())
-                            : ""
-                        text: Services.WeatherService.currentWeatherStr + locationLabel
-                        font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                        font.family: ThemeModule.Theme.fontFamily
-                        color: ThemeModule.Theme.subtext
                         visible: Services.WeatherService.enabled
                             && Services.WeatherService.currentWeatherStr !== "Loading..."
+                            && Services.WeatherService.currentWeatherStr !== ""
+
+                        height: 28
+                        width: weatherRow.implicitWidth + 24
+                        radius: 14
+                        color: weatherMouse.containsMouse
+                            ? ThemeModule.Theme.cardHover
+                            : Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.25)
+                        border.width: 1
+                        border.color: weatherMouse.containsMouse
+                            ? ThemeModule.Theme.accent
+                            : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.2)
+
+                        Behavior on color { ColorAnimation { duration: ThemeModule.Theme.animDuration } }
+                        Behavior on border.color { ColorAnimation { duration: ThemeModule.Theme.animDuration } }
+
+                        Row {
+                            id: weatherRow
+                            anchors.centerIn: parent
+                            spacing: ThemeModule.Theme.spacingSmall
+
+                            Text {
+                                text: Services.WeatherService.currentWeatherStr
+                                font.pixelSize: ThemeModule.Theme.fontSizeNormal
+                                font.bold: true
+                                font.family: ThemeModule.Theme.fontFamily
+                                color: ThemeModule.Theme.text
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
 
                         MouseArea {
+                            id: weatherMouse
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
                             onClicked: Services.WeatherService.fetchWeather()
                             ToolTip.visible: containsMouse
-                            ToolTip.text: "Refresh weather"
-                            ToolTip.delay: 400
+                            ToolTip.text: "Click to refresh weather"
+                            ToolTip.delay: 300
                         }
                     }
                 }

@@ -1,5 +1,5 @@
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Controls as Controls
 import "../theme" as ThemeModule
 
 Rectangle {
@@ -12,14 +12,27 @@ Rectangle {
 
     signal toggled(bool newState)
 
-    width: 42
-    height: 28
+    width: 36
+    height: 20
     radius: height / 2
     activeFocusOnTab: root.enabled
     opacity: enabled ? 1.0 : 0.45
-    color: "transparent"
-    border.width: root.activeFocus ? 2 : 0
-    border.color: root.activeColor
+
+    color: root.checked
+        ? root.activeColor
+        : Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.4)
+    border.width: root.activeFocus ? 2 : 1
+    border.color: root.activeFocus
+        ? ThemeModule.Theme.accent
+        : (root.checked ? root.activeColor : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.3))
+
+    Behavior on color {
+        ColorAnimation { duration: ThemeModule.Theme.animDuration }
+    }
+
+    Behavior on border.color {
+        ColorAnimation { duration: ThemeModule.Theme.animDuration }
+    }
 
     Accessible.role: Accessible.CheckBox
     Accessible.name: root.tooltipText
@@ -40,43 +53,27 @@ Rectangle {
         }
     }
 
+    // Compact Thumb Handle
     Rectangle {
-        id: track
-        width: 38
-        height: 20
+        id: thumb
+        width: switchMouse.pressed ? 16 : 14
+        height: 14
         radius: height / 2
-        anchors.centerIn: parent
-        color: root.checked
-            ? Qt.rgba(root.activeColor.r, root.activeColor.g, root.activeColor.b, 0.28)
-            : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.18)
-        border.width: ThemeModule.Theme.borderWidth
-        border.color: root.checked
-            ? Qt.rgba(root.activeColor.r, root.activeColor.g, root.activeColor.b, 0.9)
-            : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.35)
+        anchors.verticalCenter: parent.verticalCenter
+        x: root.checked ? (root.width - width - 3) : 3
+
+        color: root.checked ? ThemeModule.Theme.bg : ThemeModule.Theme.subtext
+
+        Behavior on x {
+            NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
+        }
+
+        Behavior on width {
+            NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
+        }
 
         Behavior on color {
             ColorAnimation { duration: ThemeModule.Theme.animDuration }
-        }
-
-        Behavior on border.color {
-            ColorAnimation { duration: ThemeModule.Theme.animDuration }
-        }
-
-        Rectangle {
-            width: 14
-            height: 14
-            radius: height / 2
-            x: root.checked ? parent.width - width - 3 : 3
-            anchors.verticalCenter: parent.verticalCenter
-            color: root.checked ? root.activeColor : ThemeModule.Theme.subtext
-
-            Behavior on x {
-                NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
-            }
-
-            Behavior on color {
-                ColorAnimation { duration: ThemeModule.Theme.animDuration }
-            }
         }
     }
 
@@ -89,7 +86,7 @@ Rectangle {
         onClicked: root.toggled(!root.checked)
     }
 
-    ToolTip.visible: root.tooltipText !== "" && (switchMouse.containsMouse || root.activeFocus)
-    ToolTip.text: root.tooltipText
-    ToolTip.delay: root.tooltipDelay
+    Controls.ToolTip.visible: root.tooltipText !== "" && (switchMouse.containsMouse || root.activeFocus)
+    Controls.ToolTip.text: root.tooltipText
+    Controls.ToolTip.delay: root.tooltipDelay
 }

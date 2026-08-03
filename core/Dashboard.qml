@@ -27,6 +27,10 @@ Item {
     readonly property string defaultPanel: WidgetRegistry.primaryPanel
     readonly property string activePanel: {
         var requested = WidgetRegistry.canonicalName(dashboard.selectedPanel);
+        if (requested === "audioInputControl"
+                && dashboard.config
+                && dashboard.config.audioPanelMode === "combined")
+            requested = "audioControl";
         if (WidgetRegistry.isSidebarPanel(requested)
                 && dashboard.isWidgetAvailable(requested))
             return requested;
@@ -223,6 +227,10 @@ Item {
                 item.quickSwitchDevices = cfg.audioQuickSwitch || [];
             if ("deviceDisplayNames" in item)
                 item.deviceDisplayNames = cfg.audioDeviceNames || ({});
+            if ("inputQuickSwitchDevices" in item)
+                item.inputQuickSwitchDevices = cfg.audioInputQuickSwitch || [];
+            if ("inputDeviceDisplayNames" in item)
+                item.inputDeviceDisplayNames = cfg.audioInputDeviceNames || ({});
         } else if (widgetName === "audioInputControl") {
             if ("quickSwitchDevices" in item)
                 item.quickSwitchDevices = cfg.audioInputQuickSwitch || [];
@@ -236,6 +244,11 @@ Item {
                 ? cfg.maxVisibleNotification
                 : 3;
         }
+    }
+
+    onConfigChanged: {
+        dashboard.configureLoadedWidget(activePanelLoader.item, dashboard.activePanel);
+        dashboard.configureLoadedWidget(reservedBottomPanelLoader.item, dashboard.activeBottomPanel);
     }
 
     Connections {
@@ -278,6 +291,11 @@ Item {
 
                 Repeater {
                     model: WidgetRegistry.sidebarPanels.filter(function(widgetName) {
+                        if (widgetName === "audioInputControl") {
+                            var mode = Services.ConfigService.config ? Services.ConfigService.config.audioPanelMode : "combined";
+                            if (mode === "combined")
+                                return false;
+                        }
                         return dashboard.isWidgetAvailable(widgetName);
                     })
                     delegate: Components.SidebarIcon {
@@ -295,13 +313,14 @@ Item {
                         }
 
                         onWheelDelta: function(delta) {
+                            var step = (Services.ConfigService.config && Services.ConfigService.config.audioScrollStep)
+                                ? Services.ConfigService.config.audioScrollStep
+                                : 5;
                             if (wName === "audioControl") {
-                                var step = 5;
                                 var newVol = Services.AudioService.outputVolumePercent + (delta > 0 ? step : -step);
                                 Services.AudioService.setOutputVolumePercent(Math.max(0, Math.min(100, newVol)));
                             } else if (wName === "audioInputControl") {
-                                var stepIn = 5;
-                                var newVolIn = Services.AudioService.inputVolumePercent + (delta > 0 ? stepIn : -stepIn);
+                                var newVolIn = Services.AudioService.inputVolumePercent + (delta > 0 ? step : -step);
                                 Services.AudioService.setInputVolumePercent(Math.max(0, Math.min(100, newVolIn)));
                             }
                         }

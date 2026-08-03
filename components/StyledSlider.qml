@@ -1,35 +1,61 @@
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Controls as Controls
 import "../theme" as ThemeModule
 
-Slider {
+Controls.Slider {
     id: root
 
-    property color trackColor: ThemeModule.Theme.surface2
+    property color trackColor: Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.5)
     property color progressColor: ThemeModule.Theme.accent
     property color handleColor: ThemeModule.Theme.bg
+    property color handleBorderColor: ThemeModule.Theme.accent
+    property real trackHeight: 8
+    property real handleSize: 18
+    signal wheelAdjusted(real nextValue)
 
     from: 0
     to: 100
     stepSize: 1
     height: 32
 
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.NoButton
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onWheel: function(wheel) {
+            if (wheel.angleDelta.y === 0)
+                return;
+            var step = root.stepSize > 0 ? root.stepSize : 5;
+            var delta = wheel.angleDelta.y > 0 ? step : -step;
+            var newVal = Math.max(root.from, Math.min(root.to, root.value + delta));
+            if (newVal !== root.value)
+                root.wheelAdjusted(newVal);
+            wheel.accepted = true;
+        }
+    }
+
     background: Rectangle {
         x: root.leftPadding
         y: root.topPadding + root.availableHeight / 2 - height / 2
         width: root.availableWidth
-        height: 4
-        radius: 0
+        height: root.trackHeight
+        radius: height / 2
         color: root.trackColor
+        clip: true
 
         Rectangle {
             width: root.visualPosition * parent.width
             height: parent.height
-            radius: 0
+            radius: parent.radius
             color: root.progressColor
 
             Behavior on width {
-                NumberAnimation { duration: 50 }
+                NumberAnimation { duration: 60; easing.type: Easing.OutCubic }
+            }
+
+            Behavior on color {
+                ColorAnimation { duration: ThemeModule.Theme.animDuration }
             }
         }
     }
@@ -37,21 +63,26 @@ Slider {
     handle: Rectangle {
         x: root.leftPadding + root.visualPosition * (root.availableWidth - width)
         y: root.topPadding + root.availableHeight / 2 - height / 2
-        width: 18
-        height: 18
-        radius: 9
+        width: sliderMouse.containsMouse || root.pressed ? 20 : root.handleSize
+        height: sliderMouse.containsMouse || root.pressed ? 20 : root.handleSize
+        radius: height / 2
         color: root.handleColor
         border.width: 2
-        border.color: root.progressColor
+        border.color: root.handleBorderColor
 
-        scale: root.pressed ? 1.15 : (hoverHandler.hovered ? 1.08 : 1.0)
-
-        Behavior on scale {
+        Behavior on width {
             NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
         }
 
-        HoverHandler {
-            id: hoverHandler
+        Behavior on height {
+            NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
+        }
+
+        MouseArea {
+            id: sliderMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            acceptedButtons: Qt.NoButton
         }
     }
 }
