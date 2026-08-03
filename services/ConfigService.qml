@@ -133,12 +133,7 @@ Singleton {
         // Optimistically apply new config state
         root.config = parsed.config;
 
-        // Persist directly to disk via save process
-        configSaveProc.command = [
-            "sh", "-c",
-            "printf '%s' " + root.shellQuote(root.writeText) + " > " + root.shellQuote(root.configPath)
-        ];
-        configSaveProc.running = true;
+        configFile.setText(root.writeText);
         return true;
     }
 
@@ -276,20 +271,14 @@ Singleton {
         }
     }
 
-    Process {
-        id: configSaveProc
-        running: false
-        onExited: function(exitCode) {
-            root.finishConfigWrite(exitCode === 0);
-        }
-    }
-
     FileView {
         id: configFile
         path: root.configPath
         blockLoading: true
-        atomicWrites: false
+        atomicWrites: true
         printErrors: false
+        onSaved: root.finishConfigWrite(true)
+        onSaveFailed: root.finishConfigWrite(false)
     }
 
     Process {

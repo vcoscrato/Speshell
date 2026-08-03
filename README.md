@@ -15,7 +15,7 @@ Speshell is especially useful for heavy fullscreen applications. If you need qui
 ## Features
 
 - Clock, date, weather, and focus timer
-- Notes and clipboard history as separate widgets
+- Multi-note Markdown scratchpad and clipboard history widgets
 - Media controls through MPRIS
 - Output and input audio controls
 - Hyprland display overview, layout presets, and brightness controls
@@ -67,6 +67,15 @@ The package installs immutable app files under `/usr/share/speshell` and seeds y
 - `~/.local/share/speshell`
 
 Package upgrades do not replace your config or runtime data.
+
+Notes remain ordinary text files under `~/.local/share/speshell/notes/`; the
+selected note is recorded in the adjacent `.active` file. Writes replace files
+atomically, and an existing `~/.local/share/speshell/scratchpad.txt` is moved to
+`notes/Scratchpad.txt` on first launch after upgrading.
+
+Notes render as Markdown until clicked. While editing, **Enter** finishes and
+**Shift+Enter** inserts a new line; clicking elsewhere also finishes. Deleting
+a note offers a five-second Undo window.
 
 ## Hyprland Setup
 
@@ -149,7 +158,7 @@ Available panel destinations:
 |------|--------|
 | `main` | Home panel with media and notifications |
 | `clock` | Clock, weather, and focus timer |
-| `notes` | Persistent scratchpad notes |
+| `notes` | Persistent multi-note Markdown scratchpad |
 | `clipboardManager` | Clipboard history |
 | `nowPlaying` | Full media player in the main widget |
 | `audioControl` | Output volume |

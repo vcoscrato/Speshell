@@ -54,6 +54,7 @@ var files = ({
     "notes": "pencil",
     "photo-missing": "photo-off",
     "plug": "plug",
+    "plus": "plus",
     "power": "power",
     "refresh": "refresh",
     "restart": "reload",
