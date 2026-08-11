@@ -10,7 +10,6 @@ Singleton {
     property var notificationHistory: []
     property var activePopups: []
     property int popupCounter: 0
-    property int refreshTick: 0
 
     function debugLog(message) {
         if (SystemState.debugLogging)
@@ -222,13 +221,6 @@ Singleton {
         } else if (notification.tracked) {
             notification.expire();
         }
-    }
-
-    Timer {
-        interval: 30000
-        running: SystemState.dashboardVisible
-        repeat: true
-        onTriggered: root.refreshTick++
     }
 
     Timer {

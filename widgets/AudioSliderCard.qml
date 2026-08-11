@@ -8,7 +8,7 @@ import "../theme" as ThemeModule
 Components.Card {
     id: root
 
-    property bool dashboardActive: true
+    property bool presented: false
     property var quickSwitchDevices: []
     property var deviceDisplayNames: ({})
     property var inputQuickSwitchDevices: []
@@ -21,7 +21,7 @@ Components.Card {
     readonly property bool isOutput: mode === "output" || isCombined
 
     function buildNodeList(isOut) {
-        if (!root.dashboardActive || !Pipewire.nodes || !Pipewire.nodes.values)
+        if (!root.presented || !Pipewire.nodes || !Pipewire.nodes.values)
             return [];
 
         var values = Pipewire.nodes.values;

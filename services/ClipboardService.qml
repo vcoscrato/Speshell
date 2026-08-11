@@ -8,7 +8,8 @@ Singleton {
     id: root
 
     property var history: []
-    property bool panelVisible: false
+    property bool viewPresented: false
+    property bool historyDirty: true
     property bool loading: false
     property bool available: true
     property bool liveUpdatesAvailable: true
@@ -31,13 +32,19 @@ Singleton {
         }
     }
 
-    function setPanelVisible(visible) {
-        if (root.panelVisible === visible)
+    function setViewPresented(presented) {
+        var next = !!presented;
+        if (root.viewPresented === next)
             return;
 
-        root.panelVisible = visible;
-        if (visible) {
-            root.refresh(false);
+        root.viewPresented = next;
+        if (next) {
+            if (!root.liveUpdatesAvailable) {
+                root.feedbackText = root.liveUpdateWarning;
+                root.feedbackTone = "warning";
+            }
+            if (root.historyDirty)
+                root.refresh(false);
         } else {
             clipboardChangeDebounce.stop();
         }
@@ -74,7 +81,8 @@ Singleton {
 
         stdout: SplitParser {
             onRead: {
-                if (root.panelVisible)
+                root.historyDirty = true;
+                if (root.viewPresented)
                     clipboardChangeDebounce.restart();
             }
         }
@@ -89,7 +97,7 @@ Singleton {
 
         onExited: function(exitCode) {
             root.liveUpdatesAvailable = false;
-            if (root.panelVisible) {
+            if (root.viewPresented) {
                 root.feedbackText = root.liveUpdateWarning;
                 root.feedbackTone = "warning";
             }
@@ -113,6 +121,7 @@ Singleton {
             return;
         }
 
+        root.historyDirty = false;
         root.loading = showIndicator;
         cliphistListProc.running = true;
     }
@@ -135,7 +144,8 @@ Singleton {
 
             if (exitCode !== 0) {
                 root.history = [];
-                if (root.panelVisible) {
+                root.historyDirty = true;
+                if (root.viewPresented) {
                     root.feedbackText = "Clipboard history is unavailable.";
                     root.feedbackTone = "warning";
                 }

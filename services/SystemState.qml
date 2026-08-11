@@ -7,8 +7,6 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    property bool dashboardVisible: true
-    property bool dashboardActive: true
     property bool debugLogging: false
     property string appVersion: "Unknown"
     readonly property string appDir: Qt.resolvedUrl("..").toString().replace(/^file:\/\//, "")
@@ -20,12 +18,6 @@ Singleton {
 
     function shellQuote(value) {
         return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
-    }
-
-    function setDashboardState(visible, active) {
-        root.dashboardVisible = !!visible;
-        root.dashboardActive = !!active;
-        root.debugLog("dashboard state visible=" + root.dashboardVisible + " active=" + root.dashboardActive);
     }
 
     Process {

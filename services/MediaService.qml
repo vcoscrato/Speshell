@@ -9,6 +9,7 @@ Singleton {
 
     property var player: null
     property real displayedPosition: 0
+    property bool viewPresented: false
     readonly property bool hasPlayer: root.player !== null
     readonly property bool playing: root.player !== null
         && root.player.playbackState === MprisPlaybackState.Playing
@@ -60,25 +61,26 @@ Singleton {
         root.player.position = root.displayedPosition;
     }
 
+    function setViewPresented(presented) {
+        var next = !!presented;
+        if (root.viewPresented === next)
+            return;
+        root.viewPresented = next;
+        if (next)
+            root.refreshPlayer();
+    }
+
     Timer {
         interval: 1000
         repeat: true
         triggeredOnStart: true
-        running: SystemState.dashboardActive
+        running: root.viewPresented
         onTriggered: root.refreshPlayer()
     }
 
     Connections {
         target: Mpris.players
         function onValuesChanged() { root.refreshPlayer(); }
-    }
-
-    Connections {
-        target: SystemState
-        function onDashboardActiveChanged() {
-            if (SystemState.dashboardActive)
-                root.refreshPlayer();
-        }
     }
 
     Component.onCompleted: root.refreshPlayer()

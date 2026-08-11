@@ -15,7 +15,7 @@ Components.Card {
     iconName: "display"
     visible: Services.FeatureSupport.supportsDisplayControl
 
-    property bool dashboardActive: true
+    property bool presented: false
     readonly property bool busy: Services.DisplayService.loading || Services.DisplayService.applying
     readonly property var selectedMonitor: Services.DisplayService.monitorByName(
         Services.DisplayService.draftMonitors,
@@ -44,14 +44,14 @@ Components.Card {
     property bool brightnessCommitQueued: false
 
     Component.onCompleted: {
-        if (root.dashboardActive) {
+        if (root.presented) {
             Services.DisplayService.refresh();
             root.requestBrightnessRefresh();
         }
     }
 
-    onDashboardActiveChanged: {
-        if (root.dashboardActive) {
+    onPresentedChanged: {
+        if (root.presented) {
             Services.DisplayService.refresh();
             root.requestBrightnessRefresh();
         }
@@ -170,7 +170,7 @@ Components.Card {
     }
 
     function requestBrightnessRefresh() {
-        if (!root.dashboardActive || !root.canControlSelectedBrightness) {
+        if (!root.presented || !root.canControlSelectedBrightness) {
             return;
         }
         brightnessValueFile.reload();

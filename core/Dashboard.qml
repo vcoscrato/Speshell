@@ -19,8 +19,7 @@ Item {
     clip: true
 
     property var config: null
-    property bool dashboardVisible: true
-    property bool dashboardActive: true
+    property bool presented: false
     
     property string selectedPanel: ""
     property string selectedBottomPanel: WidgetRegistry.defaultReservedBottomPanel
@@ -481,7 +480,7 @@ Item {
 
                 Widgets.Clock {
                     width: parent.width
-                    dashboardActive: dashboard.dashboardActive
+                    presented: dashboard.presented
                 }
 
                 Item { width: 1; height: ThemeModule.Theme.spacingXL }
@@ -524,8 +523,8 @@ Item {
                         onLoaded: {
                             if (!item)
                                 return;
-                            if ("dashboardActive" in item)
-                                item.dashboardActive = Qt.binding(function() { return dashboard.dashboardActive; });
+                            if ("presented" in item)
+                                item.presented = Qt.binding(function() { return dashboard.presented; });
                             if ("collapsible" in item) {
                                 item.collapsible = false;
                                 item.collapsed = false;
@@ -580,8 +579,8 @@ Item {
                         onLoaded: {
                             if (!item) return;
 
-                            if ("dashboardActive" in item) {
-                                item.dashboardActive = Qt.binding(function() { return dashboard.dashboardActive; });
+                            if ("presented" in item) {
+                                item.presented = Qt.binding(function() { return dashboard.presented; });
                             }
                             if ("collapsible" in item) {
                                 item.collapsible = false;

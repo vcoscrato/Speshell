@@ -5,7 +5,7 @@ import "../theme" as ThemeModule
 Column {
     id: root
 
-    property bool dashboardActive: true
+    property bool presented: false
     property alias maxVisibleNotifications: notifications.maxVisibleNotifications
 
     width: parent ? parent.width : 0
@@ -13,11 +13,12 @@ Column {
 
     NowPlaying {
         width: parent.width
-        dashboardActive: root.dashboardActive
+        presented: root.presented
     }
 
     NotificationCenter {
         id: notifications
         width: parent.width
+        presented: root.presented
     }
 }

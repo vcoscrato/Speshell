@@ -8,10 +8,14 @@ Components.Card {
     id: root
     title: "Now playing"
     iconName: "media"
-    property bool dashboardActive: true
+    property bool presented: false
 
     readonly property var player: Services.MediaService.player
     readonly property bool hasPlayer: Services.MediaService.hasPlayer
+
+    onPresentedChanged: Services.MediaService.setViewPresented(root.presented)
+    Component.onCompleted: Services.MediaService.setViewPresented(root.presented)
+    Component.onDestruction: Services.MediaService.setViewPresented(false)
 
     // Show the widget: if we have a player show controls,
     // otherwise show a "waiting" message so user can see the widget is alive

@@ -12,7 +12,21 @@ Components.Card {
 
     property var notifList: Services.NotificationService.notificationHistory
     property int maxVisibleNotifications: 3
+    property bool presented: false
+    property int refreshTick: 0
     readonly property int notificationRowHeight: 48
+
+    onPresentedChanged: {
+        if (root.presented)
+            root.refreshTick++;
+    }
+
+    Timer {
+        interval: 30000
+        running: root.presented
+        repeat: true
+        onTriggered: root.refreshTick++
+    }
 
     function listHeightForRows(rowCount) {
         var rows = Math.max(0, rowCount);
@@ -125,7 +139,7 @@ Components.Card {
 
                     Text {
                         width: parent.width
-                        text: root.detailText(notificationRow.modelData, Services.NotificationService.refreshTick)
+                        text: root.detailText(notificationRow.modelData, root.refreshTick)
                         textFormat: Text.PlainText
                         font.pixelSize: 10
                         font.family: ThemeModule.Theme.fontFamily

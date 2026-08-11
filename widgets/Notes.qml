@@ -10,7 +10,7 @@ Components.Card {
     title: "Notes"
     iconName: "notes"
 
-    property bool dashboardActive: true
+    property bool presented: false
     property bool syncingFromService: false
     property bool previewMode: true
     property bool creatingNote: false
@@ -122,11 +122,19 @@ Components.Card {
             root.updateRenderedMarkdown();
     }
 
-    onDashboardActiveChanged: {
-        if (root.dashboardActive) {
+    function restoreEditingFocus() {
+        if (!root.presented)
+            return;
+        if (root.creatingNote)
+            newNoteInput.forceActiveFocus();
+        else if (!root.previewMode)
+            notesInput.forceActiveFocus();
+    }
+
+    onPresentedChanged: {
+        if (root.presented) {
             Services.NotesService.read();
-        } else {
-            root.exitEditMode();
+            Qt.callLater(root.restoreEditingFocus);
         }
     }
 
@@ -146,7 +154,8 @@ Components.Card {
     Connections {
         target: root.Window ? root.Window.window : null
         function onActiveFocusItemChanged() {
-            if (!root.previewMode && root.Window && root.Window.window && root.Window.window.activeFocusItem !== notesInput) {
+            if (root.presented && !root.previewMode && root.Window && root.Window.window
+                    && root.Window.window.activeFocusItem !== notesInput) {
                 root.exitEditMode();
             }
         }
@@ -406,7 +415,8 @@ Components.Card {
                     }
 
                     onActiveFocusChanged: {
-                        if (!activeFocus && root.creatingNote) {
+                        if (!activeFocus && root.creatingNote && root.presented
+                                && root.Window && root.Window.window && root.Window.window.visible) {
                             if (text.trim() !== "")
                                 Services.NotesService.createNote(text.trim());
                             root.creatingNote = false;
@@ -576,7 +586,8 @@ Components.Card {
                 }
 
                 onActiveFocusChanged: {
-                    if (!activeFocus) {
+                    if (!activeFocus && root.presented
+                            && root.Window && root.Window.window && root.Window.window.visible) {
                         root.exitEditMode();
                     }
                 }

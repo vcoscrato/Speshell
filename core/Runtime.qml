@@ -14,16 +14,6 @@ Scope {
     }
 
     property var config: null
-    readonly property var dashboardSurface: panelLoader.item
-    readonly property bool dashboardVisible: root.dashboardSurface
-        ? root.dashboardSurface.dashboardVisible
-        : false
-    readonly property bool dashboardActive: root.dashboardSurface
-        ? root.dashboardSurface.dashboardActive
-        : false
-
-    onDashboardVisibleChanged: Services.SystemState.setDashboardState(root.dashboardVisible, root.dashboardActive)
-    onDashboardActiveChanged: Services.SystemState.setDashboardState(root.dashboardVisible, root.dashboardActive)
 
     NotificationServer {
         actionsSupported: true
@@ -79,6 +69,4 @@ Scope {
     }
 
     NotificationToastWindow {}
-
-    Component.onCompleted: Services.SystemState.setDashboardState(root.dashboardVisible, root.dashboardActive)
 }

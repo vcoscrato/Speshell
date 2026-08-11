@@ -1,5 +1,6 @@
 module services
 singleton AudioService 1.0 AudioService.qml
+singleton BluetoothService 1.0 BluetoothService.qml
 singleton SystemState 1.0 SystemState.qml
 singleton DisplayService 1.0 DisplayService.qml
 singleton WeatherService 1.0 WeatherService.qml

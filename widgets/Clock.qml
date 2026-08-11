@@ -9,7 +9,7 @@ import "../theme" as ThemeModule
 Components.Card {
     id: root
     title: ""
-    property bool dashboardActive: true
+    property bool presented: false
 
     readonly property real timerProgress: root.totalSeconds > 0
         ? root.remainingSeconds / root.totalSeconds
@@ -22,6 +22,7 @@ Components.Card {
     property int totalSeconds: 0
     property int remainingSeconds: 0
     property bool timerRunning: false
+    property double timerEndsAtMs: 0
 
     function refreshTime() {
         var now = new Date();
@@ -33,7 +34,7 @@ Components.Card {
 
     function scheduleNextTick() {
         clockTimer.stop();
-        if (!root.dashboardActive)
+        if (!root.presented)
             return;
 
         var now = new Date();
@@ -67,17 +68,17 @@ Components.Card {
         var safeMinutes = Math.max(1, Math.round(Number(minutes) || 0));
         root.totalSeconds = safeMinutes * 60;
         root.remainingSeconds = root.totalSeconds;
+        root.timerEndsAtMs = Date.now() + root.totalSeconds * 1000;
         root.timerRunning = true;
         root.timerControlsOpen = false;
         customTimerInput.text = "";
-        countdownTimer.start();
     }
 
     function stopTimer() {
         root.timerRunning = false;
+        root.timerEndsAtMs = 0;
         root.totalSeconds = 0;
         root.remainingSeconds = 0;
-        countdownTimer.stop();
     }
 
     function addTimerMinutes(minutes) {
@@ -87,8 +88,21 @@ Components.Card {
             return;
         }
 
-        root.remainingSeconds += extra;
         root.totalSeconds += extra;
+        root.timerEndsAtMs += extra * 1000;
+        root.updateCountdown();
+    }
+
+    function updateCountdown() {
+        if (!root.timerRunning)
+            return;
+
+        root.remainingSeconds = Math.max(0, Math.ceil((root.timerEndsAtMs - Date.now()) / 1000));
+        if (root.remainingSeconds > 0)
+            return;
+
+        root.stopTimer();
+        timerDoneProc.running = true;
     }
 
     function startCustomTimer() {
@@ -121,16 +135,10 @@ Components.Card {
     Timer {
         id: countdownTimer
         interval: 1000
-        running: false
+        running: root.timerRunning
         repeat: true
-        onTriggered: {
-            if (root.remainingSeconds > 1) {
-                root.remainingSeconds--;
-            } else {
-                root.stopTimer();
-                timerDoneProc.running = true;
-            }
-        }
+        triggeredOnStart: true
+        onTriggered: root.updateCountdown()
     }
 
     Process {
@@ -139,8 +147,8 @@ Components.Card {
         running: false
     }
 
-    onDashboardActiveChanged: {
-        if (root.dashboardActive)
+    onPresentedChanged: {
+        if (root.presented)
             root.refreshTime();
         root.scheduleNextTick();
     }

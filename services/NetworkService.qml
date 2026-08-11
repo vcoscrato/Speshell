@@ -8,8 +8,6 @@ import Quickshell.Networking
 Singleton {
     id: root
 
-    property int activePanelCount: 0
-    readonly property bool panelActive: root.activePanelCount > 0
     property int scanDurationMs: 30000
     property int cacheMaxAgeMs: 10 * 60 * 1000
     property var cachedNetworks: []
@@ -442,17 +440,6 @@ Singleton {
     onIsScanningChanged: {
         if (!root.isScanning)
             wifiScanTimeoutTimer.stop();
-    }
-
-    function acquirePanel() {
-        root.activePanelCount++;
-        root.refreshNetworkCache();
-    }
-
-    function releasePanel() {
-        root.activePanelCount = Math.max(0, root.activePanelCount - 1);
-        if (!root.panelActive)
-            root.stopWifiScan();
     }
 
     function setWifiEnabled(enabled) {

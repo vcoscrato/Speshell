@@ -11,26 +11,8 @@ Components.Card {
     title: "Network"
     iconName: "wifi"
     collapsible: true
-    property bool dashboardActive: true
-    property bool networkPanelRegistered: false
+    property bool presented: false
     readonly property var network: Services.NetworkService
-
-    function syncNetworkPanelRegistration() {
-        if (root.dashboardActive && !root.networkPanelRegistered) {
-            root.network.acquirePanel();
-            root.networkPanelRegistered = true;
-        } else if (!root.dashboardActive && root.networkPanelRegistered) {
-            root.network.releasePanel();
-            root.networkPanelRegistered = false;
-        }
-    }
-
-    onDashboardActiveChanged: root.syncNetworkPanelRegistration()
-    Component.onCompleted: root.syncNetworkPanelRegistration()
-    Component.onDestruction: {
-        if (root.networkPanelRegistered)
-            root.network.releasePanel();
-    }
 
 
     pinnedContent: [
@@ -67,7 +49,7 @@ Components.Card {
 
                 Components.RefreshButton {
                     visible: root.network.wifiOn && root.network.wifiDevice !== null
-                    active: root.network.isScanning
+                    active: root.presented && root.network.isScanning
                     tooltipText: root.network.isScanning ? "Stop Wi-Fi scan" : "Refresh Wi-Fi networks"
                     onClicked: root.network.toggleWifiScan()
                 }
@@ -213,7 +195,7 @@ Components.Card {
                         to: 360
                         duration: 1200
                         loops: Animation.Infinite
-                        running: root.network.connectingNetwork !== null
+                        running: root.presented && root.network.connectingNetwork !== null
                     }
                 }
 

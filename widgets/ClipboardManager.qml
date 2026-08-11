@@ -9,11 +9,11 @@ Components.Card {
     title: "Clipboard"
     iconName: "clipboard"
 
-    property bool dashboardActive: true
+    property bool presented: false
 
-    onDashboardActiveChanged: Services.ClipboardService.setPanelVisible(root.dashboardActive)
-    Component.onCompleted: Services.ClipboardService.setPanelVisible(root.dashboardActive)
-    Component.onDestruction: Services.ClipboardService.setPanelVisible(false)
+    onPresentedChanged: Services.ClipboardService.setViewPresented(root.presented)
+    Component.onCompleted: Services.ClipboardService.setViewPresented(root.presented)
+    Component.onDestruction: Services.ClipboardService.setViewPresented(false)
 
     headerActions: Components.IconButton {
         id: clearButton

@@ -17,7 +17,7 @@ Components.Card {
     property int today: new Date().getDate()
     property int todayMonth: new Date().getMonth()
     property int todayYear: new Date().getFullYear()
-    property bool dashboardActive: true
+    property bool presented: false
 
     function refreshToday() {
         var now = new Date();
@@ -26,15 +26,15 @@ Components.Card {
         root.todayYear = now.getFullYear();
     }
 
-    onDashboardActiveChanged: {
-        if (root.dashboardActive) root.refreshToday();
+    onPresentedChanged: {
+        if (root.presented) root.refreshToday();
     }
 
     // Refresh at midnight if dashboard stays open
     Timer {
         id: midnightRefreshTimer
         interval: 60000
-        running: root.dashboardActive
+        running: root.presented
         repeat: true
         onTriggered: root.refreshToday()
     }

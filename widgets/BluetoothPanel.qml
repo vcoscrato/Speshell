@@ -13,35 +13,12 @@ Components.Card {
     iconName: "bluetooth"
     collapsible: true
     visible: Services.FeatureSupport.supportsBluetooth
-    property bool dashboardActive: true
-    property int scanDurationMs: 20000
-
-    onDashboardActiveChanged: {
-        if (!root.dashboardActive)
-            root.stopDiscovery();
-    }
-
-    Component.onDestruction: root.stopDiscovery()
+    property bool presented: false
 
     // ── Native API helpers ──
-    readonly property var adapter: Bluetooth.defaultAdapter
-    readonly property bool btOn: root.adapter ? root.adapter.enabled : false
-    readonly property bool scanning: root.adapter ? root.adapter.discovering : false
-
-    onBtOnChanged: {
-        if (!root.btOn)
-            root.stopDiscovery();
-    }
-
-    onAdapterChanged: {
-        if (!root.adapter)
-            bluetoothScanTimeoutTimer.stop();
-    }
-
-    onScanningChanged: {
-        if (!root.scanning)
-            bluetoothScanTimeoutTimer.stop();
-    }
+    readonly property var adapter: Services.BluetoothService.adapter
+    readonly property bool btOn: Services.BluetoothService.enabled
+    readonly property bool scanning: Services.BluetoothService.scanning
 
     function buildConnectedDevices() {
         if (!root.adapter) return [];
@@ -102,27 +79,6 @@ Components.Card {
         return [{ text: "Connect", tone: "success", enabled: !busy, actionId: "connect" }];
     }
 
-    function startDiscovery() {
-        if (!root.adapter || !root.btOn)
-            return;
-        root.adapter.discovering = true;
-        bluetoothScanTimeoutTimer.restart();
-    }
-
-    function stopDiscovery() {
-        if (root.adapter)
-            root.adapter.discovering = false;
-        bluetoothScanTimeoutTimer.stop();
-    }
-
-    function toggleDiscovery() {
-        if (root.scanning) {
-            root.stopDiscovery();
-        } else {
-            root.startDiscovery();
-        }
-    }
-
     function deviceOpacity(dev) {
         var busy = dev.state === BluetoothDeviceState.Connecting
                 || dev.state === BluetoothDeviceState.Disconnecting;
@@ -143,9 +99,9 @@ Components.Card {
 
         Components.RefreshButton {
             visible: root.btOn
-            active: root.scanning
+            active: root.presented && root.scanning
             tooltipText: root.scanning ? "Stop Bluetooth scan" : "Scan for Bluetooth devices"
-            onClicked: root.toggleDiscovery()
+            onClicked: Services.BluetoothService.toggleDiscovery()
         }
 
         Components.ToggleSwitch {
@@ -210,13 +166,6 @@ Components.Card {
             anchors.horizontalCenter: parent.horizontalCenter
         }
     ]
-
-    Timer {
-        id: bluetoothScanTimeoutTimer
-        interval: root.scanDurationMs
-        repeat: false
-        onTriggered: root.stopDiscovery()
-    }
 
     Column {
         width: parent.width

@@ -12,8 +12,7 @@ PanelWindow {
     property bool focusGrabActive: false
     property var targetScreen: null
     readonly property bool mapped: root.visible && root.backingWindowVisible
-    readonly property bool dashboardVisible: root.backingWindowVisible
-    readonly property bool dashboardActive: root.dashboardVisible
+    readonly property bool presented: root.mapped
     readonly property int panelMargin: root.config && root.config.panelMargin !== undefined
         ? Math.max(0, root.config.panelMargin)
         : 16
@@ -82,7 +81,9 @@ PanelWindow {
             if (!root.mapped)
                 return;
 
-            dashboardContent.forceActiveFocus();
+            var panelWindow = dashboardContent.Window.window;
+            if (!panelWindow || !panelWindow.activeFocusItem)
+                dashboardContent.forceActiveFocus();
             root.focusGrabActive = true;
             focusReleaseTimer.restart();
         }
@@ -114,7 +115,6 @@ PanelWindow {
         anchors.fill: parent
         focus: true
         config: root.config
-        dashboardVisible: root.dashboardVisible
-        dashboardActive: root.dashboardActive
+        presented: root.presented
     }
 }
