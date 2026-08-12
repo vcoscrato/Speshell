@@ -32,7 +32,6 @@ Components.Card {
             height: 36
 
             Text {
-                id: wifiLabel
                 text: "Wi-Fi"
                 font.pixelSize: ThemeModule.Theme.fontSizeNormal
                 font.family: ThemeModule.Theme.fontFamily
@@ -42,7 +41,6 @@ Components.Card {
             }
 
             Row {
-                id: wifiControls
                 spacing: ThemeModule.Theme.spacingSmall
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.right: parent.right
@@ -223,29 +221,17 @@ Components.Card {
                     opacity: modelData.live && !modelData.stateChanging ? 1.0 : 0.55
 
                     Rectangle {
-                        id: nearbyNetworkRow
                         width: parent.width
                         height: 34
                         radius: ThemeModule.Theme.borderRadiusSmall
-                        activeFocusOnTab: nearbyNetworkDelegate.modelData.live
-                            && !nearbyNetworkDelegate.modelData.stateChanging
                         color: nearbyRowMouse.containsMouse && nearbyRowMouse.enabled
                             ? ThemeModule.Theme.cardHover
                             : "transparent"
-                        border.width: activeFocus ? 2 : 0
-                        border.color: ThemeModule.Theme.accent
 
                         Accessible.role: Accessible.Button
                         Accessible.name: "Connect to " + nearbyNetworkDelegate.modelData.name
                         Accessible.description: root.network.networkSubtitle(nearbyNetworkDelegate.modelData)
                         Accessible.onPressAction: root.network.onNetworkItemPrimary(nearbyNetworkDelegate.modelData)
-
-                        Keys.onPressed: function(event) {
-                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                                root.network.onNetworkItemPrimary(nearbyNetworkDelegate.modelData);
-                                event.accepted = true;
-                            }
-                        }
 
                         MouseArea {
                             id: nearbyRowMouse
@@ -253,10 +239,7 @@ Components.Card {
                             enabled: nearbyNetworkDelegate.modelData.live && !nearbyNetworkDelegate.modelData.stateChanging
                             hoverEnabled: true
                             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            onClicked: {
-                                nearbyNetworkRow.forceActiveFocus();
-                                root.network.onNetworkItemPrimary(nearbyNetworkDelegate.modelData);
-                            }
+                            onClicked: root.network.onNetworkItemPrimary(nearbyNetworkDelegate.modelData)
                         }
 
                         Row {
@@ -400,14 +383,6 @@ Components.Card {
                 anchors.horizontalCenter: parent.horizontalCenter
             }
 
-            Text {
-                visible: root.network.nearbyExpanded && root.network.displayedNetworks.length === 0 && root.network.wifiOn && root.network.isScanning
-                text: "Looking for nearby networks..."
-                font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                font.family: ThemeModule.Theme.fontFamily
-                color: ThemeModule.Theme.accent
-                anchors.horizontalCenter: parent.horizontalCenter
-            }
         }
     ]
 }

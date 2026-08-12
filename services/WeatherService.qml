@@ -34,7 +34,6 @@ Singleton {
     }
 
     Timer {
-        id: weatherTimer
         interval: 1800000 // 30 mins
         running: root.enabled
         repeat: true

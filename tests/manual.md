@@ -57,7 +57,5 @@ relevant scenarios from this list on a real Hyprland session.
   same issues appear under Settings → Integrations.
 - Verify absent laptop battery or unconfigured optional tools do not create a
   startup warning.
-- Navigate the sidebar, every Settings category, notes, display confirmation,
-  and power confirmation without using the mouse.
 - Repeat the dashboard and launcher checks after moving the special workspace to
   another monitor and after changing fractional monitor scale.

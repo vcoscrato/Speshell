@@ -67,7 +67,6 @@ Scope {
     }
 
     LazyLoader {
-        id: panelLoader
         active: root.config !== null
 
         component: DashboardPanel {

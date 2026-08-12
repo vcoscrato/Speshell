@@ -63,7 +63,6 @@ Singleton {
                 iconName: "alert",
                 iconSource: "",
                 badge: "CALC",
-                completion: "",
                 activatable: false,
                 payload: ({})
             }];
@@ -76,7 +75,6 @@ Singleton {
             iconName: "calculator",
             iconSource: "",
             badge: "CALC",
-            completion: "",
             activatable: true,
             payload: { text: calculation.result }
         }];
@@ -153,10 +151,6 @@ Singleton {
         }
         root.activationError = "This launcher result cannot be activated.";
         return false;
-    }
-
-    function completionFor(result) {
-        return result && result.completion ? String(result.completion) : "";
     }
 
     function emptyMessage() {

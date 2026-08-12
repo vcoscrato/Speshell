@@ -218,18 +218,6 @@ Singleton {
         copyProc.running = true;
     }
 
-    function decodeAndCopy(id) {
-        // Find the full entry in history to get the raw line
-        for (var i = 0; i < root.history.length; i++) {
-            if (root.history[i].id === id) {
-                root.copyEntry(root.history[i]);
-                return;
-            }
-        }
-        // Fallback: try with id only (may not decode correctly without preview)
-        root.copyEntry({ id: id, preview: "", raw: id });
-    }
-
     Process {
         id: copyProc
         running: false

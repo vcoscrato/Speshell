@@ -15,13 +15,12 @@ Rectangle {
     height: 34
     implicitWidth: Math.max(34, contentRow.implicitWidth + ThemeModule.Theme.spacingLarge)
     radius: ThemeModule.Theme.borderRadiusSmall
-    activeFocusOnTab: root.enabled
     opacity: enabled ? 1.0 : 0.55
     color: actionArea.containsMouse && root.enabled
         ? Qt.rgba(root.toneColor.r, root.toneColor.g, root.toneColor.b, 0.16)
         : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.15)
-    border.width: root.activeFocus ? 2 : ThemeModule.Theme.borderWidth
-    border.color: root.activeFocus || (actionArea.containsMouse && root.enabled)
+    border.width: ThemeModule.Theme.borderWidth
+    border.color: actionArea.containsMouse && root.enabled
         ? root.toneColor
         : "transparent"
 
@@ -30,17 +29,6 @@ Rectangle {
     Accessible.onPressAction: {
         if (root.enabled)
             root.activated();
-    }
-
-    Keys.onPressed: function(event) {
-        if (!root.enabled || event.isAutoRepeat)
-            return;
-        if (event.key === Qt.Key_Return
-                || event.key === Qt.Key_Enter
-                || event.key === Qt.Key_Space) {
-            root.activated();
-            event.accepted = true;
-        }
     }
 
     Row {

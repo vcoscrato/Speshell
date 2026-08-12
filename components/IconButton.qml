@@ -25,13 +25,10 @@ Rectangle {
     width: size
     height: size
     radius: size / 2
-    activeFocusOnTab: root.enabled
     opacity: enabled ? 1.0 : 0.45
     color: mouseArea.containsMouse && root.enabled
         ? (mouseArea.pressed ? ThemeModule.Theme.surface2 : root.hoverColor)
         : "transparent"
-    border.width: root.activeFocus ? 2 : 0
-    border.color: ThemeModule.Theme.accent
 
     Accessible.role: Accessible.Button
     Accessible.name: root.tooltipText !== ""
@@ -40,17 +37,6 @@ Rectangle {
     Accessible.onPressAction: {
         if (root.enabled)
             root.clicked();
-    }
-
-    Keys.onPressed: function(event) {
-        if (!root.enabled || event.isAutoRepeat)
-            return;
-        if (event.key === Qt.Key_Return
-                || event.key === Qt.Key_Enter
-                || event.key === Qt.Key_Space) {
-            root.clicked();
-            event.accepted = true;
-        }
     }
 
     Item {
@@ -92,7 +78,7 @@ Rectangle {
         onClicked: root.clicked()
     }
 
-    ToolTip.visible: root.tooltipText !== "" && (mouseArea.containsMouse || root.activeFocus)
+    ToolTip.visible: root.tooltipText !== "" && mouseArea.containsMouse
     ToolTip.text: root.tooltipText
     ToolTip.delay: root.tooltipDelay
 }

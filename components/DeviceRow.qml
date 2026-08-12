@@ -39,24 +39,12 @@ Rectangle {
     width: parent ? parent.width : 300
     radius: ThemeModule.Theme.borderRadiusSmall
     color: rowMouse.containsMouse ? ThemeModule.Theme.cardHover : "transparent"
-    border.width: root.activeFocus ? 2 : 0
-    border.color: ThemeModule.Theme.accent
     implicitHeight: contentColumn.implicitHeight + ThemeModule.Theme.spacingSmall * 2
-    activeFocusOnTab: root.primaryEnabled
 
     Accessible.role: Accessible.Button
     Accessible.name: root.title
     Accessible.description: root.subtitle
     Accessible.onPressAction: if (root.primaryEnabled) root.primaryTriggered()
-
-    Keys.onPressed: function(event) {
-        if (!root.primaryEnabled || event.isAutoRepeat)
-            return;
-        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-            root.primaryTriggered();
-            event.accepted = true;
-        }
-    }
 
     readonly property bool hasControls: root.itemCount(root.badges) > 0 || root.itemCount(root.actionChips) > 0
     readonly property bool hasLeadingVisual: root.leadingIconName !== ""
@@ -68,10 +56,8 @@ Rectangle {
         hoverEnabled: true
         cursorShape: root.primaryEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: {
-            if (root.primaryEnabled) {
-                root.forceActiveFocus();
+            if (root.primaryEnabled)
                 root.primaryTriggered();
-            }
         }
     }
 
@@ -83,7 +69,6 @@ Rectangle {
         spacing: ThemeModule.Theme.spacingSmall
 
         Row {
-            id: headRow
             width: parent.width
             spacing: ThemeModule.Theme.spacingSmall
 
@@ -185,7 +170,6 @@ Rectangle {
         }
 
         Flow {
-            id: bottomActions
             visible: root.controlsBelow && root.hasControls
             width: parent.width
             spacing: ThemeModule.Theme.spacingTiny

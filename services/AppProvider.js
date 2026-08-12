@@ -113,7 +113,6 @@ function search(index, query, usage, limit) {
             iconName: "apps",
             iconSource: item.iconSource,
             badge: "APP",
-            completion: "",
             activatable: true,
             payload: { entry: item.entry, appId: item.id }
         });

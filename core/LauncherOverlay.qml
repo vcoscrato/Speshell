@@ -83,16 +83,6 @@ PanelWindow {
             root.closeLauncher();
     }
 
-    function completeSelected() {
-        if (root.resultCount <= 0)
-            return;
-        var completion = Services.LauncherService.completionFor(root.results[root.selectedIndex]);
-        if (completion !== "") {
-            searchField.text = completion;
-            searchField.cursorPosition = searchField.text.length;
-        }
-    }
-
     function iconPath(result) {
         if (!result || !result.iconSource)
             return "";
@@ -154,7 +144,6 @@ PanelWindow {
     }
 
     Rectangle {
-        id: palette
         z: 1
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
@@ -229,9 +218,6 @@ PanelWindow {
                             event.accepted = true;
                         } else if (event.key === Qt.Key_Up) {
                             root.moveSelection(-1);
-                            event.accepted = true;
-                        } else if (event.key === Qt.Key_Tab) {
-                            root.completeSelected();
                             event.accepted = true;
                         } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                             root.activateSelected();

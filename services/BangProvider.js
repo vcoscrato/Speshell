@@ -16,13 +16,12 @@ function panelResult(panel) {
         iconName: panel.icon,
         iconSource: "",
         badge: "PANEL",
-        completion: "!" + panel.bang,
         activatable: true,
         payload: { panel: panel.panel }
     };
 }
 
-function webResult(id, title, subtitle, url, completion) {
+function webResult(id, title, subtitle, url) {
     return {
         id: id,
         kind: "web",
@@ -31,7 +30,6 @@ function webResult(id, title, subtitle, url, completion) {
         iconName: "web-search",
         iconSource: "",
         badge: "WEB",
-        completion: completion || "",
         activatable: true,
         payload: { url: url }
     };
@@ -47,8 +45,7 @@ function configuredBangResults(prefix, bangs) {
             "bang:" + names[i],
             "!" + names[i],
             "Search the configured site",
-            urlFromTemplate(bangs[names[i]], ""),
-            "!" + names[i] + " "
+            urlFromTemplate(bangs[names[i]], "")
         ));
     }
     return results;
@@ -93,8 +90,7 @@ function bangResults(query, launcherConfig, availablePanelNames) {
             "bang:" + alias + ":" + terms,
             "Search !" + alias + (terms !== "" ? " for “" + terms + "”" : ""),
             "Configured web bang",
-            urlFromTemplate(bangs[alias], terms),
-            ""
+            urlFromTemplate(bangs[alias], terms)
         )];
     }
 
@@ -102,8 +98,7 @@ function bangResults(query, launcherConfig, availablePanelNames) {
         "bang:passthrough:" + body,
         "Search “" + raw + "”",
         "Pass this bang through to the configured search engine",
-        urlFromTemplate(config.searchUrl, raw),
-        ""
+        urlFromTemplate(config.searchUrl, raw)
     )];
 }
 
@@ -116,7 +111,6 @@ function searchResult(query, launcherConfig) {
         "search:" + terms,
         "Search the web for “" + terms + "”",
         "Open in the configured search engine",
-        urlFromTemplate(launcherConfig.searchUrl, terms),
-        ""
+        urlFromTemplate(launcherConfig.searchUrl, terms)
     )];
 }

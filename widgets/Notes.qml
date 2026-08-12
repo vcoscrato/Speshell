@@ -162,7 +162,6 @@ Components.Card {
     }
 
     headerActions: Components.IconButton {
-        id: copyNotesButton
         size: 24
         iconName: "copy"
         iconSize: 15
@@ -188,7 +187,6 @@ Components.Card {
     }
 
     Flickable {
-        id: tabsFlickable
         width: parent.width
         height: 24
         contentWidth: tabsRow.width
@@ -196,22 +194,12 @@ Components.Card {
         boundsBehavior: Flickable.StopAtBounds
         clip: true
 
-        function reveal(item) {
-            var leftEdge = item.x;
-            var rightEdge = item.x + item.width;
-            if (leftEdge < tabsFlickable.contentX)
-                tabsFlickable.contentX = leftEdge;
-            else if (rightEdge > tabsFlickable.contentX + tabsFlickable.width)
-                tabsFlickable.contentX = rightEdge - tabsFlickable.width;
-        }
-
         Row {
             id: tabsRow
             spacing: ThemeModule.Theme.spacingSmall
             height: parent.height
 
             Repeater {
-                id: tabsRepeater
                 model: Services.NotesService.noteList
                 delegate: Rectangle {
                     id: tabItem
@@ -220,7 +208,6 @@ Components.Card {
                     height: 24
                     width: tabText.implicitWidth + (root.canDeleteNote ? 28 : 16)
                     radius: ThemeModule.Theme.borderRadiusSmall
-                    activeFocusOnTab: tabItem.enabled
                     enabled: Services.NotesService.managementEnabled
                     opacity: tabItem.enabled ? 1.0 : 0.55
                     color: tabItem.isSelected
@@ -228,8 +215,8 @@ Components.Card {
                         : (tabHover.hovered
                             ? Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.4)
                             : Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.15))
-                    border.width: tabItem.activeFocus ? 2 : 1
-                    border.color: tabItem.activeFocus || tabItem.isSelected
+                    border.width: 1
+                    border.color: tabItem.isSelected
                         ? Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.6)
                         : "transparent"
 
@@ -245,42 +232,6 @@ Components.Card {
                         Services.NotesService.selectNote(tabItem.modelData);
                     }
 
-                    function focusRelative(offset) {
-                        var index = Services.NotesService.noteList.indexOf(tabItem.modelData);
-                        var count = Services.NotesService.noteList.length;
-                        if (index < 0 || count === 0)
-                            return;
-                        var nextItem = tabsRepeater.itemAt((index + offset + count) % count);
-                        if (nextItem)
-                            nextItem.forceActiveFocus();
-                    }
-
-                    onActiveFocusChanged: {
-                        if (activeFocus)
-                            tabsFlickable.reveal(tabItem);
-                    }
-
-                    Keys.onPressed: function(event) {
-                        if (!tabItem.enabled || event.isAutoRepeat)
-                            return;
-                        if (event.key === Qt.Key_Return
-                                || event.key === Qt.Key_Enter
-                                || event.key === Qt.Key_Space) {
-                            tabItem.activate();
-                            event.accepted = true;
-                        } else if (event.key === Qt.Key_Left) {
-                            tabItem.focusRelative(-1);
-                            event.accepted = true;
-                        } else if (event.key === Qt.Key_Right) {
-                            tabItem.focusRelative(1);
-                            event.accepted = true;
-                        } else if (event.key === Qt.Key_Delete && root.canDeleteNote) {
-                            root.exitEditMode();
-                            Services.NotesService.deleteNote(tabItem.modelData);
-                            event.accepted = true;
-                        }
-                    }
-
                     HoverHandler {
                         id: tabHover
                     }
@@ -288,10 +239,7 @@ Components.Card {
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            tabItem.forceActiveFocus();
-                            tabItem.activate();
-                        }
+                        onClicked: tabItem.activate()
                     }
 
                     Text {
@@ -317,9 +265,7 @@ Components.Card {
                             ? ThemeModule.Theme.error
                             : ThemeModule.Theme.subtext
                         enabled: root.canDeleteNote
-                        visible: root.canDeleteNote && (tabHover.hovered
-                            || tabItem.activeFocus
-                            || deleteButton.activeFocus)
+                        visible: root.canDeleteNote && tabHover.hovered
                         tooltipText: "Delete " + tabItem.modelData
                         onClicked: {
                             root.exitEditMode();
@@ -342,30 +288,13 @@ Components.Card {
                 border.width: 1
                 border.color: root.creatingNote
                     ? ThemeModule.Theme.accent
-                    : (newTabButton.activeFocus ? ThemeModule.Theme.accent : "transparent")
-                activeFocusOnTab: newTabButton.enabled && !root.creatingNote
+                    : "transparent"
                 enabled: Services.NotesService.managementEnabled
                 opacity: newTabButton.enabled ? 1.0 : 0.55
 
                 Accessible.role: Accessible.Button
                 Accessible.name: "Create note"
                 Accessible.onPressAction: root.beginCreatingNote()
-
-                onActiveFocusChanged: {
-                    if (activeFocus)
-                        tabsFlickable.reveal(newTabButton);
-                }
-
-                Keys.onPressed: function(event) {
-                    if (!newTabButton.enabled || root.creatingNote || event.isAutoRepeat)
-                        return;
-                    if (event.key === Qt.Key_Return
-                            || event.key === Qt.Key_Enter
-                            || event.key === Qt.Key_Space) {
-                        root.beginCreatingNote();
-                        event.accepted = true;
-                    }
-                }
 
                 Behavior on width {
                     NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
@@ -380,10 +309,7 @@ Components.Card {
                     anchors.fill: parent
                     visible: !root.creatingNote
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        newTabButton.forceActiveFocus();
-                        root.beginCreatingNote();
-                    }
+                    onClicked: root.beginCreatingNote()
                 }
 
                 Components.AppIcon {
@@ -425,7 +351,7 @@ Components.Card {
 
                     Keys.onEscapePressed: {
                         root.creatingNote = false;
-                        newTabButton.forceActiveFocus();
+                        focusSink.forceActiveFocus();
                     }
                 }
             }
@@ -549,6 +475,7 @@ Components.Card {
 
             TextArea {
                 id: notesInput
+                focusPolicy: Qt.ClickFocus
                 visible: !root.previewMode
                 width: notesFlickable.contentWidth
                 height: notesFlickable.contentHeight

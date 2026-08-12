@@ -11,11 +11,6 @@ Singleton {
     property var activePopups: []
     property int popupCounter: 0
 
-    function debugLog(message) {
-        if (SystemState.debugLogging)
-            console.log("[Speshell][Notifications] " + message);
-    }
-
     function popupById(popupId) {
         for (var i = 0; i < root.activePopups.length; i++) {
             if (root.activePopups[i].popupId === popupId)
@@ -214,8 +209,6 @@ Singleton {
     function addNotification(notification) {
         if (!notification)
             return;
-        root.debugLog("received app='" + (notification.appName || "")
-            + "' urgency=" + notification.urgency + " dnd=" + root.dndEnabled);
 
         var receivedAt = new Date();
         var actions = root.notificationActions(notification);

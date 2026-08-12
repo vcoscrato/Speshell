@@ -15,16 +15,15 @@ Rectangle {
     width: 36
     height: 20
     radius: height / 2
-    activeFocusOnTab: root.enabled
     opacity: enabled ? 1.0 : 0.45
 
     color: root.checked
         ? root.activeColor
         : Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.4)
-    border.width: root.activeFocus ? 2 : 1
-    border.color: root.activeFocus
-        ? ThemeModule.Theme.accent
-        : (root.checked ? root.activeColor : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.3))
+    border.width: 1
+    border.color: root.checked
+        ? root.activeColor
+        : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.3)
 
     Behavior on color {
         ColorAnimation { duration: ThemeModule.Theme.animDuration }
@@ -42,20 +41,8 @@ Rectangle {
             root.toggled(!root.checked);
     }
 
-    Keys.onPressed: function(event) {
-        if (!root.enabled || event.isAutoRepeat)
-            return;
-        if (event.key === Qt.Key_Return
-                || event.key === Qt.Key_Enter
-                || event.key === Qt.Key_Space) {
-            root.toggled(!root.checked);
-            event.accepted = true;
-        }
-    }
-
     // Compact Thumb Handle
     Rectangle {
-        id: thumb
         width: switchMouse.pressed ? 16 : 14
         height: 14
         radius: height / 2
@@ -86,7 +73,7 @@ Rectangle {
         onClicked: root.toggled(!root.checked)
     }
 
-    Controls.ToolTip.visible: root.tooltipText !== "" && (switchMouse.containsMouse || root.activeFocus)
+    Controls.ToolTip.visible: root.tooltipText !== "" && switchMouse.containsMouse
     Controls.ToolTip.text: root.tooltipText
     Controls.ToolTip.delay: root.tooltipDelay
 }

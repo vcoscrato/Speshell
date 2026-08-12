@@ -17,6 +17,7 @@ Controls.Slider {
     to: 100
     stepSize: 1
     height: 32
+    focusPolicy: Qt.ClickFocus
 
     MouseArea {
         anchors.fill: parent

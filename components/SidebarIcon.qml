@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import "../theme" as ThemeModule
 import "../core/WidgetRegistry.js" as WidgetRegistry
 import "." as Components
@@ -13,7 +12,6 @@ Rectangle {
     property string statusText: ""
     property string microStatus: ""
     property string tooltipText: ""
-    property bool focusTooltipSuppressed: false
     property bool pointerInside: false
     readonly property bool containingWindowVisible: !!(root.Window
         && root.Window.window
@@ -30,11 +28,6 @@ Rectangle {
     signal activated(string name)
     signal wheelDelta(int angleDelta)
 
-    onActiveFocusChanged: {
-        if (!root.activeFocus)
-            root.focusTooltipSuppressed = false;
-    }
-
     Connections {
         target: root.Window ? root.Window.window : null
 
@@ -47,30 +40,13 @@ Rectangle {
     width: parent ? parent.width : ThemeModule.Theme.sidebarIconSize
     height: ThemeModule.Theme.sidebarIconSize
     color: "transparent"
-    activeFocusOnTab: root.enabled
 
     Accessible.role: Accessible.Button
     Accessible.name: WidgetRegistry.label(root.widgetName) || root.widgetName
     Accessible.description: root.statusText
     Accessible.onPressAction: if (root.enabled) root.activated(root.widgetName)
 
-    Keys.onPressed: function(event) {
-        if (!root.enabled || event.isAutoRepeat)
-            return;
-        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-            root.activated(root.widgetName);
-            event.accepted = true;
-        } else if (event.key === Qt.Key_Up || event.key === Qt.Key_Right) {
-            root.wheelDelta(120);
-            event.accepted = true;
-        } else if (event.key === Qt.Key_Down || event.key === Qt.Key_Left) {
-            root.wheelDelta(-120);
-            event.accepted = true;
-        }
-    }
-
     Rectangle {
-        id: iconTile
         anchors.centerIn: parent
         width: 38
         height: 38
@@ -78,10 +54,8 @@ Rectangle {
         color: root.active
             ? Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.14)
             : (root.pointerInside ? ThemeModule.Theme.cardHover : "transparent")
-        border.width: root.activeFocus ? 2 : (root.active ? ThemeModule.Theme.borderWidth : 0)
-        border.color: root.activeFocus
-            ? ThemeModule.Theme.accent
-            : Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.32)
+        border.width: root.active ? ThemeModule.Theme.borderWidth : 0
+        border.color: Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.32)
 
         Components.AppIcon {
             name: root.iconName
@@ -104,28 +78,46 @@ Rectangle {
         }
     }
 
-    ToolTip {
+    Rectangle {
+        anchors.left: parent.right
+        anchors.leftMargin: ThemeModule.Theme.spacingTiny
+        anchors.verticalCenter: parent.verticalCenter
+        width: nameTagText.implicitWidth + ThemeModule.Theme.spacingLarge
+        height: 26
+        radius: ThemeModule.Theme.borderRadiusSmall
         visible: root.containingWindowVisible
-            && (root.pointerInside
-            || (root.activeFocus && !root.focusTooltipSuppressed))
+            && root.pointerInside
             && root.effectiveTooltipText !== ""
-        text: root.effectiveTooltipText
-        delay: 150
+        color: ThemeModule.Theme.surface2
+        border.width: ThemeModule.Theme.borderWidth
+        border.color: Qt.rgba(
+            ThemeModule.Theme.accent.r,
+            ThemeModule.Theme.accent.g,
+            ThemeModule.Theme.accent.b,
+            0.42
+        )
+        z: 100
+
+        Text {
+            id: nameTagText
+
+            anchors.centerIn: parent
+            text: root.effectiveTooltipText
+            textFormat: Text.PlainText
+            font.pixelSize: ThemeModule.Theme.fontSizeSmall
+            font.family: ThemeModule.Theme.fontFamily
+            color: ThemeModule.Theme.text
+        }
     }
 
     MouseArea {
-        id: mouseArea
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onEntered: root.pointerInside = true
         onExited: root.pointerInside = false
         onCanceled: root.pointerInside = false
-        onClicked: {
-            root.focusTooltipSuppressed = true;
-            root.forceActiveFocus();
-            root.activated(root.widgetName);
-        }
+        onClicked: root.activated(root.widgetName)
         onWheel: function(wheel) {
             root.wheelDelta(wheel.angleDelta.y)
         }

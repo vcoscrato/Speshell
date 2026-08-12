@@ -7,7 +7,6 @@ import "../theme" as ThemeModule
 import "../components" as Components
 
 PanelWindow {
-    id: toastWindow
 
     // ── Prevent focus stealing from games and other apps ──
     // Explicitly non-focusable: the toast must never take keyboard focus.
@@ -33,13 +32,6 @@ PanelWindow {
     
     // Only show if there are active popups
     visible: Services.NotificationService.activePopups.length > 0
-
-    onVisibleChanged: {
-        if (Services.SystemState.debugLogging) {
-            console.log("[Speshell][NotificationToastWindow] visible=" + visible
-                + " popupCount=" + Services.NotificationService.activePopups.length);
-        }
-    }
 
     Column {
         id: toastColumn

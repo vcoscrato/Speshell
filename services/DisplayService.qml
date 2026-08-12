@@ -119,10 +119,6 @@ Singleton {
         return DisplayLogic.logicalHeight(monitor);
     }
 
-    function isActiveMonitor(monitor) {
-        return monitor && !monitor.disabled;
-    }
-
     function buildActiveMonitors(source) {
         return DisplayLogic.buildActiveMonitors(source);
     }
@@ -239,13 +235,6 @@ Singleton {
 
     function commandForDraftMonitor(monitor) {
         return DisplayLogic.commandForDraftMonitor(monitor);
-    }
-
-    function commandForDisable(monitor) {
-        var name = root.monitorName(monitor);
-        return name === ""
-            ? ""
-            : "hl.monitor({ output = " + DisplayLogic.luaQuote(name) + ", disabled = true })";
     }
 
     function commandsForMonitors(source, connectedOnly) {

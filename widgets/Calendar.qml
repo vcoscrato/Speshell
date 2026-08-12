@@ -32,7 +32,6 @@ Components.Card {
 
     // Refresh at midnight if dashboard stays open
     Timer {
-        id: midnightRefreshTimer
         interval: 60000
         running: root.presented
         repeat: true
@@ -182,15 +181,10 @@ Components.Card {
 
         // ── Today shortcut ───────────────────
         Rectangle {
-            id: todayShortcut
-
             width: parent.width
             height: 24
             color: "transparent"
             visible: root.displayMonth !== root.todayMonth || root.displayYear !== root.todayYear
-            activeFocusOnTab: visible
-            border.width: activeFocus ? 2 : 0
-            border.color: ThemeModule.Theme.accent
             radius: ThemeModule.Theme.borderRadiusSmall
 
             Accessible.role: Accessible.Button
@@ -198,14 +192,6 @@ Components.Card {
             Accessible.onPressAction: {
                 root.displayMonth = root.todayMonth;
                 root.displayYear = root.todayYear;
-            }
-
-            Keys.onPressed: function(event) {
-                if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                    root.displayMonth = root.todayMonth;
-                    root.displayYear = root.todayYear;
-                    event.accepted = true;
-                }
             }
 
             Row {
@@ -232,7 +218,6 @@ Components.Card {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                    todayShortcut.forceActiveFocus();
                     root.displayMonth = root.todayMonth;
                     root.displayYear = root.todayYear;
                 }

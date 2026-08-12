@@ -51,6 +51,7 @@ Components.SelectRow {
 
             delegate: Controls.MenuItem {
                 required property var modelData
+                focusPolicy: Qt.ClickFocus
 
                 text: root.optionLabel(modelData)
                 checkable: true

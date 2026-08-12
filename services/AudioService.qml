@@ -11,7 +11,6 @@ Singleton {
 
     readonly property var defaultSink: Pipewire.defaultAudioSink
     readonly property var defaultSource: Pipewire.defaultAudioSource
-    property bool debugLogging: false
 
     property int outputVolumePercent: 0
     property bool hasOutputVolume: false
@@ -39,26 +38,6 @@ Singleton {
     property double outputOsdSuppressedUntil: 0
 
     signal outputOsdRequested(int volumePercent, bool muted)
-
-    function debugLog(message) {
-        if (!root.debugLogging)
-            return;
-        console.log("[Speshell][AudioService] " + message);
-    }
-
-    function describeNode(node) {
-        if (!node)
-            return "<none>";
-
-        var parts = [];
-        if (node.description)
-            parts.push(node.description);
-        if (node.name)
-            parts.push("name=" + node.name);
-        if (node.id !== undefined)
-            parts.push("id=" + node.id);
-        return parts.join(" |");
-    }
 
     function clampPercent(value) {
         return Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
@@ -223,7 +202,6 @@ Singleton {
 
     function setOutputVolumePercent(percent) {
         var next = root.clampPercent(percent);
-        root.debugLog("setOutputVolumePercent(" + next + ") defaultSink=" + root.describeNode(root.defaultSink));
         root.suppressOutputOsd(1200);
         root.outputVolumePercent = next;
         root.hasOutputVolume = true;
@@ -249,7 +227,6 @@ Singleton {
 
     function setInputVolumePercent(percent) {
         var next = root.clampPercent(percent);
-        root.debugLog("setInputVolumePercent(" + next + ") defaultSource=" + root.describeNode(root.defaultSource));
         root.inputVolumePercent = next;
         root.hasInputVolume = true;
         root.pendingInputVolumePercent = next;
@@ -308,17 +285,15 @@ Singleton {
         return true;
     }
 
-    function disableWpctlWrites(reason) {
+    function disableWpctlWrites() {
         if (!root.preferWpctlWrites)
             return;
 
         root.preferWpctlWrites = false;
-        root.debugLog("wpctl write failed, falling back to direct PipeWire writes" + (reason ? " (" + reason + ")" : ""));
     }
 
     function setOutputMuted(muted) {
         var next = !!muted;
-        root.debugLog("setOutputMuted(" + next + ") defaultSink=" + root.describeNode(root.defaultSink));
         root.suppressOutputOsd(1200);
         root.outputMuted = next;
         root.pendingOutputMuted = next;
@@ -328,7 +303,6 @@ Singleton {
 
     function setInputMuted(muted) {
         var next = !!muted;
-        root.debugLog("setInputMuted(" + next + ") defaultSource=" + root.describeNode(root.defaultSource));
         root.inputMuted = next;
         root.pendingInputMuted = next;
         root.inputMuteQueued = true;
@@ -382,7 +356,6 @@ Singleton {
         var cmd = "wpctl set-volume @DEFAULT_AUDIO_SINK@ " + pct + "%";
         if (pct > 0)
             cmd = "wpctl set-mute @DEFAULT_AUDIO_SINK@ 0 && " + cmd;
-        root.debugLog("running output volume command: " + cmd);
         wpctlOutputSetProc.command = ["sh", "-c", cmd];
         wpctlOutputSetProc.running = true;
     }
@@ -402,21 +375,17 @@ Singleton {
         var cmd = "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ " + pct + "%";
         if (pct > 0)
             cmd = "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 && " + cmd;
-        root.debugLog("running input volume command: " + cmd);
         wpctlInputSetProc.command = ["sh", "-c", cmd];
         wpctlInputSetProc.running = true;
     }
 
     Component.onCompleted: {
-        root.debugLog("component completed; defaultSink=" + root.describeNode(root.defaultSink)
-            + ", defaultSource=" + root.describeNode(root.defaultSource));
         root.syncOutputFromPipewire();
         root.syncInputFromPipewire();
         root.outputOsdInitialized = true;
     }
 
     onDefaultSinkChanged: {
-        root.debugLog("defaultSink changed -> " + root.describeNode(root.defaultSink));
         root.suppressOutputOsd(1200);
         root.outputParseRetryCount = 0;
         root.hasOutputVolume = false;
@@ -425,25 +394,14 @@ Singleton {
     }
 
     onDefaultSourceChanged: {
-        root.debugLog("defaultSource changed -> " + root.describeNode(root.defaultSource));
         root.inputParseRetryCount = 0;
         root.hasInputVolume = false;
         root.syncInputFromPipewire();
         inputSwitchReadTimer.restart();
     }
 
-    onOutputVolumePercentChanged: {
-        root.debugLog("outputVolumePercent=" + root.outputVolumePercent);
-        root.queueOutputOsd();
-    }
-    onOutputMutedChanged: {
-        root.debugLog("outputMuted=" + root.outputMuted);
-        root.queueOutputOsd();
-    }
-    onHasOutputVolumeChanged: root.debugLog("hasOutputVolume=" + root.hasOutputVolume)
-    onInputVolumePercentChanged: root.debugLog("inputVolumePercent=" + root.inputVolumePercent)
-    onInputMutedChanged: root.debugLog("inputMuted=" + root.inputMuted)
-    onHasInputVolumeChanged: root.debugLog("hasInputVolume=" + root.hasInputVolume)
+    onOutputVolumePercentChanged: root.queueOutputOsd()
+    onOutputMutedChanged: root.queueOutputOsd()
 
     Timer {
         id: outputRetryTimer
@@ -521,9 +479,8 @@ Singleton {
         command: ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "50%"]
         running: false
         onExited: function(exitCode) {
-            root.debugLog("output volume command exited code=" + exitCode);
             if (exitCode !== 0) {
-                root.disableWpctlWrites("output volume");
+                root.disableWpctlWrites();
                 root.applyOutputVolumeDirect(root.pendingOutputVolumePercent);
             }
             if (root.outputVolumeQueued) {
@@ -539,9 +496,8 @@ Singleton {
         command: ["wpctl", "set-volume", "@DEFAULT_AUDIO_SOURCE@", "50%"]
         running: false
         onExited: function(exitCode) {
-            root.debugLog("input volume command exited code=" + exitCode);
             if (exitCode !== 0) {
-                root.disableWpctlWrites("input volume");
+                root.disableWpctlWrites();
                 root.applyInputVolumeDirect(root.pendingInputVolumePercent);
             }
             if (root.inputVolumeQueued) {
@@ -557,9 +513,8 @@ Singleton {
         command: ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"]
         running: false
         onExited: function(exitCode) {
-            root.debugLog("output mute command exited code=" + exitCode);
             if (exitCode !== 0) {
-                root.disableWpctlWrites("output mute");
+                root.disableWpctlWrites();
                 root.applyOutputMuteDirect(root.pendingOutputMuted);
             }
             if (root.outputMuteQueued) {
@@ -575,9 +530,8 @@ Singleton {
         command: ["wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle"]
         running: false
         onExited: function(exitCode) {
-            root.debugLog("input mute command exited code=" + exitCode);
             if (exitCode !== 0) {
-                root.disableWpctlWrites("input mute");
+                root.disableWpctlWrites();
                 root.applyInputMuteDirect(root.pendingInputMuted);
             }
             if (root.inputMuteQueued) {

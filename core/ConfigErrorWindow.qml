@@ -65,7 +65,6 @@ PanelWindow {
         color: "#111418"
 
         Rectangle {
-            id: errorCard
             anchors.centerIn: parent
             width: Math.min(720, parent.width - 48)
             height: Math.min(620, parent.height - 48)
@@ -148,6 +147,7 @@ PanelWindow {
 
                     TextArea {
                         id: reportArea
+                        focusPolicy: Qt.ClickFocus
                         width: reportScroll.availableWidth
                         text: Services.ConfigService.errorReport
                         readOnly: true

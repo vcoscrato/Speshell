@@ -106,14 +106,13 @@ Components.Card {
         width: parent.width
         height: 68
         radius: ThemeModule.Theme.borderRadiusSmall
-        activeFocusOnTab: enabled
         enabled: root.canRun("lock")
         opacity: enabled ? 1.0 : 0.52
         color: lockMouse.containsMouse && enabled
             ? Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.14)
             : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.12)
-        border.width: activeFocus ? 2 : ThemeModule.Theme.borderWidth
-        border.color: activeFocus || (lockMouse.containsMouse && enabled)
+        border.width: ThemeModule.Theme.borderWidth
+        border.color: lockMouse.containsMouse && enabled
             ? ThemeModule.Theme.accent
             : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.28)
 
@@ -123,17 +122,6 @@ Components.Card {
             ? "Secure this session immediately"
             : "Screen locker unavailable"
         Accessible.onPressAction: if (enabled) Services.PowerService.runAction("lock")
-
-        Keys.onPressed: function(event) {
-            if (!lockAction.enabled || event.isAutoRepeat)
-                return;
-            if (event.key === Qt.Key_Return
-                    || event.key === Qt.Key_Enter
-                    || event.key === Qt.Key_Space) {
-                Services.PowerService.runAction("lock");
-                event.accepted = true;
-            }
-        }
 
         Row {
             anchors.left: parent.left
@@ -216,14 +204,13 @@ Components.Card {
                 width: (parent.width - ThemeModule.Theme.spacingSmall) / 2
                 height: 72
                 radius: ThemeModule.Theme.borderRadiusSmall
-                activeFocusOnTab: enabled
                 enabled: root.canRun(modelData.id)
                 opacity: enabled ? 1.0 : 0.5
                 color: actionMouse.containsMouse && enabled
                     ? Qt.rgba(toneColor.r, toneColor.g, toneColor.b, 0.14)
                     : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.10)
-                border.width: activeFocus || root.pendingAction === modelData.id ? 2 : ThemeModule.Theme.borderWidth
-                border.color: activeFocus || root.pendingAction === modelData.id
+                border.width: root.pendingAction === modelData.id ? 2 : ThemeModule.Theme.borderWidth
+                border.color: root.pendingAction === modelData.id
                     ? toneColor
                     : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.24)
 
@@ -231,17 +218,6 @@ Components.Card {
                 Accessible.name: modelData.label
                 Accessible.description: modelData.detail + ". Requires confirmation."
                 Accessible.onPressAction: if (enabled) root.requestConfirmation(modelData.id)
-
-                Keys.onPressed: function(event) {
-                    if (!powerAction.enabled || event.isAutoRepeat)
-                        return;
-                    if (event.key === Qt.Key_Return
-                            || event.key === Qt.Key_Enter
-                            || event.key === Qt.Key_Space) {
-                        root.requestConfirmation(powerAction.modelData.id);
-                        event.accepted = true;
-                    }
-                }
 
                 Row {
                     anchors.left: parent.left
@@ -299,7 +275,6 @@ Components.Card {
     }
 
     Rectangle {
-        id: confirmationPanel
         visible: root.pendingAction !== ""
         width: parent.width
         height: visible ? confirmationContent.implicitHeight + ThemeModule.Theme.spacingMedium * 2 : 0

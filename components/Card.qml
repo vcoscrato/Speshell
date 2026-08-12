@@ -34,7 +34,6 @@ Rectangle {
 
         // Header (optional)
         Item {
-            id: headerContainer
             visible: root.title !== ""
             width: parent.width
             height: visible ? Math.max(20, leftTitleRow.height, rightControlsRow.height) : 0
@@ -76,7 +75,6 @@ Rectangle {
                 }
 
                 Components.AppIcon {
-                    id: collapseIndicator
                     name: root.collapsed ? "chevron-right" : "chevron-down"
                     iconColor: ThemeModule.Theme.subtext
                     size: 14

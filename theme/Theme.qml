@@ -37,18 +37,6 @@ QtObject {
         }
     }
     
-    readonly property color accentAlt: {
-        switch(paletteName) {
-            case "nord": return _p.sky;
-            case "dracula": return _p.lavender;
-            case "gruvbox": return _p.yellow;
-            case "tokyo-night": return _p.sky;
-            case "rose-pine": return _p.pink;
-            case "solarized-dark": return _p.peach;
-            case "everforest": return _p.blue;
-            default: return _p.mauve;
-        }
-    }
     readonly property color pink:      _p.pink
 
     readonly property color success:   _p.green
@@ -82,8 +70,6 @@ QtObject {
     readonly property int borderRadiusSmall: 3
     readonly property int surfaceCornerCut:  16
     readonly property int borderWidth:       1
-    readonly property int cardElevation:     2
-
     // ── Animation ───────────────────────────────────────────
     readonly property int animDuration:     200
     readonly property int animDurationSlow: 350

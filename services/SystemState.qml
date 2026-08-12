@@ -7,14 +7,8 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    property bool debugLogging: false
     property string appVersion: "Unknown"
     readonly property string appDir: Qt.resolvedUrl("..").toString().replace(/^file:\/\//, "")
-
-    function debugLog(message) {
-        if (root.debugLogging)
-            console.log("[Speshell][SystemState] " + message);
-    }
 
     function shellQuote(value) {
         return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";

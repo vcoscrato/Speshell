@@ -18,7 +18,6 @@ Components.Card {
     property string mode: "output"
 
     readonly property bool isCombined: mode === "combined"
-    readonly property bool isOutput: mode === "output" || isCombined
 
     function buildNodeList(isOut) {
         if (!root.presented || !Pipewire.nodes || !Pipewire.nodes.values)
@@ -221,21 +220,11 @@ Components.Card {
                         width: parent.width
                         height: 32
                         radius: ThemeModule.Theme.borderRadiusSmall
-                        activeFocusOnTab: true
                         color: outDevMouse.containsMouse ? ThemeModule.Theme.cardHover : "transparent"
-                        border.width: activeFocus ? 2 : 0
-                        border.color: ThemeModule.Theme.accent
 
                         Accessible.role: Accessible.Button
                         Accessible.name: "Use " + outDevDelegate.modelData.label + " for audio output"
                         Accessible.onPressAction: Pipewire.preferredDefaultAudioSink = outDevDelegate.modelData.node
-                        Keys.onPressed: function(event) {
-                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                                Pipewire.preferredDefaultAudioSink = outDevDelegate.modelData.node;
-                                event.accepted = true;
-                            }
-                        }
-
                         Row {
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.left: parent.left
@@ -264,10 +253,7 @@ Components.Card {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
-                            onClicked: {
-                                outDevDelegate.forceActiveFocus();
-                                Pipewire.preferredDefaultAudioSink = outDevDelegate.modelData.node;
-                            }
+                            onClicked: Pipewire.preferredDefaultAudioSink = outDevDelegate.modelData.node
                         }
                     }
                 }
@@ -342,21 +328,11 @@ Components.Card {
                         width: parent.width
                         height: 32
                         radius: ThemeModule.Theme.borderRadiusSmall
-                        activeFocusOnTab: true
                         color: inDevMouse.containsMouse ? ThemeModule.Theme.cardHover : "transparent"
-                        border.width: activeFocus ? 2 : 0
-                        border.color: ThemeModule.Theme.accent
 
                         Accessible.role: Accessible.Button
                         Accessible.name: "Use " + inDevDelegate.modelData.label + " for audio input"
                         Accessible.onPressAction: Pipewire.preferredDefaultAudioSource = inDevDelegate.modelData.node
-                        Keys.onPressed: function(event) {
-                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                                Pipewire.preferredDefaultAudioSource = inDevDelegate.modelData.node;
-                                event.accepted = true;
-                            }
-                        }
-
                         Row {
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.left: parent.left
@@ -385,10 +361,7 @@ Components.Card {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
-                            onClicked: {
-                                inDevDelegate.forceActiveFocus();
-                                Pipewire.preferredDefaultAudioSource = inDevDelegate.modelData.node;
-                            }
+                            onClicked: Pipewire.preferredDefaultAudioSource = inDevDelegate.modelData.node
                         }
                     }
                 }

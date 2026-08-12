@@ -99,7 +99,6 @@ Components.Card {
         spacing: ThemeModule.Theme.spacingSmall
 
         ListView {
-            id: notificationList
             width: parent.width
             readonly property int compactHeight: root.listHeightForRows(root.maxVisibleNotifications === -1
                 ? root.notifList.length
@@ -137,33 +136,20 @@ Components.Card {
                         expandedContent.implicitHeight + ThemeModule.Theme.spacingSmall * 2)
                     : root.notificationRowHeight
                 radius: ThemeModule.Theme.borderRadiusSmall
-                activeFocusOnTab: true
                 color: notifMouse.containsMouse
                     ? Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.35)
                     : Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.18)
-                border.width: activeFocus ? 2 : 0
-                border.color: ThemeModule.Theme.accent
 
                 Accessible.role: Accessible.Button
                 Accessible.name: root.primaryText(notificationRow.modelData)
                 Accessible.description: expanded ? "Collapse notification" : "Read full notification"
                 Accessible.onPressAction: root.toggleExpanded(notificationRow.modelData)
 
-                Keys.onPressed: function(event) {
-                    if (event.isAutoRepeat)
-                        return;
-                    if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                        root.toggleExpanded(notificationRow.modelData);
-                        event.accepted = true;
-                    }
-                }
-
                 Behavior on height {
                     NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
                 }
 
                 Column {
-                    id: notifContent
                     anchors {
                         left: parent.left
                         right: dismissBtn.left
@@ -268,10 +254,7 @@ Components.Card {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     z: 1
-                    onClicked: {
-                        notificationRow.forceActiveFocus();
-                        root.toggleExpanded(notificationRow.modelData);
-                    }
+                    onClicked: root.toggleExpanded(notificationRow.modelData)
                 }
             }
         }

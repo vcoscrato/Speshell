@@ -316,7 +316,6 @@ Components.Card {
         }
 
         Rectangle {
-            id: confirmationCard
 
             width: parent.width
             visible: Services.DisplayService.confirming || Services.DisplayService.reverting
@@ -422,27 +421,17 @@ Components.Card {
                     height: Math.min(Math.max(24, rect.height), displayMap.height - 20)
                     radius: 6
                     z: selected ? 2 : 1
-                    activeFocusOnTab: !root.busy
                     color: selected
                         ? Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.22)
                         : Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.72)
-                    border.width: displayTile.activeFocus ? 2 : ThemeModule.Theme.borderWidth
-                    border.color: displayTile.activeFocus
+                    border.width: ThemeModule.Theme.borderWidth
+                    border.color: selected
                         ? ThemeModule.Theme.accent
-                        : (selected
-                        ? ThemeModule.Theme.accent
-                        : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.55))
+                        : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.55)
 
                     Accessible.role: Accessible.Button
                     Accessible.name: "Select " + Services.DisplayService.monitorName(displayTile.modelData)
                     Accessible.onPressAction: Services.DisplayService.setSelected(displayTile.modelData.name)
-
-                    Keys.onPressed: function(event) {
-                        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                            Services.DisplayService.setSelected(displayTile.modelData.name);
-                            event.accepted = true;
-                        }
-                    }
 
                     Column {
                         anchors.centerIn: parent
@@ -465,10 +454,7 @@ Components.Card {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            displayTile.forceActiveFocus();
-                            Services.DisplayService.setSelected(displayTile.modelData.name);
-                        }
+                        onClicked: Services.DisplayService.setSelected(displayTile.modelData.name)
                     }
 
                     Behavior on x { NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic } }
@@ -501,25 +487,15 @@ Components.Card {
                     width: Math.min(displayPicker.width, Math.max(82, pillText.implicitWidth + pillState.implicitWidth + 26))
                     height: 26
                     radius: ThemeModule.Theme.borderRadiusSmall
-                    activeFocusOnTab: !root.busy
                     opacity: root.busy ? 0.55 : 1.0
                     color: Qt.rgba(pillColor.r, pillColor.g, pillColor.b, selected ? 0.22 : 0.10)
-                    border.width: displayPill.activeFocus ? 2 : ThemeModule.Theme.borderWidth
-                    border.color: displayPill.activeFocus
-                        ? ThemeModule.Theme.accent
-                        : Qt.rgba(pillColor.r, pillColor.g, pillColor.b, selected ? 0.85 : 0.36)
+                    border.width: ThemeModule.Theme.borderWidth
+                    border.color: Qt.rgba(pillColor.r, pillColor.g, pillColor.b, selected ? 0.85 : 0.36)
 
                     Accessible.role: Accessible.Button
                     Accessible.name: "Select " + Services.DisplayService.monitorName(displayPill.modelData)
                     Accessible.description: displayPill.modelData.disabled ? "Display off" : "Display on"
                     Accessible.onPressAction: Services.DisplayService.setSelected(displayPill.modelData.name)
-
-                    Keys.onPressed: function(event) {
-                        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                            Services.DisplayService.setSelected(displayPill.modelData.name);
-                            event.accepted = true;
-                        }
-                    }
 
                     Row {
                         anchors.centerIn: parent
@@ -552,17 +528,13 @@ Components.Card {
                         enabled: !root.busy
                         hoverEnabled: true
                         cursorShape: root.busy ? Qt.ArrowCursor : Qt.PointingHandCursor
-                        onClicked: {
-                            displayPill.forceActiveFocus();
-                            Services.DisplayService.setSelected(displayPill.modelData.name);
-                        }
+                        onClicked: Services.DisplayService.setSelected(displayPill.modelData.name)
                     }
                 }
             }
         }
 
         Rectangle {
-            id: editor
             width: parent.width
             visible: root.selectedMonitor !== null
             implicitHeight: editorColumn.implicitHeight + ThemeModule.Theme.spacingMedium * 2
@@ -642,15 +614,18 @@ Components.Card {
                         y: layoutRow.height
 
                         Controls.MenuItem {
+                            focusPolicy: Qt.ClickFocus
                             text: "Single"
                             onTriggered: Services.DisplayService.setDraftLayoutMode("single")
                         }
                         Controls.MenuItem {
+                            focusPolicy: Qt.ClickFocus
                             text: "Mirror"
                             enabled: Services.DisplayService.draftMonitors.length > 1
                             onTriggered: Services.DisplayService.setDraftLayoutMode("mirror")
                         }
                         Controls.MenuItem {
+                            focusPolicy: Qt.ClickFocus
                             text: "Extend"
                             enabled: Services.DisplayService.draftMonitors.length > 1
                             onTriggered: Services.DisplayService.setDraftLayoutMode("extend")
@@ -671,18 +646,22 @@ Components.Card {
                         y: positionRow.height
 
                         Controls.MenuItem {
+                            focusPolicy: Qt.ClickFocus
                             text: "Left"
                             onTriggered: Services.DisplayService.arrangeSelected("left")
                         }
                         Controls.MenuItem {
+                            focusPolicy: Qt.ClickFocus
                             text: "Right"
                             onTriggered: Services.DisplayService.arrangeSelected("right")
                         }
                         Controls.MenuItem {
+                            focusPolicy: Qt.ClickFocus
                             text: "Above"
                             onTriggered: Services.DisplayService.arrangeSelected("above")
                         }
                         Controls.MenuItem {
+                            focusPolicy: Qt.ClickFocus
                             text: "Below"
                             onTriggered: Services.DisplayService.arrangeSelected("below")
                         }
@@ -705,6 +684,7 @@ Components.Card {
 
                             delegate: Controls.MenuItem {
                                 required property var modelData
+                                focusPolicy: Qt.ClickFocus
 
                                 text: Services.DisplayService.modeLabel(modelData)
                                 checkable: true

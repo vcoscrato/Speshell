@@ -442,10 +442,6 @@ Singleton {
             wifiScanTimeoutTimer.stop();
     }
 
-    function setWifiEnabled(enabled) {
-        Networking.wifiEnabled = !!enabled;
-    }
-
     Component.onCompleted: root.refreshNetworkCache()
     Timer {
         id: wifiScanTimeoutTimer

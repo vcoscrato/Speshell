@@ -133,7 +133,6 @@ Components.Card {
     }
 
     Timer {
-        id: countdownTimer
         interval: 1000
         running: root.timerRunning
         repeat: true
@@ -218,7 +217,6 @@ Components.Card {
                     Item { height: ThemeModule.Theme.spacingTiny; width: 1 }
 
                     Rectangle {
-                        id: weatherBadge
                         anchors.horizontalCenter: parent.horizontalCenter
                         visible: Services.WeatherService.enabled
                             && Services.WeatherService.currentWeatherStr !== "Loading..."
@@ -227,12 +225,11 @@ Components.Card {
                         height: 28
                         width: weatherRow.implicitWidth + 24
                         radius: 14
-                        activeFocusOnTab: true
                         color: weatherMouse.containsMouse
                             ? ThemeModule.Theme.cardHover
                             : Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.25)
-                        border.width: weatherBadge.activeFocus ? 2 : 1
-                        border.color: weatherBadge.activeFocus || weatherMouse.containsMouse
+                        border.width: 1
+                        border.color: weatherMouse.containsMouse
                             ? ThemeModule.Theme.accent
                             : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.2)
 
@@ -240,13 +237,6 @@ Components.Card {
                         Accessible.name: "Refresh weather"
                         Accessible.description: Services.WeatherService.currentWeatherStr
                         Accessible.onPressAction: Services.WeatherService.fetchWeather()
-
-                        Keys.onPressed: function(event) {
-                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                                Services.WeatherService.fetchWeather();
-                                event.accepted = true;
-                            }
-                        }
 
                         Behavior on color { ColorAnimation { duration: ThemeModule.Theme.animDuration } }
                         Behavior on border.color { ColorAnimation { duration: ThemeModule.Theme.animDuration } }
@@ -271,11 +261,8 @@ Components.Card {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
-                            onClicked: {
-                                weatherBadge.forceActiveFocus();
-                                Services.WeatherService.fetchWeather();
-                            }
-                            ToolTip.visible: containsMouse || weatherBadge.activeFocus
+                            onClicked: Services.WeatherService.fetchWeather()
+                            ToolTip.visible: containsMouse
                             ToolTip.text: "Click to refresh weather"
                             ToolTip.delay: 300
                         }
@@ -323,32 +310,23 @@ Components.Card {
             Behavior on opacity { NumberAnimation { duration: 140 } }
 
             Rectangle {
-                id: timerDock
                 width: Math.min(parent.width, 272)
                 height: 42
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.topMargin: 4
                 radius: 10
-                activeFocusOnTab: true
                 color: dockMouse.containsMouse
                     ? Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.28)
                     : Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.18)
-                border.width: timerDock.activeFocus ? 2 : 1
+                border.width: 1
                 border.color: Qt.rgba(root.timerAccentColor().r, root.timerAccentColor().g, root.timerAccentColor().b,
-                    timerDock.activeFocus ? 0.9 : 0.20)
+                    0.20)
 
                 Accessible.role: Accessible.Button
                 Accessible.name: "Edit running timer"
                 Accessible.description: root.formatTimer(root.remainingSeconds) + " remaining"
                 Accessible.onPressAction: root.timerControlsOpen = !root.timerControlsOpen
-
-                Keys.onPressed: function(event) {
-                    if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                        root.timerControlsOpen = !root.timerControlsOpen;
-                        event.accepted = true;
-                    }
-                }
 
                 Behavior on color { ColorAnimation { duration: ThemeModule.Theme.animDuration } }
 
@@ -358,17 +336,13 @@ Components.Card {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     acceptedButtons: Qt.LeftButton
-                    onClicked: {
-                        timerDock.forceActiveFocus();
-                        root.timerControlsOpen = !root.timerControlsOpen;
-                    }
-                    ToolTip.visible: containsMouse || timerDock.activeFocus
+                    onClicked: root.timerControlsOpen = !root.timerControlsOpen
+                    ToolTip.visible: containsMouse
                     ToolTip.text: "Edit timer"
                     ToolTip.delay: 400
                 }
 
                 Row {
-                    id: timerDockRow
                     anchors {
                         left: parent.left
                         right: parent.right
@@ -442,25 +416,17 @@ Components.Card {
                         width: 34
                         height: 22
                         radius: 6
-                        activeFocusOnTab: true
                         anchors.verticalCenter: parent.verticalCenter
                         color: addFiveMouse.containsMouse
                             ? Qt.rgba(root.timerAccentColor().r, root.timerAccentColor().g, root.timerAccentColor().b, 0.22)
                             : Qt.rgba(root.timerAccentColor().r, root.timerAccentColor().g, root.timerAccentColor().b, 0.12)
-                        border.width: addFiveButton.activeFocus ? 2 : 1
+                        border.width: 1
                         border.color: Qt.rgba(root.timerAccentColor().r, root.timerAccentColor().g, root.timerAccentColor().b,
-                            addFiveButton.activeFocus ? 0.9 : 0.36)
+                            0.36)
 
                         Accessible.role: Accessible.Button
                         Accessible.name: "Add five minutes"
                         Accessible.onPressAction: root.addTimerMinutes(5)
-                        Keys.onPressed: function(event) {
-                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                                root.addTimerMinutes(5);
-                                event.accepted = true;
-                            }
-                        }
-
                         Text {
                             anchors.centerIn: parent
                             text: "+5"
@@ -475,10 +441,7 @@ Components.Card {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                addFiveButton.forceActiveFocus();
-                                root.addTimerMinutes(5);
-                            }
+                            onClicked: root.addTimerMinutes(5)
                         }
                     }
 
@@ -487,25 +450,17 @@ Components.Card {
                         width: 24
                         height: 22
                         radius: 6
-                        activeFocusOnTab: true
                         anchors.verticalCenter: parent.verticalCenter
                         color: stopSmallMouse.containsMouse
                             ? Qt.rgba(ThemeModule.Theme.error.r, ThemeModule.Theme.error.g, ThemeModule.Theme.error.b, 0.20)
                             : "transparent"
-                        border.width: stopSmallButton.activeFocus ? 2 : 1
+                        border.width: 1
                         border.color: Qt.rgba(ThemeModule.Theme.error.r, ThemeModule.Theme.error.g, ThemeModule.Theme.error.b,
-                            stopSmallButton.activeFocus ? 0.9 : 0.28)
+                            0.28)
 
                         Accessible.role: Accessible.Button
                         Accessible.name: "Stop timer"
                         Accessible.onPressAction: root.stopTimer()
-                        Keys.onPressed: function(event) {
-                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                                root.stopTimer();
-                                event.accepted = true;
-                            }
-                        }
-
                         Components.AppIcon {
                             anchors.centerIn: parent
                             name: "close"
@@ -518,10 +473,7 @@ Components.Card {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                stopSmallButton.forceActiveFocus();
-                                root.stopTimer();
-                            }
+                            onClicked: root.stopTimer()
                         }
                     }
                 }
@@ -531,7 +483,6 @@ Components.Card {
         }
 
         Rectangle {
-            id: timerControlsColumn
             width: parent.width
             visible: root.timerControlsOpen
             height: controlsContent.height + ThemeModule.Theme.spacingMedium * 2
@@ -604,14 +555,11 @@ Components.Card {
                             width: 54
                             height: 30
                             radius: 7
-                            activeFocusOnTab: true
                             color: presetMouse.containsMouse
                                 ? Qt.rgba(presetColor.r, presetColor.g, presetColor.b, primary ? 0.26 : 0.18)
                                 : Qt.rgba(presetColor.r, presetColor.g, presetColor.b, primary ? 0.18 : 0.09)
-                            border.width: presetButton.activeFocus ? 2 : 1
-                            border.color: presetButton.activeFocus
-                                ? presetColor
-                                : Qt.rgba(presetColor.r, presetColor.g, presetColor.b, primary ? 0.62 : 0.32)
+                            border.width: 1
+                            border.color: Qt.rgba(presetColor.r, presetColor.g, presetColor.b, primary ? 0.62 : 0.32)
 
                             Accessible.role: Accessible.Button
                             Accessible.name: (root.timerRunning ? "Add " : "Start ") + presetButton.modelData + " minutes"
@@ -619,14 +567,6 @@ Components.Card {
                                 if (root.timerRunning) root.addTimerMinutes(presetButton.modelData);
                                 else root.startTimer(presetButton.modelData);
                             }
-                            Keys.onPressed: function(event) {
-                                if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                                    if (root.timerRunning) root.addTimerMinutes(presetButton.modelData);
-                                    else root.startTimer(presetButton.modelData);
-                                    event.accepted = true;
-                                }
-                            }
-
                             Behavior on color { ColorAnimation { duration: ThemeModule.Theme.animDuration } }
 
                             Text {
@@ -644,7 +584,6 @@ Components.Card {
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
-                                    presetButton.forceActiveFocus();
                                     if (root.timerRunning) root.addTimerMinutes(presetButton.modelData);
                                     else root.startTimer(presetButton.modelData);
                                 }
@@ -661,6 +600,7 @@ Components.Card {
                         id: customTimerInput
                         width: parent.width - startTimerButton.width - parent.spacing
                         height: 36
+                        focusPolicy: Qt.ClickFocus
                         background: Rectangle {
                             radius: ThemeModule.Theme.borderRadiusSmall
                             color: Qt.rgba(ThemeModule.Theme.card.r, ThemeModule.Theme.card.g, ThemeModule.Theme.card.b, 0.72)

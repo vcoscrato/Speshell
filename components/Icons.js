@@ -24,21 +24,18 @@ var files = ({
     "bell-off": "bell-off",
     "bell-clear": "bell-x",
     "bluetooth": "bluetooth",
-    "brightness": "brightness-up",
     "calculator": "calculator",
     "calendar": "calendar",
     "check": "check",
     "chevron-down": "chevron-down",
     "chevron-left": "chevron-left",
     "chevron-right": "chevron-right",
-    "chevron-up": "chevron-up",
     "clipboard": "clipboard-text",
     "close": "x",
     "config": "adjustments-horizontal",
     "copy": "copy",
     "dashboard": "layout-dashboard",
     "display": "device-desktop",
-    "file": "file-text",
     "folder-open": "folder-open",
     "github": "brand-github",
     "info": "info-circle",
@@ -52,7 +49,6 @@ var files = ({
     "media-previous": "player-track-prev",
     "missing": "help-circle",
     "notes": "pencil",
-    "photo-missing": "photo-off",
     "plug": "plug",
     "plus": "plus",
     "power": "power",
@@ -60,8 +56,6 @@ var files = ({
     "restart": "reload",
     "search": "search",
     "sleep": "moon",
-    "swap": "arrows-exchange",
-    "terminal": "terminal",
     "timer": "clock",
     "tray-fallback": "circle-dashed",
     "trash": "trash",
@@ -69,15 +63,10 @@ var files = ({
     "wifi": "wifi",
     "wifi-empty": "wifi-0",
     "wifi-low": "wifi-1",
-    "wifi-medium": "wifi-2",
-    "wifi-off": "wifi-off"
+    "wifi-medium": "wifi-2"
 });
 
 function fileFor(name) {
     var requested = String(name || "");
     return Object.prototype.hasOwnProperty.call(files, requested) ? files[requested] : files.missing;
-}
-
-function isKnown(name) {
-    return Object.prototype.hasOwnProperty.call(files, String(name || ""));
 }

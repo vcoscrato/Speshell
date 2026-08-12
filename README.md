@@ -210,7 +210,7 @@ Panel bangs are navigation only. The launcher lists every built-in destination s
 
 The calculator supports `+`, `-`, `*`, `/`, `%`, `^`, parentheses, unary signs, `pi`, `e`, and these functions: `sqrt`, `abs`, `round`, `floor`, `ceil`, `sin`, `cos`, `tan`, `log`, `ln`, `min`, and `max`. Activating a result copies it.
 
-Keyboard controls are **Up/Down** to select, **Tab** to complete a bang, **Enter** to activate, and **Escape** to close.
+Keyboard controls are **Up/Down** to select, **Enter** to activate, and **Escape** to close.
 
 Configure web search and custom bangs with HTTPS URL templates containing exactly one `{query}` placeholder. Bang names use lowercase letters, digits, and hyphens; built-in panel aliases are reserved.
 

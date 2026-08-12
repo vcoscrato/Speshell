@@ -265,6 +265,7 @@ Item {
             anchors.top: parent.top
             anchors.bottom: parent.bottom
             width: ThemeModule.Theme.sidebarWidth
+            z: 20
 
             Column {
                 id: sidebarTopCol
@@ -345,7 +346,6 @@ Item {
 
             // ── System Tray (centered in the free zone between top and bottom icons) ──
             Item {
-                id: sidebarTrayZone
                 anchors.top: sidebarTopCol.bottom
                 anchors.bottom: sidebarBottomCol.top
                 anchors.left: parent.left
@@ -363,12 +363,30 @@ Item {
                         delegate: Item {
                             id: sidebarTrayDelegate
                             required property var modelData
+                            property bool pointerInside: false
+                            readonly property bool containingWindowVisible: !!(sidebarTrayDelegate.Window
+                                && sidebarTrayDelegate.Window.window
+                                && sidebarTrayDelegate.Window.window.visible)
+                            readonly property string labelText: modelData.tooltipTitle
+                                || modelData.title
+                                || modelData.id
+                                || "System tray icon"
                             width: ThemeModule.Theme.sidebarIconSize
                             height: ThemeModule.Theme.sidebarIconSize
-                            activeFocusOnTab: true
+
+                            Connections {
+                                target: sidebarTrayDelegate.Window
+                                    ? sidebarTrayDelegate.Window.window
+                                    : null
+
+                                function onVisibleChanged() {
+                                    if (!sidebarTrayDelegate.containingWindowVisible)
+                                        sidebarTrayDelegate.pointerInside = false;
+                                }
+                            }
 
                             Accessible.role: Accessible.Button
-                            Accessible.name: modelData.tooltipTitle || modelData.title || modelData.id || "System tray icon"
+                            Accessible.name: sidebarTrayDelegate.labelText
                             Accessible.onPressAction: {
                                 if (sidebarTrayDelegate.modelData.onlyMenu && sidebarTrayDelegate.modelData.hasMenu)
                                     sidebarTrayMenu.open();
@@ -376,25 +394,12 @@ Item {
                                     sidebarTrayDelegate.modelData.activate();
                             }
 
-                            Keys.onPressed: function(event) {
-                                if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                                    if (sidebarTrayDelegate.modelData.onlyMenu && sidebarTrayDelegate.modelData.hasMenu)
-                                        sidebarTrayMenu.open();
-                                    else
-                                        sidebarTrayDelegate.modelData.activate();
-                                    event.accepted = true;
-                                } else if (event.key === Qt.Key_Menu && sidebarTrayDelegate.modelData.hasMenu) {
-                                    sidebarTrayMenu.open();
-                                    event.accepted = true;
-                                }
-                            }
-
                             Rectangle {
                                 id: trayIconRect
                                 anchors.fill: parent
-                                color: sidebarTrayMouse.containsMouse ? ThemeModule.Theme.cardHover : "transparent"
-                                border.width: sidebarTrayDelegate.activeFocus ? 2 : 0
-                                border.color: ThemeModule.Theme.accent
+                                color: sidebarTrayDelegate.pointerInside
+                                    ? ThemeModule.Theme.cardHover
+                                    : "transparent"
                                 radius: ThemeModule.Theme.borderRadiusSmall
 
                                 Image {
@@ -423,10 +428,36 @@ Item {
                                     visible: !sidebarTrayImg.visible
                                 }
 
-                                ToolTip {
-                                    visible: sidebarTrayMouse.containsMouse || sidebarTrayDelegate.activeFocus
-                                    text: sidebarTrayDelegate.modelData.tooltipTitle || sidebarTrayDelegate.modelData.title || sidebarTrayDelegate.modelData.id || "System tray icon"
-                                    delay: 150
+                                Rectangle {
+                                    anchors.left: parent.right
+                                    anchors.leftMargin: ThemeModule.Theme.spacingTiny
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: trayLabel.implicitWidth + ThemeModule.Theme.spacingLarge
+                                    height: 26
+                                    radius: ThemeModule.Theme.borderRadiusSmall
+                                    visible: sidebarTrayDelegate.containingWindowVisible
+                                        && sidebarTrayDelegate.pointerInside
+                                        && sidebarTrayDelegate.labelText !== ""
+                                    color: ThemeModule.Theme.surface2
+                                    border.width: ThemeModule.Theme.borderWidth
+                                    border.color: Qt.rgba(
+                                        ThemeModule.Theme.accent.r,
+                                        ThemeModule.Theme.accent.g,
+                                        ThemeModule.Theme.accent.b,
+                                        0.42
+                                    )
+                                    z: 100
+
+                                    Text {
+                                        id: trayLabel
+
+                                        anchors.centerIn: parent
+                                        text: sidebarTrayDelegate.labelText
+                                        textFormat: Text.PlainText
+                                        font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                                        font.family: ThemeModule.Theme.fontFamily
+                                        color: ThemeModule.Theme.text
+                                    }
                                 }
 
                                 QsMenuAnchor {
@@ -438,13 +469,14 @@ Item {
                                 }
 
                                 MouseArea {
-                                    id: sidebarTrayMouse
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
                                     acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                    onEntered: sidebarTrayDelegate.pointerInside = true
+                                    onExited: sidebarTrayDelegate.pointerInside = false
+                                    onCanceled: sidebarTrayDelegate.pointerInside = false
                                     onClicked: function(mouse) {
-                                        sidebarTrayDelegate.forceActiveFocus();
                                         if (mouse.button === Qt.LeftButton) {
                                             if (sidebarTrayDelegate.modelData.onlyMenu && sidebarTrayDelegate.modelData.hasMenu) {
                                                 sidebarTrayMenu.open();
@@ -477,7 +509,6 @@ Item {
 
         // ── Content Area ──
         Item {
-            id: contentArea
             anchors.left: mainSeparator.right
             anchors.right: parent.right
             anchors.top: parent.top
