@@ -98,6 +98,57 @@ Singleton {
         root.notificationHistory = [];
     }
 
+    function addInternalNotification(id, summary, body) {
+        var notificationId = "internal:" + String(id || "notice");
+        var receivedAt = new Date();
+        var history = [];
+        for (var i = 0; i < root.notificationHistory.length; i++) {
+            if (root.notificationHistory[i].id !== notificationId)
+                history.push(root.notificationHistory[i]);
+        }
+        history.unshift({
+            id: notificationId,
+            desktopEntry: "",
+            appName: "Speshell",
+            appIcon: "",
+            summary: String(summary || "Speshell notice"),
+            body: String(body || ""),
+            urgency: 1,
+            time: receivedAt
+        });
+        root.notificationHistory = history.slice(0, 50);
+
+        if (root.dndEnabled)
+            return;
+
+        var popupId = root.popupCounter++;
+        var popups = root.activePopups.slice();
+        popups.push({
+            popupId: popupId,
+            id: notificationId,
+            desktopEntry: "",
+            appName: "Speshell",
+            appIcon: "",
+            image: "",
+            summary: String(summary || "Speshell notice"),
+            body: String(body || ""),
+            urgency: 1,
+            time: receivedAt,
+            notification: null,
+            defaultAction: null,
+            actions: [],
+            resident: false,
+            expiresAt: Date.now() + 8000
+        });
+        if (popups.length > 5) {
+            var evicted = popups.shift();
+            if (evicted.notification && evicted.notification.tracked)
+                evicted.notification.expire();
+        }
+        root.activePopups = popups;
+        root.schedulePopupExpiry();
+    }
+
     function removeHistoryAt(index) {
         var current = root.notificationHistory.slice();
         if (index >= 0 && index < current.length) {

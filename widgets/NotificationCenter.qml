@@ -14,11 +14,23 @@ Components.Card {
     property int maxVisibleNotifications: 3
     property bool presented: false
     property int refreshTick: 0
+    property string expandedNotificationId: ""
     readonly property int notificationRowHeight: 48
 
     onPresentedChanged: {
         if (root.presented)
             root.refreshTick++;
+        else
+            root.expandedNotificationId = "";
+    }
+
+    function notificationKey(notification) {
+        return String(notification && notification.id !== undefined ? notification.id : "");
+    }
+
+    function toggleExpanded(notification) {
+        var key = root.notificationKey(notification);
+        root.expandedNotificationId = root.expandedNotificationId === key ? "" : key;
     }
 
     Timer {
@@ -89,13 +101,22 @@ Components.Card {
         ListView {
             id: notificationList
             width: parent.width
-            height: root.listHeightForRows(root.maxVisibleNotifications === -1
+            readonly property int compactHeight: root.listHeightForRows(root.maxVisibleNotifications === -1
                 ? root.notifList.length
                 : Math.min(root.notifList.length, root.maxVisibleNotifications))
+            height: root.expandedNotificationId === ""
+                ? compactHeight
+                : (root.maxVisibleNotifications === -1
+                    ? contentHeight
+                    : Math.max(compactHeight, Math.min(contentHeight, 240)))
             clip: true
             spacing: ThemeModule.Theme.spacingTiny
             boundsBehavior: Flickable.StopAtBounds
             model: root.notifList
+
+            Behavior on height {
+                NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
+            }
 
             ScrollBar.vertical: ScrollBar {
                 policy: root.maxVisibleNotifications !== -1 && root.notifList.length > root.maxVisibleNotifications
@@ -107,13 +128,39 @@ Components.Card {
                 id: notificationRow
                 required property var modelData
                 required property int index
+                readonly property bool expanded: root.expandedNotificationId
+                    === root.notificationKey(notificationRow.modelData)
 
                 width: ListView.view.width
-                height: root.notificationRowHeight
+                height: expanded
+                    ? Math.max(root.notificationRowHeight,
+                        expandedContent.implicitHeight + ThemeModule.Theme.spacingSmall * 2)
+                    : root.notificationRowHeight
                 radius: ThemeModule.Theme.borderRadiusSmall
+                activeFocusOnTab: true
                 color: notifMouse.containsMouse
                     ? Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.35)
                     : Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.18)
+                border.width: activeFocus ? 2 : 0
+                border.color: ThemeModule.Theme.accent
+
+                Accessible.role: Accessible.Button
+                Accessible.name: root.primaryText(notificationRow.modelData)
+                Accessible.description: expanded ? "Collapse notification" : "Read full notification"
+                Accessible.onPressAction: root.toggleExpanded(notificationRow.modelData)
+
+                Keys.onPressed: function(event) {
+                    if (event.isAutoRepeat)
+                        return;
+                    if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                        root.toggleExpanded(notificationRow.modelData);
+                        event.accepted = true;
+                    }
+                }
+
+                Behavior on height {
+                    NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
+                }
 
                 Column {
                     id: notifContent
@@ -125,6 +172,7 @@ Components.Card {
                         rightMargin: ThemeModule.Theme.spacingTiny
                     }
                     spacing: 2
+                    visible: !notificationRow.expanded
 
                     Text {
                         width: parent.width
@@ -149,11 +197,62 @@ Components.Card {
                     }
                 }
 
+                Column {
+                    id: expandedContent
+                    anchors {
+                        left: parent.left
+                        right: dismissBtn.left
+                        top: parent.top
+                        leftMargin: ThemeModule.Theme.spacingSmall
+                        rightMargin: ThemeModule.Theme.spacingTiny
+                        topMargin: ThemeModule.Theme.spacingSmall
+                    }
+                    spacing: ThemeModule.Theme.spacingTiny
+                    visible: notificationRow.expanded
+
+                    Text {
+                        width: parent.width
+                        text: root.primaryText(notificationRow.modelData)
+                        textFormat: Text.PlainText
+                        font.pixelSize: 12
+                        font.family: ThemeModule.Theme.fontFamily
+                        font.bold: true
+                        color: ThemeModule.Theme.text
+                        wrapMode: Text.WrapAnywhere
+                    }
+
+                    Text {
+                        width: parent.width
+                        text: root.compactText(notificationRow.modelData.appName || "App")
+                            + " · " + root.formatTimeAgo(notificationRow.modelData.time, root.refreshTick)
+                        textFormat: Text.PlainText
+                        font.pixelSize: 10
+                        font.family: ThemeModule.Theme.fontFamily
+                        color: ThemeModule.Theme.overlay
+                        wrapMode: Text.WordWrap
+                    }
+
+                    Text {
+                        width: parent.width
+                        text: String(notificationRow.modelData.body || "")
+                        textFormat: Text.PlainText
+                        font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                        font.family: ThemeModule.Theme.fontFamily
+                        color: ThemeModule.Theme.subtext
+                        wrapMode: Text.WrapAnywhere
+                        visible: text !== "" && text !== notificationRow.modelData.summary
+                    }
+                }
+
                 Components.IconButton {
                     id: dismissBtn
                     anchors.right: parent.right
                     anchors.rightMargin: ThemeModule.Theme.spacingTiny
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: notificationRow.expanded
+                        ? ThemeModule.Theme.spacingTiny
+                        : (notificationRow.height - height) / 2
+                    z: 2
                     iconName: "close"
                     size: 30
                     iconSize: 14
@@ -167,7 +266,12 @@ Components.Card {
                     id: notifMouse
                     anchors.fill: parent
                     hoverEnabled: true
-                    acceptedButtons: Qt.NoButton
+                    cursorShape: Qt.PointingHandCursor
+                    z: 1
+                    onClicked: {
+                        notificationRow.forceActiveFocus();
+                        root.toggleExpanded(notificationRow.modelData);
+                    }
                 }
             }
         }

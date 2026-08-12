@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
+import "DisplayLogic.js" as DisplayLogic
 
 Singleton {
     id: root
@@ -13,11 +14,24 @@ Singleton {
     property var monitors: []
     property var draftMonitors: []
     property bool applying: false
+    property bool confirming: false
+    property bool reverting: false
     property bool loading: false
     property bool hasPending: false
     property string errorText: ""
     property string pendingSummary: ""
     property string selectedName: ""
+    property int confirmationSecondsRemaining: 0
+    property var rollbackMonitors: []
+    property bool rollbackRetryAvailable: false
+    property string operationKind: ""
+    property bool topologyRollbackQueued: false
+    property double topologyEventGraceUntil: 0
+
+    readonly property bool displayEditingLocked: root.applying
+        || root.loading
+        || root.confirming
+        || root.reverting
 
     readonly property var draftActiveMonitors: root.buildActiveMonitors(root.draftMonitors)
     readonly property string draftLayoutMode: root.detectLayoutMode(root.draftMonitors)
@@ -27,78 +41,35 @@ Singleton {
     }
 
     function monitorName(monitor) {
-        return monitor && monitor.name ? String(monitor.name) : "";
+        return DisplayLogic.monitorName(monitor);
     }
 
     function monitorScale(monitor) {
-        var scale = monitor && monitor.scale !== undefined ? Number(monitor.scale) : 1;
-        return scale > 0 ? scale : 1;
+        return DisplayLogic.monitorScale(monitor);
     }
 
     function formatModeRefresh(refreshRate) {
-        var refresh = Number(refreshRate) || 0;
-        return refresh > 0 ? refresh.toFixed(2) : "";
+        return DisplayLogic.formatModeRefresh(refreshRate);
     }
 
     function normalizeMode(mode) {
-        var raw = String(mode || "").trim();
-        if (raw === "") {
-            return "";
-        }
-
-        var parsed = root.parseMode(raw);
-        if (!parsed) {
-            return raw;
-        }
-        return parsed.width + "x" + parsed.height + "@" + root.formatModeRefresh(parsed.refreshRate) + "Hz";
+        return DisplayLogic.normalizeMode(mode);
     }
 
     function parseMode(mode) {
-        var raw = String(mode || "").trim();
-        var match = raw.match(/^([0-9]+)x([0-9]+)@([0-9.]+)\s*(Hz)?$/i);
-        if (!match) {
-            return null;
-        }
-
-        var width = parseInt(match[1], 10);
-        var height = parseInt(match[2], 10);
-        var refreshRate = Number(match[3]) || 0;
-        if (width <= 0 || height <= 0 || refreshRate <= 0) {
-            return null;
-        }
-        return { width: width, height: height, refreshRate: refreshRate };
+        return DisplayLogic.parseMode(mode);
     }
 
     function modeLabel(mode) {
-        var parsed = root.parseMode(mode);
-        if (!parsed) {
-            return String(mode || "Preferred");
-        }
-
-        var rounded = Math.round(parsed.refreshRate);
-        var refresh = Math.abs(parsed.refreshRate - rounded) < 0.01
-            ? String(rounded)
-            : parsed.refreshRate.toFixed(2);
-        return parsed.width + "x" + parsed.height + "@" + refresh + "Hz";
+        return DisplayLogic.modeLabel(mode);
     }
 
     function modeCommand(mode) {
-        var normalized = root.normalizeMode(mode);
-        return normalized === "" ? "preferred" : normalized.replace(/Hz$/i, "");
+        return DisplayLogic.modeCommand(mode);
     }
 
     function monitorModeString(monitor) {
-        if (monitor && monitor.mode) {
-            return root.normalizeMode(monitor.mode);
-        }
-
-        var width = Number(monitor && monitor.width) || 0;
-        var height = Number(monitor && monitor.height) || 0;
-        var refresh = Number(monitor && monitor.refreshRate) || 0;
-        if (width <= 0 || height <= 0 || refresh <= 0) {
-            return "preferred";
-        }
-        return width + "x" + height + "@" + root.formatModeRefresh(refresh) + "Hz";
+        return DisplayLogic.monitorModeString(monitor);
     }
 
     function availableModesFor(monitor) {
@@ -141,11 +112,11 @@ Singleton {
     }
 
     function logicalWidth(monitor) {
-        return Math.max(1, Math.round((Number(monitor && monitor.width) || 1) / root.monitorScale(monitor)));
+        return DisplayLogic.logicalWidth(monitor);
     }
 
     function logicalHeight(monitor) {
-        return Math.max(1, Math.round((Number(monitor && monitor.height) || 1) / root.monitorScale(monitor)));
+        return DisplayLogic.logicalHeight(monitor);
     }
 
     function isActiveMonitor(monitor) {
@@ -153,14 +124,7 @@ Singleton {
     }
 
     function buildActiveMonitors(source) {
-        var result = [];
-        var list = source || [];
-        for (var i = 0; i < list.length; i++) {
-            if (root.isActiveMonitor(list[i])) {
-                result.push(list[i]);
-            }
-        }
-        return result;
+        return DisplayLogic.buildActiveMonitors(source);
     }
 
     function primaryMonitorObject(source) {
@@ -180,33 +144,11 @@ Singleton {
     }
 
     function detectMirrored(source) {
-        var active = root.buildActiveMonitors(source || root.monitors);
-        var occupiedPositions = {};
-        for (var i = 0; i < active.length; i++) {
-            var mirrorOf = String(active[i].mirrorOf || "");
-            if (mirrorOf !== "" && mirrorOf !== "none") {
-                return true;
-            }
-
-            var positionKey = Math.round(Number(active[i].x) || 0)
-                + "x" + Math.round(Number(active[i].y) || 0);
-            if (occupiedPositions[positionKey]) {
-                return true;
-            }
-            occupiedPositions[positionKey] = true;
-        }
-        return false;
+        return DisplayLogic.detectMirrored(source || root.monitors);
     }
 
     function detectLayoutMode(source) {
-        var active = root.buildActiveMonitors(source || root.monitors);
-        if (active.length <= 1) {
-            return "single";
-        }
-        if (root.detectMirrored(source || root.monitors)) {
-            return "mirror";
-        }
-        return "extend";
+        return DisplayLogic.detectLayoutMode(source || root.monitors);
     }
 
     function cloneMonitor(monitor) {
@@ -292,41 +234,25 @@ Singleton {
     }
 
     function commandForMonitorMode(monitor, position, mirrorTarget) {
-        var name = root.monitorName(monitor);
-        if (name === "") {
-            return "";
-        }
-
-        var mode = root.modeCommand(root.monitorModeString(monitor));
-        var scale = root.monitorScale(monitor);
-        var command = name + "," + mode + "," + position + "," + scale;
-        if (mirrorTarget && mirrorTarget !== "") {
-            command += ",mirror," + mirrorTarget;
-        }
-        return command;
+        return DisplayLogic.commandForMonitorMode(monitor, position, mirrorTarget);
     }
 
     function commandForDraftMonitor(monitor) {
-        if (!monitor || root.monitorName(monitor) === "") {
-            return "";
-        }
-        if (monitor.disabled) {
-            return root.commandForDisable(monitor);
-        }
-
-        var mirrorTarget = String(monitor.mirrorOf || "");
-        var position = mirrorTarget !== "" && mirrorTarget !== "none"
-            ? "auto"
-            : Math.round(Number(monitor.x) || 0) + "x" + Math.round(Number(monitor.y) || 0);
-        return root.commandForMonitorMode(monitor, position, mirrorTarget);
+        return DisplayLogic.commandForDraftMonitor(monitor);
     }
 
     function commandForDisable(monitor) {
         var name = root.monitorName(monitor);
-        return name === "" ? "" : name + ",disable";
+        return name === ""
+            ? ""
+            : "hl.monitor({ output = " + DisplayLogic.luaQuote(name) + ", disabled = true })";
     }
 
-    function runMonitorCommands(commands) {
+    function commandsForMonitors(source, connectedOnly) {
+        return DisplayLogic.commandsForMonitors(source, root.monitors, connectedOnly);
+    }
+
+    function runMonitorCommands(commands, operation) {
         if (applyProc.running) {
             return false;
         }
@@ -338,7 +264,7 @@ Singleton {
             if (command === "") {
                 continue;
             }
-            script += "hyprctl keyword monitor " + root.shellQuote(command) + "\n";
+            script += "hyprctl eval " + root.shellQuote(command) + "\n";
             hasCommand = true;
         }
 
@@ -349,22 +275,53 @@ Singleton {
         applyProc.command = ["sh", "-lc", script];
         applyProc.running = true;
         root.applying = true;
+        root.operationKind = operation || "apply";
         root.errorText = "";
         return true;
     }
 
     function applyDraft() {
-        if (!root.hasPending || root.applying || root.loading) {
+        if (!root.hasPending || root.displayEditingLocked) {
             return;
         }
 
-        var commands = [];
-        for (var i = 0; i < root.draftMonitors.length; i++) {
-            commands.push(root.commandForDraftMonitor(root.draftMonitors[i]));
-        }
-        if (!root.runMonitorCommands(commands)) {
+        root.rollbackMonitors = root.cloneMonitors(root.monitors);
+        root.rollbackRetryAvailable = false;
+        if (!root.runMonitorCommands(root.commandsForMonitors(root.draftMonitors, false), "apply")) {
+            root.rollbackMonitors = [];
             root.resetDraft();
         }
+    }
+
+    function keepDisplayChanges() {
+        if (!root.confirming)
+            return;
+        confirmationTimer.stop();
+        root.confirming = false;
+        root.confirmationSecondsRemaining = 0;
+        root.rollbackMonitors = [];
+        root.rollbackRetryAvailable = false;
+        root.errorText = "";
+        root.refresh();
+    }
+
+    function revertDisplayChanges() {
+        if (root.rollbackMonitors.length === 0 || applyProc.running)
+            return false;
+
+        confirmationTimer.stop();
+        root.confirming = false;
+        root.confirmationSecondsRemaining = 0;
+        root.reverting = true;
+        root.rollbackRetryAvailable = false;
+        var commands = root.commandsForMonitors(root.rollbackMonitors, true);
+        if (!root.runMonitorCommands(commands, "rollback")) {
+            root.reverting = false;
+            root.rollbackRetryAvailable = true;
+            root.errorText = "Could not start display rollback.";
+            return false;
+        }
+        return true;
     }
 
     function activeDraftCount() {
@@ -645,6 +602,17 @@ Singleton {
         onTriggered: root.refresh()
     }
 
+    Timer {
+        id: confirmationTimer
+        interval: 1000
+        repeat: true
+        onTriggered: {
+            root.confirmationSecondsRemaining--;
+            if (root.confirmationSecondsRemaining <= 0)
+                root.revertDisplayChanges();
+        }
+    }
+
     Connections {
         target: Hyprland
 
@@ -653,7 +621,20 @@ Singleton {
                     || event.name === "monitoraddedv2"
                     || event.name === "monitorremoved") {
                 Hyprland.refreshMonitors();
-                root.queueRefresh();
+                if (root.confirming) {
+                    if (Date.now() < root.topologyEventGraceUntil) {
+                        root.queueRefresh();
+                        return;
+                    }
+                    confirmationTimer.stop();
+                    root.confirming = false;
+                    root.confirmationSecondsRemaining = 0;
+                    root.topologyRollbackQueued = true;
+                    if (!root.loading)
+                        root.refresh();
+                } else {
+                    root.queueRefresh();
+                }
             }
         }
     }
@@ -683,11 +664,22 @@ Singleton {
                     } else {
                         root.ensureSelected();
                     }
-                    root.errorText = exitCode === 0 ? "" : (monitorsError.text || "Could not read displays.");
+                    if (exitCode !== 0)
+                        root.errorText = monitorsError.text || "Could not read displays.";
+                    else if (!root.rollbackRetryAvailable)
+                        root.errorText = "";
+                    if (root.topologyRollbackQueued) {
+                        root.topologyRollbackQueued = false;
+                        Qt.callLater(root.revertDisplayChanges);
+                    }
                 }
             } catch(e) {
                 root.errorText = "Could not read displays.";
                 console.warn("[Speshell] Failed to parse hyprctl monitors output:", e);
+                if (root.topologyRollbackQueued) {
+                    root.topologyRollbackQueued = false;
+                    Qt.callLater(root.revertDisplayChanges);
+                }
             }
         }
     }
@@ -699,12 +691,29 @@ Singleton {
             id: applyError
         }
         onExited: function(exitCode) {
+            var completedOperation = root.operationKind;
+            root.operationKind = "";
             root.applying = false;
-            if (exitCode !== 0) {
+            if (completedOperation === "rollback") {
+                root.reverting = false;
+                if (exitCode !== 0) {
+                    root.rollbackRetryAvailable = true;
+                    root.errorText = applyError.text || "Display rollback failed.";
+                } else {
+                    root.rollbackMonitors = [];
+                    root.rollbackRetryAvailable = false;
+                    root.errorText = "";
+                }
+            } else if (exitCode !== 0) {
+                root.rollbackMonitors = [];
                 root.errorText = applyError.text || "Display change failed.";
             } else {
                 root.hasPending = false;
                 root.pendingSummary = "";
+                root.confirming = true;
+                root.confirmationSecondsRemaining = 15;
+                root.topologyEventGraceUntil = Date.now() + 1500;
+                confirmationTimer.restart();
             }
             root.refresh();
         }

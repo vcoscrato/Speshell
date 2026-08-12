@@ -83,15 +83,32 @@ Components.Card {
                     width: clipboardRows.width
                     height: Math.max(40, previewText.implicitHeight + 16)
                     radius: ThemeModule.Theme.borderRadiusSmall
+                    activeFocusOnTab: true
                     color: clipMouse.containsMouse
                         ? ThemeModule.Theme.cardHover
                         : (clipRow.modelData.id === Services.ClipboardService.lastCopiedId
                             ? Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.12)
                             : Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.10))
-                    border.width: 1
-                    border.color: clipRow.modelData.id === Services.ClipboardService.lastCopiedId
+                    border.width: clipRow.activeFocus ? 2 : 1
+                    border.color: clipRow.activeFocus
+                        ? ThemeModule.Theme.accent
+                        : (clipRow.modelData.id === Services.ClipboardService.lastCopiedId
                         ? Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.45)
-                        : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.18)
+                        : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.18))
+
+                    Accessible.role: Accessible.Button
+                    Accessible.name: "Copy clipboard item"
+                    Accessible.description: clipRow.modelData.preview
+                    Accessible.onPressAction: Services.ClipboardService.copyEntry(clipRow.modelData)
+
+                    Keys.onPressed: function(event) {
+                        if (event.isAutoRepeat)
+                            return;
+                        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                            Services.ClipboardService.copyEntry(clipRow.modelData);
+                            event.accepted = true;
+                        }
+                    }
 
                     Text {
                         id: previewText
@@ -111,7 +128,10 @@ Components.Card {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: Services.ClipboardService.copyEntry(clipRow.modelData)
+                        onClicked: {
+                            clipRow.forceActiveFocus();
+                            Services.ClipboardService.copyEntry(clipRow.modelData);
+                        }
                     }
                 }
             }

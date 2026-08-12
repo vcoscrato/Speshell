@@ -179,6 +179,14 @@ Singleton {
         return setProperty("Launcher", "width", width);
     }
 
+    function setLauncherSearchUrl(url) {
+        return setProperty("Launcher", "searchUrl", url);
+    }
+
+    function setBacklightDevice(device) {
+        return setProperty("Backlight", "device", device);
+    }
+
     function finishConfigWrite(succeeded) {
         var nextConfig = root.pendingConfig;
         var oldConfig = root.previousConfig;

@@ -16,7 +16,7 @@ Components.Card {
     visible: Services.FeatureSupport.supportsDisplayControl
 
     property bool presented: false
-    readonly property bool busy: Services.DisplayService.loading || Services.DisplayService.applying
+    readonly property bool busy: Services.DisplayService.displayEditingLocked
     readonly property var selectedMonitor: Services.DisplayService.monitorByName(
         Services.DisplayService.draftMonitors,
         Services.DisplayService.selectedName
@@ -103,6 +103,12 @@ Components.Card {
     function statusText() {
         if (Services.DisplayService.errorText !== "") {
             return Services.DisplayService.errorText;
+        }
+        if (Services.DisplayService.reverting) {
+            return "Restoring the previous display layout.";
+        }
+        if (Services.DisplayService.confirming) {
+            return "Waiting for display confirmation.";
         }
         if (Services.DisplayService.applying) {
             return "Applying display changes.";
@@ -260,6 +266,15 @@ Components.Card {
             onActivated: Services.DisplayService.applyDraft()
         }
 
+        Components.InlineActionChip {
+            visible: Services.DisplayService.rollbackRetryAvailable
+            text: "Retry Revert"
+            iconName: "back"
+            tone: "warning"
+            enabled: !Services.DisplayService.applying
+            onActivated: Services.DisplayService.revertDisplayChanges()
+        }
+
         Components.RefreshButton {
             active: root.busy
             enabled: !root.busy
@@ -297,6 +312,72 @@ Components.Card {
                     : (Services.DisplayService.hasPending ? ThemeModule.Theme.warning : ThemeModule.Theme.subtext)
                 elide: Text.ElideRight
                 anchors.verticalCenter: parent.verticalCenter
+            }
+        }
+
+        Rectangle {
+            id: confirmationCard
+
+            width: parent.width
+            visible: Services.DisplayService.confirming || Services.DisplayService.reverting
+            implicitHeight: confirmationColumn.implicitHeight + ThemeModule.Theme.spacingMedium * 2
+            radius: ThemeModule.Theme.borderRadiusSmall
+            color: Qt.rgba(ThemeModule.Theme.warning.r, ThemeModule.Theme.warning.g, ThemeModule.Theme.warning.b, 0.10)
+            border.width: ThemeModule.Theme.borderWidth
+            border.color: Qt.rgba(ThemeModule.Theme.warning.r, ThemeModule.Theme.warning.g, ThemeModule.Theme.warning.b, 0.56)
+
+            Column {
+                id: confirmationColumn
+
+                x: ThemeModule.Theme.spacingMedium
+                y: ThemeModule.Theme.spacingMedium
+                width: parent.width - ThemeModule.Theme.spacingMedium * 2
+                spacing: ThemeModule.Theme.spacingSmall
+
+                Text {
+                    width: parent.width
+                    text: Services.DisplayService.reverting
+                        ? "Restoring previous display settings…"
+                        : "Keep these display settings?"
+                    font.pixelSize: ThemeModule.Theme.fontSizeNormal
+                    font.family: ThemeModule.Theme.fontFamily
+                    font.bold: true
+                    color: ThemeModule.Theme.text
+                }
+
+                Text {
+                    width: parent.width
+                    visible: Services.DisplayService.confirming
+                    text: "Changes revert automatically in "
+                        + Services.DisplayService.confirmationSecondsRemaining + " seconds."
+                    font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                    font.family: ThemeModule.Theme.fontFamily
+                    color: ThemeModule.Theme.subtext
+                    wrapMode: Text.WordWrap
+                }
+
+                Row {
+                    width: parent.width
+                    spacing: ThemeModule.Theme.spacingSmall
+                    visible: Services.DisplayService.confirming
+
+                    Components.ActionButton {
+                        width: (parent.width - parent.spacing) / 2
+                        label: "Revert"
+                        iconName: "back"
+                        enabled: !Services.DisplayService.applying
+                        onActivated: Services.DisplayService.revertDisplayChanges()
+                    }
+
+                    Components.ActionButton {
+                        width: (parent.width - parent.spacing) / 2
+                        label: "Keep Changes"
+                        iconName: "check"
+                        toneColor: ThemeModule.Theme.success
+                        enabled: !Services.DisplayService.applying
+                        onActivated: Services.DisplayService.keepDisplayChanges()
+                    }
+                }
             }
         }
 
@@ -341,13 +422,27 @@ Components.Card {
                     height: Math.min(Math.max(24, rect.height), displayMap.height - 20)
                     radius: 6
                     z: selected ? 2 : 1
+                    activeFocusOnTab: !root.busy
                     color: selected
                         ? Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.22)
                         : Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.72)
-                    border.width: ThemeModule.Theme.borderWidth
-                    border.color: selected
+                    border.width: displayTile.activeFocus ? 2 : ThemeModule.Theme.borderWidth
+                    border.color: displayTile.activeFocus
                         ? ThemeModule.Theme.accent
-                        : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.55)
+                        : (selected
+                        ? ThemeModule.Theme.accent
+                        : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.55))
+
+                    Accessible.role: Accessible.Button
+                    Accessible.name: "Select " + Services.DisplayService.monitorName(displayTile.modelData)
+                    Accessible.onPressAction: Services.DisplayService.setSelected(displayTile.modelData.name)
+
+                    Keys.onPressed: function(event) {
+                        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                            Services.DisplayService.setSelected(displayTile.modelData.name);
+                            event.accepted = true;
+                        }
+                    }
 
                     Column {
                         anchors.centerIn: parent
@@ -370,7 +465,10 @@ Components.Card {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: Services.DisplayService.setSelected(displayTile.modelData.name)
+                        onClicked: {
+                            displayTile.forceActiveFocus();
+                            Services.DisplayService.setSelected(displayTile.modelData.name);
+                        }
                     }
 
                     Behavior on x { NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic } }
@@ -403,10 +501,25 @@ Components.Card {
                     width: Math.min(displayPicker.width, Math.max(82, pillText.implicitWidth + pillState.implicitWidth + 26))
                     height: 26
                     radius: ThemeModule.Theme.borderRadiusSmall
+                    activeFocusOnTab: !root.busy
                     opacity: root.busy ? 0.55 : 1.0
                     color: Qt.rgba(pillColor.r, pillColor.g, pillColor.b, selected ? 0.22 : 0.10)
-                    border.width: ThemeModule.Theme.borderWidth
-                    border.color: Qt.rgba(pillColor.r, pillColor.g, pillColor.b, selected ? 0.85 : 0.36)
+                    border.width: displayPill.activeFocus ? 2 : ThemeModule.Theme.borderWidth
+                    border.color: displayPill.activeFocus
+                        ? ThemeModule.Theme.accent
+                        : Qt.rgba(pillColor.r, pillColor.g, pillColor.b, selected ? 0.85 : 0.36)
+
+                    Accessible.role: Accessible.Button
+                    Accessible.name: "Select " + Services.DisplayService.monitorName(displayPill.modelData)
+                    Accessible.description: displayPill.modelData.disabled ? "Display off" : "Display on"
+                    Accessible.onPressAction: Services.DisplayService.setSelected(displayPill.modelData.name)
+
+                    Keys.onPressed: function(event) {
+                        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                            Services.DisplayService.setSelected(displayPill.modelData.name);
+                            event.accepted = true;
+                        }
+                    }
 
                     Row {
                         anchors.centerIn: parent
@@ -439,7 +552,10 @@ Components.Card {
                         enabled: !root.busy
                         hoverEnabled: true
                         cursorShape: root.busy ? Qt.ArrowCursor : Qt.PointingHandCursor
-                        onClicked: Services.DisplayService.setSelected(displayPill.modelData.name)
+                        onClicked: {
+                            displayPill.forceActiveFocus();
+                            Services.DisplayService.setSelected(displayPill.modelData.name);
+                        }
                     }
                 }
             }

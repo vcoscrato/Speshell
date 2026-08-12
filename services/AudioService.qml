@@ -35,6 +35,10 @@ Singleton {
     property bool inputMuteQueued: false
     property bool outputReadQueued: false
     property bool inputReadQueued: false
+    property bool outputOsdInitialized: false
+    property double outputOsdSuppressedUntil: 0
+
+    signal outputOsdRequested(int volumePercent, bool muted)
 
     function debugLog(message) {
         if (!root.debugLogging)
@@ -58,6 +62,20 @@ Singleton {
 
     function clampPercent(value) {
         return Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+    }
+
+    function suppressOutputOsd(durationMs) {
+        root.outputOsdSuppressedUntil = Math.max(
+            root.outputOsdSuppressedUntil,
+            Date.now() + Math.max(0, Number(durationMs) || 0)
+        );
+        outputOsdDebounce.stop();
+    }
+
+    function queueOutputOsd() {
+        if (!root.outputOsdInitialized || Date.now() < root.outputOsdSuppressedUntil)
+            return;
+        outputOsdDebounce.restart();
     }
 
     function extractNumericVolume(value) {
@@ -206,6 +224,7 @@ Singleton {
     function setOutputVolumePercent(percent) {
         var next = root.clampPercent(percent);
         root.debugLog("setOutputVolumePercent(" + next + ") defaultSink=" + root.describeNode(root.defaultSink));
+        root.suppressOutputOsd(1200);
         root.outputVolumePercent = next;
         root.hasOutputVolume = true;
         root.pendingOutputVolumePercent = next;
@@ -300,6 +319,7 @@ Singleton {
     function setOutputMuted(muted) {
         var next = !!muted;
         root.debugLog("setOutputMuted(" + next + ") defaultSink=" + root.describeNode(root.defaultSink));
+        root.suppressOutputOsd(1200);
         root.outputMuted = next;
         root.pendingOutputMuted = next;
         root.outputMuteQueued = true;
@@ -392,10 +412,12 @@ Singleton {
             + ", defaultSource=" + root.describeNode(root.defaultSource));
         root.syncOutputFromPipewire();
         root.syncInputFromPipewire();
+        root.outputOsdInitialized = true;
     }
 
     onDefaultSinkChanged: {
         root.debugLog("defaultSink changed -> " + root.describeNode(root.defaultSink));
+        root.suppressOutputOsd(1200);
         root.outputParseRetryCount = 0;
         root.hasOutputVolume = false;
         root.syncOutputFromPipewire();
@@ -410,8 +432,14 @@ Singleton {
         inputSwitchReadTimer.restart();
     }
 
-    onOutputVolumePercentChanged: root.debugLog("outputVolumePercent=" + root.outputVolumePercent)
-    onOutputMutedChanged: root.debugLog("outputMuted=" + root.outputMuted)
+    onOutputVolumePercentChanged: {
+        root.debugLog("outputVolumePercent=" + root.outputVolumePercent);
+        root.queueOutputOsd();
+    }
+    onOutputMutedChanged: {
+        root.debugLog("outputMuted=" + root.outputMuted);
+        root.queueOutputOsd();
+    }
     onHasOutputVolumeChanged: root.debugLog("hasOutputVolume=" + root.hasOutputVolume)
     onInputVolumePercentChanged: root.debugLog("inputVolumePercent=" + root.inputVolumePercent)
     onInputMutedChanged: root.debugLog("inputMuted=" + root.inputMuted)
@@ -423,6 +451,17 @@ Singleton {
         running: false
         repeat: false
         onTriggered: root.syncOutputFromPipewire()
+    }
+
+    Timer {
+        id: outputOsdDebounce
+        interval: 30
+        running: false
+        repeat: false
+        onTriggered: {
+            if (root.outputOsdInitialized && Date.now() >= root.outputOsdSuppressedUntil)
+                root.outputOsdRequested(root.outputVolumePercent, root.outputMuted);
+        }
     }
 
     Timer {

@@ -14,6 +14,28 @@ Scope {
     }
 
     property var config: null
+    property bool startupAssessmentComplete: false
+
+    function reportStartupIssues() {
+        if (root.startupAssessmentComplete || !Services.FeatureSupport.issuesReady)
+            return;
+        root.startupAssessmentComplete = true;
+        var issues = Services.FeatureSupport.issues || [];
+        if (issues.length === 0)
+            return;
+        Services.NotificationService.addInternalNotification(
+            "configured-features",
+            "Some configured features are unavailable",
+            issues.map(function(issue) { return issue.detail; }).join("\n")
+        );
+    }
+
+    Connections {
+        target: Services.FeatureSupport
+        function onIssuesReadyChanged() { Qt.callLater(root.reportStartupIssues); }
+    }
+
+    Component.onCompleted: root.reportStartupIssues()
 
     NotificationServer {
         actionsSupported: true
@@ -67,6 +89,8 @@ Scope {
         id: launcherOverlay
         config: root.config
     }
+
+    VolumeOsdWindow {}
 
     NotificationToastWindow {}
 }

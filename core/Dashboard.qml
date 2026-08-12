@@ -189,7 +189,7 @@ Item {
 
     function activateSidebarItem(widgetName) {
         if (WidgetRegistry.isReservedBottomPanel(widgetName)) {
-            dashboard.toggleBottomPanel(widgetName);
+            dashboard.showBottomPanel(widgetName);
             return;
         }
         if (!dashboard.isWidgetAvailable(widgetName) || dashboard.activePanel === widgetName)
@@ -203,17 +203,6 @@ Item {
         if (WidgetRegistry.isReservedBottomPanel(panelName)
                 && dashboard.isWidgetAvailable(panelName))
             dashboard.selectedBottomPanel = panelName;
-    }
-
-    function toggleBottomPanel(widgetName) {
-        var panelName = WidgetRegistry.canonicalName(widgetName);
-        if (!WidgetRegistry.isReservedBottomPanel(panelName)
-                || !dashboard.isWidgetAvailable(panelName))
-            return;
-
-        dashboard.selectedBottomPanel = dashboard.activeBottomPanel === panelName
-            ? WidgetRegistry.defaultReservedBottomPanel
-            : panelName;
     }
 
     function configureLoadedWidget(item, widgetName) {
@@ -376,11 +365,37 @@ Item {
                             required property var modelData
                             width: ThemeModule.Theme.sidebarIconSize
                             height: ThemeModule.Theme.sidebarIconSize
+                            activeFocusOnTab: true
+
+                            Accessible.role: Accessible.Button
+                            Accessible.name: modelData.tooltipTitle || modelData.title || modelData.id || "System tray icon"
+                            Accessible.onPressAction: {
+                                if (sidebarTrayDelegate.modelData.onlyMenu && sidebarTrayDelegate.modelData.hasMenu)
+                                    sidebarTrayMenu.open();
+                                else
+                                    sidebarTrayDelegate.modelData.activate();
+                            }
+
+                            Keys.onPressed: function(event) {
+                                if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                                    if (sidebarTrayDelegate.modelData.onlyMenu && sidebarTrayDelegate.modelData.hasMenu)
+                                        sidebarTrayMenu.open();
+                                    else
+                                        sidebarTrayDelegate.modelData.activate();
+                                    event.accepted = true;
+                                } else if (event.key === Qt.Key_Menu && sidebarTrayDelegate.modelData.hasMenu) {
+                                    sidebarTrayMenu.open();
+                                    event.accepted = true;
+                                }
+                            }
 
                             Rectangle {
                                 id: trayIconRect
                                 anchors.fill: parent
                                 color: sidebarTrayMouse.containsMouse ? ThemeModule.Theme.cardHover : "transparent"
+                                border.width: sidebarTrayDelegate.activeFocus ? 2 : 0
+                                border.color: ThemeModule.Theme.accent
+                                radius: ThemeModule.Theme.borderRadiusSmall
 
                                 Image {
                                     id: sidebarTrayImg
@@ -409,7 +424,7 @@ Item {
                                 }
 
                                 ToolTip {
-                                    visible: sidebarTrayMouse.containsMouse
+                                    visible: sidebarTrayMouse.containsMouse || sidebarTrayDelegate.activeFocus
                                     text: sidebarTrayDelegate.modelData.tooltipTitle || sidebarTrayDelegate.modelData.title || sidebarTrayDelegate.modelData.id || "System tray icon"
                                     delay: 150
                                 }
@@ -429,6 +444,7 @@ Item {
                                     cursorShape: Qt.PointingHandCursor
                                     acceptedButtons: Qt.LeftButton | Qt.RightButton
                                     onClicked: function(mouse) {
+                                        sidebarTrayDelegate.forceActiveFocus();
                                         if (mouse.button === Qt.LeftButton) {
                                             if (sidebarTrayDelegate.modelData.onlyMenu && sidebarTrayDelegate.modelData.hasMenu) {
                                                 sidebarTrayMenu.open();

@@ -117,9 +117,11 @@ Edit `~/.config/speshell/config.ini`. The bundled `config.example.ini` is the ca
 
 The INI format intentionally replaces the earlier `config.jsonc` format without an automatic migration. If you have an old config, copy the settings you still want into `config.ini`; the old file is left untouched and ignored.
 
-Gruvbox is the default color scheme. Catppuccin, Nord, Dracula, Tokyo Night, Rosé Pine, Solarized Dark, and Everforest remain available. The Settings panel switches themes live and persists selections to `config.ini`.
+Gruvbox is the default color scheme. Catppuccin, Nord, Dracula, Tokyo Night, Rosé Pine, Solarized Dark, and Everforest remain available. The Settings panel uses compact category pages for common appearance, audio, launcher, integration, and notification options; advanced mappings and commands remain in `config.ini`.
 
 Speshell validates malformed lines and the settings that can put the runtime into a bad state: enums, booleans, numeric ranges, URL templates, and launcher bangs. Other entries are ignored. Validation failures open a line-aware diagnostic window; correct the file and select **Retry**. Comments use `#` or `;` on their own line. Important numeric constraints are:
+
+Output-volume changes made outside the dashboard, including the standard `wpctl` media-key bindings, show a compact on-screen volume indicator. Changes made with Speshell's own slider or sidebar wheel stay quiet.
 
 | INI property | Valid values |
 |---|---|
@@ -253,6 +255,8 @@ pactl list sources | grep -E "Name:|Description:"
 
 On systems with multiple entries in `/sys/class/backlight`, set `[Backlight] device` to the device that Speshell should read and pass to `brightnessctl`.
 
+Display layout changes require confirmation. After applying a change, select **Keep Changes** within fifteen seconds or Speshell restores the previous modes, positions, scales, mirror relationships, and enabled outputs. Closing the dashboard does not cancel the rollback timer.
+
 Weather lookup is disabled by default. Set `[Weather] enabled` to `true`; `location` controls the label and query. Leaving the location empty allows wttr.in to infer an approximate location from the request.
 
 The power menu uses `hyprlock` by default. Lock runs immediately; Sleep, Log out, Restart, and Power off require confirmation. Sleep starts the locker, verifies that it remains active, and only then asks systemd to suspend. To use another blocking Wayland locker, set its executable and add optional numbered arguments:
@@ -266,6 +270,19 @@ lockCommand = gtklock
 ```
 
 The locker process must remain running for the duration of the locked session. Lock and Sleep are disabled when the configured executable cannot be found. Action failures are shown inline in the power panel.
+
+After startup, Speshell emits one aggregated warning when an explicitly configured integration cannot operate: enabled weather without `curl`, a missing configured backlight or `brightnessctl`, or an unavailable configured locker. The same diagnostics appear under **Settings → Integrations**. Unconfigured optional tools and absent laptop hardware remain silent.
+
+## Development
+
+Run deterministic tests and QML linting locally:
+
+```bash
+make test
+make lint
+```
+
+Hardware and compositor behavior is intentionally verified on a real Hyprland session. See [`tests/manual.md`](tests/manual.md) for the focused manual checklist.
 
 ## Third-party assets
 

@@ -16,6 +16,9 @@ Singleton {
     property string errorMessage: ""
 
     property string lockerPurpose: ""
+    property string lockerProbeTarget: ""
+    property string queuedLockerProbeTarget: ""
+    property string checkedLockerExecutable: ""
 
     signal actionCompleted(string action)
 
@@ -57,17 +60,33 @@ Singleton {
 
     function probeLocker() {
         var command = root.lockCommand || [];
-        root.lockerAvailable = false;
-        root.lockerChecking = true;
+        var executable = command.length > 0 ? String(command[0]).trim() : "";
 
-        if (command.length === 0 || String(command[0]).trim() === "") {
+        if (executable === "") {
+            root.queuedLockerProbeTarget = "";
+            root.checkedLockerExecutable = "";
+            root.lockerAvailable = false;
             root.lockerChecking = false;
             return;
         }
 
-        if (lockerProbe.running)
-            lockerProbe.running = false;
-        lockerProbe.command = ["which", String(command[0])];
+        if (!lockerProbe.running && root.checkedLockerExecutable === executable) {
+            root.lockerChecking = false;
+            return;
+        }
+
+        root.lockerChecking = true;
+        if (root.checkedLockerExecutable !== executable)
+            root.lockerAvailable = false;
+
+        if (lockerProbe.running) {
+            root.queuedLockerProbeTarget = executable;
+            return;
+        }
+
+        root.lockerProbeTarget = executable;
+        root.queuedLockerProbeTarget = "";
+        lockerProbe.command = ["which", executable];
         lockerProbe.running = true;
     }
 
@@ -153,8 +172,24 @@ Singleton {
         id: lockerProbe
         running: false
         onExited: function(exitCode) {
-            root.lockerAvailable = exitCode === 0;
-            root.lockerChecking = false;
+            var completedTarget = root.lockerProbeTarget;
+            var command = root.lockCommand || [];
+            var desiredTarget = command.length > 0 ? String(command[0]).trim() : "";
+            var queuedTarget = root.queuedLockerProbeTarget;
+            root.lockerProbeTarget = "";
+            root.queuedLockerProbeTarget = "";
+
+            if (completedTarget === desiredTarget) {
+                root.checkedLockerExecutable = completedTarget;
+                root.lockerAvailable = exitCode === 0;
+            }
+
+            if (desiredTarget !== completedTarget
+                    || (queuedTarget !== "" && queuedTarget !== completedTarget)) {
+                Qt.callLater(root.probeLocker);
+            } else {
+                root.lockerChecking = false;
+            }
         }
     }
 

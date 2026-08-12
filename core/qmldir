@@ -4,5 +4,6 @@ DashboardPanel 1.0 DashboardPanel.qml
 ConfigErrorWindow 1.0 ConfigErrorWindow.qml
 LauncherOverlay 1.0 LauncherOverlay.qml
 NotificationToastWindow 1.0 NotificationToastWindow.qml
+VolumeOsdWindow 1.0 VolumeOsdWindow.qml
 Runtime 1.0 Runtime.qml
 SpecialWorkspaceTracker 1.0 SpecialWorkspaceTracker.qml

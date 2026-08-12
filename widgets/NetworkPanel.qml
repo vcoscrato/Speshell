@@ -96,14 +96,12 @@ Components.Card {
             Rectangle {
                 anchors.fill: parent
                 radius: ThemeModule.Theme.borderRadiusSmall
-                color: connectedDisconnectMouse.containsMouse
-                    ? Qt.rgba(ThemeModule.Theme.error.r, ThemeModule.Theme.error.g, ThemeModule.Theme.error.b, 0.07)
-                    : "transparent"
+                color: "transparent"
             }
 
             Row {
                 anchors.left: parent.left
-                anchors.right: connectedDisconnectText.left
+                anchors.right: disconnectChip.left
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.rightMargin: ThemeModule.Theme.spacingMedium
                 spacing: ThemeModule.Theme.spacingSmall
@@ -151,24 +149,13 @@ Components.Card {
                 }
             }
 
-            Text {
-                id: connectedDisconnectText
+            Components.InlineActionChip {
+                id: disconnectChip
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 text: "Disconnect"
-                font.pixelSize: 10
-                font.family: ThemeModule.Theme.fontFamily
-                font.bold: true
-                color: connectedDisconnectMouse.containsMouse ? ThemeModule.Theme.error : ThemeModule.Theme.subtext
-            }
-
-            MouseArea {
-                id: connectedDisconnectMouse
-                anchors.fill: connectedDisconnectText
-                anchors.margins: -ThemeModule.Theme.spacingSmall
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
+                tone: "error"
+                onActivated: {
                     if (root.network.connectedWifi) root.network.connectedWifi.disconnect();
                 }
             }
@@ -216,56 +203,13 @@ Components.Card {
             width: parent.width
             spacing: ThemeModule.Theme.spacingSmall
 
-            Item {
+            Components.SelectRow {
                 visible: root.network.displayedNetworks.length > 0 || root.network.cacheUpdatedAtMs > 0 || root.network.isScanning
-                width: parent.width
-                height: 26
-
-                MouseArea {
-                    anchors.fill: parent
-                    enabled: root.network.displayedNetworks.length > 0
-                    hoverEnabled: true
-                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: root.network.nearbyExpanded = !root.network.nearbyExpanded
-                }
-
-                Row {
-                    spacing: ThemeModule.Theme.spacingSmall
-                    anchors.left: parent.left
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    Text {
-                        text: "Nearby"
-                        font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                        font.family: ThemeModule.Theme.fontFamily
-                        font.bold: true
-                        color: ThemeModule.Theme.subtext
-                    }
-
-                    Text {
-                        text: root.network.displayedNetworks.length
-                        font.pixelSize: 10
-                        font.family: ThemeModule.Theme.fontFamily
-                        color: ThemeModule.Theme.overlay
-                    }
-                }
-
-                Components.AppIcon {
-                    visible: root.network.displayedNetworks.length > 0
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    name: root.network.nearbyExpanded ? "chevron-down" : "chevron-right"
-                    size: 14
-                    iconColor: ThemeModule.Theme.subtext
-                }
-
-                Rectangle {
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.bottom: parent.bottom
-                    height: 1
-                    color: Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.14)
-                }
+                enabled: root.network.displayedNetworks.length > 0
+                label: "Nearby"
+                value: root.network.displayedNetworks.length
+                    + (root.network.nearbyExpanded ? " shown" : " hidden")
+                onActivated: root.network.nearbyExpanded = !root.network.nearbyExpanded
             }
 
             Repeater {
@@ -278,17 +222,29 @@ Components.Card {
                     spacing: ThemeModule.Theme.spacingSmall
                     opacity: modelData.live && !modelData.stateChanging ? 1.0 : 0.55
 
-                    Item {
+                    Rectangle {
                         id: nearbyNetworkRow
                         width: parent.width
                         height: 34
+                        radius: ThemeModule.Theme.borderRadiusSmall
+                        activeFocusOnTab: nearbyNetworkDelegate.modelData.live
+                            && !nearbyNetworkDelegate.modelData.stateChanging
+                        color: nearbyRowMouse.containsMouse && nearbyRowMouse.enabled
+                            ? ThemeModule.Theme.cardHover
+                            : "transparent"
+                        border.width: activeFocus ? 2 : 0
+                        border.color: ThemeModule.Theme.accent
 
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: ThemeModule.Theme.borderRadiusSmall
-                            color: nearbyRowMouse.containsMouse && nearbyRowMouse.enabled
-                                ? ThemeModule.Theme.cardHover
-                                : "transparent"
+                        Accessible.role: Accessible.Button
+                        Accessible.name: "Connect to " + nearbyNetworkDelegate.modelData.name
+                        Accessible.description: root.network.networkSubtitle(nearbyNetworkDelegate.modelData)
+                        Accessible.onPressAction: root.network.onNetworkItemPrimary(nearbyNetworkDelegate.modelData)
+
+                        Keys.onPressed: function(event) {
+                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                                root.network.onNetworkItemPrimary(nearbyNetworkDelegate.modelData);
+                                event.accepted = true;
+                            }
                         }
 
                         MouseArea {
@@ -297,7 +253,10 @@ Components.Card {
                             enabled: nearbyNetworkDelegate.modelData.live && !nearbyNetworkDelegate.modelData.stateChanging
                             hoverEnabled: true
                             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            onClicked: root.network.onNetworkItemPrimary(nearbyNetworkDelegate.modelData)
+                            onClicked: {
+                                nearbyNetworkRow.forceActiveFocus();
+                                root.network.onNetworkItemPrimary(nearbyNetworkDelegate.modelData);
+                            }
                         }
 
                         Row {
@@ -341,29 +300,16 @@ Components.Card {
                                 anchors.verticalCenter: parent.verticalCenter
                             }
 
-                            Text {
-                                id: forgetText
+                            Components.InlineActionChip {
                                 visible: nearbyNetworkDelegate.modelData.live
                                     && nearbyNetworkDelegate.modelData.known
                                     && nearbyNetworkDelegate.modelData.network
-                                    && nearbyRowMouse.containsMouse
                                 text: "Forget"
-                                font.pixelSize: 10
-                                font.family: ThemeModule.Theme.fontFamily
-                                font.bold: true
-                                color: forgetMouse.containsMouse ? ThemeModule.Theme.warning : ThemeModule.Theme.subtext
+                                tone: "warning"
                                 anchors.verticalCenter: parent.verticalCenter
-
-                                MouseArea {
-                                    id: forgetMouse
-                                    anchors.fill: parent
-                                    anchors.margins: -ThemeModule.Theme.spacingSmall
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        if (nearbyNetworkDelegate.modelData.network)
-                                            nearbyNetworkDelegate.modelData.network.forget();
-                                    }
+                                onActivated: {
+                                    if (nearbyNetworkDelegate.modelData.network)
+                                        nearbyNetworkDelegate.modelData.network.forget();
                                 }
                             }
                         }

@@ -164,10 +164,40 @@ Components.Card {
             visible: root.player && root.player.length > 0
 
             Rectangle {
+                id: progressTrack
+
                 width: parent.width
                 height: 4
                 radius: 2
                 color: ThemeModule.Theme.surface2
+                activeFocusOnTab: root.player && root.player.length > 0
+                border.width: activeFocus ? 2 : 0
+                border.color: ThemeModule.Theme.accent
+
+                Accessible.role: Accessible.Slider
+                Accessible.name: "Track position"
+                Accessible.description: root.player
+                    ? root.formatTime(Services.MediaService.displayedPosition)
+                        + " of " + root.formatTime(root.player.length)
+                    : ""
+
+                Keys.onPressed: function(event) {
+                    if (!root.player || root.player.length <= 0)
+                        return;
+                    if (event.key === Qt.Key_Left || event.key === Qt.Key_Down) {
+                        Services.MediaService.seek(Math.max(0, Services.MediaService.displayedPosition - 5));
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_Right || event.key === Qt.Key_Up) {
+                        Services.MediaService.seek(Math.min(root.player.length, Services.MediaService.displayedPosition + 5));
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_Home) {
+                        Services.MediaService.seek(0);
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_End) {
+                        Services.MediaService.seek(root.player.length);
+                        event.accepted = true;
+                    }
+                }
 
                 Rectangle {
                     width: (root.player && root.player.length > 0)
@@ -183,6 +213,7 @@ Components.Card {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: function(mouse) {
                         if (root.player && root.player.length > 0) {
+                            progressTrack.forceActiveFocus();
                             var ratio = mouse.x / parent.width;
                             Services.MediaService.seek(ratio * root.player.length);
                         }
