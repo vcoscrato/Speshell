@@ -15,15 +15,15 @@ Rectangle {
     width: 36
     height: 20
     radius: height / 2
-    opacity: enabled ? 1.0 : 0.45
+    opacity: enabled ? 1.0 : ThemeModule.Theme.disabledOpacity
 
     color: root.checked
         ? root.activeColor
-        : Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.4)
-    border.width: 1
+        : ThemeModule.Theme.alpha(ThemeModule.Theme.surface2, 0.4)
+    border.width: ThemeModule.Theme.borderWidth
     border.color: root.checked
         ? root.activeColor
-        : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.3)
+        : ThemeModule.Theme.controlBorder
 
     Behavior on color {
         ColorAnimation { duration: ThemeModule.Theme.animDuration }
@@ -52,11 +52,11 @@ Rectangle {
         color: root.checked ? ThemeModule.Theme.bg : ThemeModule.Theme.subtext
 
         Behavior on x {
-            NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing }
         }
 
         Behavior on width {
-            NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing }
         }
 
         Behavior on color {

@@ -4,7 +4,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as Controls
 import QtQml.Models
-import Quickshell.Io
 import "../components" as Components
 import "../theme" as ThemeModule
 import "../services" as Services
@@ -29,19 +28,8 @@ Components.Card {
         && Services.DisplayService.draftLayoutMode === "extend"
         && Services.DisplayService.firstOtherActiveDraftMonitor(Services.DisplayService.monitorName(root.selectedMonitor)) !== null
     readonly property bool canControlSelectedBrightness: root.selectedEnabled
-        && Services.FeatureSupport.supportsBrightness
+        && Services.BrightnessService.available
         && root.isBrightnessDisplay(root.selectedMonitor)
-    readonly property string brightnessPath: Services.FeatureSupport.backlightDeviceName !== ""
-        ? "/sys/class/backlight/" + Services.FeatureSupport.backlightDeviceName + "/brightness"
-        : ""
-    readonly property string maxBrightnessPath: Services.FeatureSupport.backlightDeviceName !== ""
-        ? "/sys/class/backlight/" + Services.FeatureSupport.backlightDeviceName + "/max_brightness"
-        : ""
-
-    readonly property int minimumBrightnessPercent: 5
-    property int brightnessPercent: root.minimumBrightnessPercent
-    property int pendingBrightnessPercent: root.minimumBrightnessPercent
-    property bool brightnessCommitQueued: false
 
     Component.onCompleted: {
         if (root.presented) {
@@ -147,102 +135,9 @@ Components.Card {
         return (dy < 0 ? "Above " : "Below ") + anchorName;
     }
 
-    function normalizeBrightnessPercent(value) {
-        return Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
-    }
-
-    function clampBrightnessPercent(value) {
-        return Math.max(root.minimumBrightnessPercent, Math.min(100, Math.round(Number(value) || 0)));
-    }
-
-    function updateBrightnessFromFiles() {
-        if (!root.canControlSelectedBrightness
-                || !brightnessValueFile.loaded
-                || !maxBrightnessValueFile.loaded) {
-            return;
-        }
-
-        var current = parseInt((brightnessValueFile.text() || "").trim(), 10);
-        var max = parseInt((maxBrightnessValueFile.text() || "").trim(), 10);
-        if (isNaN(current) || isNaN(max) || max <= 0) {
-            return;
-        }
-
-        var pct = root.normalizeBrightnessPercent((current / max) * 100);
-        root.brightnessPercent = pct;
-        if (!brightnessSetProc.running && !brightnessSetDebounce.running) {
-            root.pendingBrightnessPercent = pct;
-        }
-    }
-
     function requestBrightnessRefresh() {
-        if (!root.presented || !root.canControlSelectedBrightness) {
-            return;
-        }
-        brightnessValueFile.reload();
-        maxBrightnessValueFile.reload();
-    }
-
-    function commitBrightness() {
-        if (!root.canControlSelectedBrightness) {
-            return;
-        }
-        if (brightnessSetProc.running) {
-            root.brightnessCommitQueued = true;
-            return;
-        }
-        root.brightnessCommitQueued = false;
-        root.pendingBrightnessPercent = root.clampBrightnessPercent(root.pendingBrightnessPercent);
-        root.brightnessPercent = root.pendingBrightnessPercent;
-        brightnessSetProc.command = [
-            "brightnessctl", "-d", Services.FeatureSupport.backlightDeviceName,
-            "set", root.pendingBrightnessPercent + "%"
-        ];
-        brightnessSetProc.running = true;
-    }
-
-    FileView {
-        id: brightnessValueFile
-        path: root.brightnessPath
-        printErrors: false
-        watchChanges: root.canControlSelectedBrightness
-        onLoaded: root.updateBrightnessFromFiles()
-        onTextChanged: root.updateBrightnessFromFiles()
-        onFileChanged: reload()
-    }
-
-    FileView {
-        id: maxBrightnessValueFile
-        path: root.maxBrightnessPath
-        printErrors: false
-        watchChanges: root.canControlSelectedBrightness
-        onLoaded: root.updateBrightnessFromFiles()
-        onTextChanged: root.updateBrightnessFromFiles()
-        onFileChanged: reload()
-    }
-
-    Process {
-        id: brightnessSetProc
-        command: [
-            "brightnessctl", "-d", Services.FeatureSupport.backlightDeviceName,
-            "set", root.pendingBrightnessPercent + "%"
-        ]
-        running: false
-        onExited: {
-            if (root.brightnessCommitQueued) {
-                root.commitBrightness();
-                return;
-            }
-            root.requestBrightnessRefresh();
-        }
-    }
-
-    Timer {
-        id: brightnessSetDebounce
-        interval: 120
-        running: false
-        repeat: false
-        onTriggered: root.commitBrightness()
+        if (root.presented && root.canControlSelectedBrightness)
+            Services.BrightnessService.refresh();
     }
 
     headerActions: Row {
@@ -321,9 +216,9 @@ Components.Card {
             visible: Services.DisplayService.confirming || Services.DisplayService.reverting
             implicitHeight: confirmationColumn.implicitHeight + ThemeModule.Theme.spacingMedium * 2
             radius: ThemeModule.Theme.borderRadiusSmall
-            color: Qt.rgba(ThemeModule.Theme.warning.r, ThemeModule.Theme.warning.g, ThemeModule.Theme.warning.b, 0.10)
+            color: ThemeModule.Theme.alpha(ThemeModule.Theme.warning, ThemeModule.Theme.tintSubtle)
             border.width: ThemeModule.Theme.borderWidth
-            border.color: Qt.rgba(ThemeModule.Theme.warning.r, ThemeModule.Theme.warning.g, ThemeModule.Theme.warning.b, 0.56)
+            border.color: ThemeModule.Theme.alpha(ThemeModule.Theme.warning, ThemeModule.Theme.tintOutline)
 
             Column {
                 id: confirmationColumn
@@ -386,9 +281,9 @@ Components.Card {
             height: 148
             visible: Services.DisplayService.monitors.length > 0
             radius: ThemeModule.Theme.borderRadiusSmall
-            color: Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.08)
+            color: ThemeModule.Theme.controlFill
             border.width: ThemeModule.Theme.borderWidth
-            border.color: Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.24)
+            border.color: ThemeModule.Theme.controlBorder
             clip: true
 
             Text {
@@ -419,15 +314,15 @@ Components.Card {
                     y: rect.y
                     width: Math.min(Math.max(34, rect.width), displayMap.width - 20)
                     height: Math.min(Math.max(24, rect.height), displayMap.height - 20)
-                    radius: 6
+                    radius: ThemeModule.Theme.borderRadius
                     z: selected ? 2 : 1
                     color: selected
-                        ? Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.22)
-                        : Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.72)
+                        ? ThemeModule.Theme.alpha(ThemeModule.Theme.accent, ThemeModule.Theme.tintStrong)
+                        : ThemeModule.Theme.alpha(ThemeModule.Theme.surface2, 0.72)
                     border.width: ThemeModule.Theme.borderWidth
                     border.color: selected
                         ? ThemeModule.Theme.accent
-                        : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.55)
+                        : ThemeModule.Theme.alpha(ThemeModule.Theme.overlay, ThemeModule.Theme.tintOutline)
 
                     Accessible.role: Accessible.Button
                     Accessible.name: "Select " + Services.DisplayService.monitorName(displayTile.modelData)
@@ -436,7 +331,7 @@ Components.Card {
                     Column {
                         anchors.centerIn: parent
                         width: Math.max(0, parent.width - ThemeModule.Theme.spacingSmall)
-                        spacing: 1
+                        spacing: ThemeModule.Theme.spacingMicro
 
                         Text {
                             width: parent.width
@@ -457,10 +352,10 @@ Components.Card {
                         onClicked: Services.DisplayService.setSelected(displayTile.modelData.name)
                     }
 
-                    Behavior on x { NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic } }
-                    Behavior on y { NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic } }
-                    Behavior on width { NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic } }
-                    Behavior on height { NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic } }
+                    Behavior on x { NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing } }
+                    Behavior on y { NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing } }
+                    Behavior on width { NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing } }
+                    Behavior on height { NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing } }
                 }
             }
         }
@@ -485,12 +380,14 @@ Components.Card {
                         : ThemeModule.Theme.accent
 
                     width: Math.min(displayPicker.width, Math.max(82, pillText.implicitWidth + pillState.implicitWidth + 26))
-                    height: 26
+                    height: ThemeModule.Theme.controlHeightSmall
                     radius: ThemeModule.Theme.borderRadiusSmall
-                    opacity: root.busy ? 0.55 : 1.0
-                    color: Qt.rgba(pillColor.r, pillColor.g, pillColor.b, selected ? 0.22 : 0.10)
+                    opacity: root.busy ? ThemeModule.Theme.disabledOpacity : 1.0
+                    color: ThemeModule.Theme.alpha(pillColor,
+                        selected ? ThemeModule.Theme.tintStrong : ThemeModule.Theme.tintSubtle)
                     border.width: ThemeModule.Theme.borderWidth
-                    border.color: Qt.rgba(pillColor.r, pillColor.g, pillColor.b, selected ? 0.85 : 0.36)
+                    border.color: ThemeModule.Theme.alpha(pillColor,
+                        selected ? ThemeModule.Theme.tintOutlineStrong : ThemeModule.Theme.tintOutline)
 
                     Accessible.role: Accessible.Button
                     Accessible.name: "Select " + Services.DisplayService.monitorName(displayPill.modelData)
@@ -539,9 +436,9 @@ Components.Card {
             visible: root.selectedMonitor !== null
             implicitHeight: editorColumn.implicitHeight + ThemeModule.Theme.spacingMedium * 2
             radius: ThemeModule.Theme.borderRadiusSmall
-            color: Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.08)
+            color: ThemeModule.Theme.controlFill
             border.width: ThemeModule.Theme.borderWidth
-            border.color: Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.18)
+            border.color: ThemeModule.Theme.controlBorder
 
             Column {
                 id: editorColumn
@@ -556,14 +453,14 @@ Components.Card {
 
                     Components.AppIcon {
                         name: "display"
-                        size: 18
+                        size: ThemeModule.Theme.iconSizeMedium
                         iconColor: root.selectedEnabled ? ThemeModule.Theme.accent : ThemeModule.Theme.subtext
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
                     Column {
-                        width: Math.max(40, parent.width - 18 - outputSwitch.width - ThemeModule.Theme.spacingSmall * 2)
-                        spacing: 1
+                        width: Math.max(40, parent.width - ThemeModule.Theme.iconSizeMedium - outputSwitch.width - ThemeModule.Theme.spacingSmall * 2)
+                        spacing: ThemeModule.Theme.spacingMicro
                         anchors.verticalCenter: parent.verticalCenter
 
                         Text {
@@ -724,28 +621,19 @@ Components.Card {
                     Components.StyledSlider {
                         width: parent.width - 118
                         anchors.verticalCenter: parent.verticalCenter
-                        from: root.minimumBrightnessPercent
-                        value: root.brightnessPercent
+                        from: Services.BrightnessService.minimumPercent
+                        value: Services.BrightnessService.percent
                         enabled: root.canControlSelectedBrightness
                         progressColor: ThemeModule.Theme.yellow
-                        onMoved: {
-                            root.pendingBrightnessPercent = root.clampBrightnessPercent(value);
-                            root.brightnessPercent = root.pendingBrightnessPercent;
-                            brightnessSetDebounce.restart();
-                        }
+                        onMoved: Services.BrightnessService.setPercent(value)
                         onWheelAdjusted: function(nextValue) {
-                            root.pendingBrightnessPercent = root.clampBrightnessPercent(nextValue);
-                            root.brightnessPercent = root.pendingBrightnessPercent;
-                            brightnessSetDebounce.restart();
+                            Services.BrightnessService.setPercent(nextValue);
                         }
-                        onPressedChanged: if (!pressed && brightnessSetDebounce.running) {
-                            brightnessSetDebounce.stop();
-                            root.commitBrightness();
-                        }
+                        onPressedChanged: if (!pressed) Services.BrightnessService.commit()
                     }
 
                     Text {
-                        text: root.brightnessPercent + "%"
+                        text: Services.BrightnessService.percent + "%"
                         font.pixelSize: ThemeModule.Theme.fontSizeSmall
                         font.family: ThemeModule.Theme.fontFamily
                         color: ThemeModule.Theme.subtext

@@ -40,14 +40,14 @@ Components.Card {
 
         Components.AppIcon {
             name: root.batteryReady ? root.getBatteryIcon(root.batteryPercent, root.isCharging) : "battery"
-            size: 20
+            size: ThemeModule.Theme.iconSizeMedium
             iconColor: root.isCharging ? ThemeModule.Theme.success : ThemeModule.Theme.accent
             anchors.verticalCenter: parent.verticalCenter
         }
 
         Column {
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 2
+            spacing: ThemeModule.Theme.spacingMicro
 
             Row {
                 spacing: ThemeModule.Theme.spacingSmall
@@ -89,10 +89,10 @@ Components.Card {
         Rectangle {
             width: 60
             height: 20
-            radius: 4
+            radius: ThemeModule.Theme.borderRadius
             color: ThemeModule.Theme.surface2
             anchors.verticalCenter: parent.verticalCenter
-            border.width: 1
+            border.width: ThemeModule.Theme.borderWidth
             border.color: ThemeModule.Theme.overlay
 
             Rectangle {

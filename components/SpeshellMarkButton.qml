@@ -1,5 +1,6 @@
 import QtQuick
 import "../theme" as ThemeModule
+import "." as Components
 
 Item {
     id: root
@@ -34,7 +35,7 @@ Item {
         height: 38
         radius: ThemeModule.Theme.borderRadiusSmall
         color: root.pointerInside
-            ? Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.10)
+            ? ThemeModule.Theme.selectedFill
             : "transparent"
 
         Item {
@@ -123,33 +124,8 @@ Item {
         onClicked: root.activated()
     }
 
-    Rectangle {
-        anchors.left: parent.right
-        anchors.leftMargin: ThemeModule.Theme.spacingTiny
-        anchors.verticalCenter: parent.verticalCenter
-        width: homeLabel.implicitWidth + ThemeModule.Theme.spacingLarge
-        height: 26
-        radius: ThemeModule.Theme.borderRadiusSmall
+    Components.HoverLabel {
         visible: root.containingWindowVisible && root.pointerInside
-        color: ThemeModule.Theme.surface2
-        border.width: ThemeModule.Theme.borderWidth
-        border.color: Qt.rgba(
-            ThemeModule.Theme.accent.r,
-            ThemeModule.Theme.accent.g,
-            ThemeModule.Theme.accent.b,
-            0.42
-        )
-        z: 100
-
-        Text {
-            id: homeLabel
-
-            anchors.centerIn: parent
-            text: "Home"
-            textFormat: Text.PlainText
-            font.pixelSize: ThemeModule.Theme.fontSizeSmall
-            font.family: ThemeModule.Theme.fontFamily
-            color: ThemeModule.Theme.text
-        }
+        text: "Home"
     }
 }

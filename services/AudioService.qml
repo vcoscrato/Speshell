@@ -19,6 +19,7 @@ Singleton {
     property int inputVolumePercent: 0
     property bool hasInputVolume: false
     property bool inputMuted: false
+    property int scrollStep: 5
     property bool preferWpctlWrites: true
 
     readonly property int maxParseRetries: 12
@@ -315,6 +316,29 @@ Singleton {
 
     function toggleInputMute() {
         root.setInputMuted(!root.inputMuted);
+    }
+
+    // Moves volume by one configured scroll step; direction is positive or negative.
+    function stepOutputVolume(direction) {
+        if (!direction)
+            return;
+        root.setOutputVolumePercent(root.outputVolumePercent + (direction > 0 ? root.scrollStep : -root.scrollStep));
+    }
+
+    function stepInputVolume(direction) {
+        if (!direction)
+            return;
+        root.setInputVolumePercent(root.inputVolumePercent + (direction > 0 ? root.scrollStep : -root.scrollStep));
+    }
+
+    function setDefaultSink(node) {
+        if (node)
+            Pipewire.preferredDefaultAudioSink = node;
+    }
+
+    function setDefaultSource(node) {
+        if (node)
+            Pipewire.preferredDefaultAudioSource = node;
     }
 
     function startOutputMuteWrite() {

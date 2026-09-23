@@ -15,9 +15,9 @@ Rectangle {
     implicitHeight: Math.max(18, badgeText.implicitHeight + ThemeModule.Theme.spacingTiny)
     height: implicitHeight
     width: badgeText.width + 14
-    color: Qt.rgba(toneColor().r, toneColor().g, toneColor().b, 0.18)
+    color: ThemeModule.Theme.alpha(root.toneColor(), ThemeModule.Theme.tintStrong)
     border.width: ThemeModule.Theme.borderWidth
-    border.color: Qt.rgba(toneColor().r, toneColor().g, toneColor().b, 0.45)
+    border.color: ThemeModule.Theme.alpha(root.toneColor(), ThemeModule.Theme.tintOutline)
 
     Text {
         id: badgeText

@@ -4,6 +4,7 @@ AppIcon 1.0 AppIcon.qml
 Card 1.0 Card.qml
 DeviceRow 1.0 DeviceRow.qml
 DeviceSection 1.0 DeviceSection.qml
+HoverLabel 1.0 HoverLabel.qml
 IconButton 1.0 IconButton.qml
 InlineActionChip 1.0 InlineActionChip.qml
 RefreshButton 1.0 RefreshButton.qml

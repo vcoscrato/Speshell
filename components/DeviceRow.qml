@@ -75,7 +75,7 @@ Rectangle {
             Components.AppIcon {
                 id: leadingAppIcon
                 name: root.leadingIconName
-                size: 18
+                size: ThemeModule.Theme.iconSizeMedium
                 iconColor: ThemeModule.Theme.text
                 anchors.verticalCenter: parent.verticalCenter
                 visible: root.leadingIconName !== ""
@@ -84,7 +84,7 @@ Rectangle {
             Components.AppIcon {
                 id: signalLevelText
                 name: root.signalIconName()
-                size: 16
+                size: ThemeModule.Theme.iconSizeMedium
                 iconColor: ThemeModule.Theme.accent
                 anchors.verticalCenter: parent.verticalCenter
                 visible: root.signalLevel >= 0
@@ -111,7 +111,7 @@ Rectangle {
             Components.AppIcon {
                 id: lockText
                 name: "lock"
-                size: 12
+                size: ThemeModule.Theme.iconSizeTiny
                 iconColor: ThemeModule.Theme.subtext
                 anchors.verticalCenter: parent.verticalCenter
                 visible: root.showLock

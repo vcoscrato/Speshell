@@ -20,6 +20,9 @@ timeout 5s quickshell --no-color -p .
 
 Prefer deleting unused QML modules over keeping broad helper surfaces. This repo should stay small and direct.
 
+- Style through `Theme` tokens: spacing, control heights, icon sizes, radii, and interaction states (`controlFill`, `selectedFill`, `tint*`, `disabledOpacity`, `Theme.alpha()`). Add a token only when several components share the value.
+- When UI changes system state, call a small domain service (for example `AudioService.stepOutputVolume()` or `BrightnessService.setPercent()`) instead of running processes or writing backend objects from widgets.
+
 ## Packaging Notes
 
 The Arch `PKGBUILD` uses the Git repository source, so plain `makepkg -si` is for normal package installs. Use `make local-package-install` when pacman must install a package built from the dirty checkout.

@@ -173,7 +173,6 @@ Components.Card {
 
                 Components.IconButton {
                     iconName: Services.AudioService.outputMuted ? "audio-output-muted" : "audio-output"
-                    size: 32
                     anchors.verticalCenter: parent.verticalCenter
                     tooltipText: Services.AudioService.outputMuted ? "Unmute output" : "Mute output"
                     onClicked: Services.AudioService.toggleOutputMute()
@@ -184,9 +183,7 @@ Components.Card {
                     anchors.verticalCenter: parent.verticalCenter
                     value: Services.AudioService.hasOutputVolume ? Services.AudioService.outputVolumePercent : 0
                     enabled: Services.AudioService.defaultSink && Services.AudioService.hasOutputVolume
-                    stepSize: (Services.ConfigService.config && Services.ConfigService.config.audioScrollStep)
-                        ? Services.ConfigService.config.audioScrollStep
-                        : 5
+                    stepSize: Services.AudioService.scrollStep
                     onMoved: {
                         Services.AudioService.setOutputVolumePercent(Math.round(value));
                     }
@@ -218,13 +215,13 @@ Components.Card {
                         id: outDevDelegate
                         required property var modelData
                         width: parent.width
-                        height: 32
+                        height: ThemeModule.Theme.controlHeight
                         radius: ThemeModule.Theme.borderRadiusSmall
                         color: outDevMouse.containsMouse ? ThemeModule.Theme.cardHover : "transparent"
 
                         Accessible.role: Accessible.Button
                         Accessible.name: "Use " + outDevDelegate.modelData.label + " for audio output"
-                        Accessible.onPressAction: Pipewire.preferredDefaultAudioSink = outDevDelegate.modelData.node
+                        Accessible.onPressAction: Services.AudioService.setDefaultSink(outDevDelegate.modelData.node)
                         Row {
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.left: parent.left
@@ -253,7 +250,7 @@ Components.Card {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
-                            onClicked: Pipewire.preferredDefaultAudioSink = outDevDelegate.modelData.node
+                            onClicked: Services.AudioService.setDefaultSink(outDevDelegate.modelData.node)
                         }
                     }
                 }
@@ -281,7 +278,6 @@ Components.Card {
 
                 Components.IconButton {
                     iconName: Services.AudioService.inputMuted ? "audio-input-muted" : "audio-input"
-                    size: 32
                     anchors.verticalCenter: parent.verticalCenter
                     tooltipText: Services.AudioService.inputMuted ? "Unmute input" : "Mute input"
                     onClicked: Services.AudioService.toggleInputMute()
@@ -292,9 +288,7 @@ Components.Card {
                     anchors.verticalCenter: parent.verticalCenter
                     value: Services.AudioService.hasInputVolume ? Services.AudioService.inputVolumePercent : 0
                     enabled: Services.AudioService.defaultSource && Services.AudioService.hasInputVolume
-                    stepSize: (Services.ConfigService.config && Services.ConfigService.config.audioScrollStep)
-                        ? Services.ConfigService.config.audioScrollStep
-                        : 5
+                    stepSize: Services.AudioService.scrollStep
                     onMoved: {
                         Services.AudioService.setInputVolumePercent(Math.round(value));
                     }
@@ -326,13 +320,13 @@ Components.Card {
                         id: inDevDelegate
                         required property var modelData
                         width: parent.width
-                        height: 32
+                        height: ThemeModule.Theme.controlHeight
                         radius: ThemeModule.Theme.borderRadiusSmall
                         color: inDevMouse.containsMouse ? ThemeModule.Theme.cardHover : "transparent"
 
                         Accessible.role: Accessible.Button
                         Accessible.name: "Use " + inDevDelegate.modelData.label + " for audio input"
-                        Accessible.onPressAction: Pipewire.preferredDefaultAudioSource = inDevDelegate.modelData.node
+                        Accessible.onPressAction: Services.AudioService.setDefaultSource(inDevDelegate.modelData.node)
                         Row {
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.left: parent.left
@@ -361,7 +355,7 @@ Components.Card {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
-                            onClicked: Pipewire.preferredDefaultAudioSource = inDevDelegate.modelData.node
+                            onClicked: Services.AudioService.setDefaultSource(inDevDelegate.modelData.node)
                         }
                     }
                 }

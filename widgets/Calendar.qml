@@ -182,7 +182,7 @@ Components.Card {
         // ── Today shortcut ───────────────────
         Rectangle {
             width: parent.width
-            height: 24
+            height: ThemeModule.Theme.controlHeightSmall
             color: "transparent"
             visible: root.displayMonth !== root.todayMonth || root.displayYear !== root.todayYear
             radius: ThemeModule.Theme.borderRadiusSmall
@@ -200,7 +200,7 @@ Components.Card {
 
                 Components.AppIcon {
                     name: "back"
-                    size: 14
+                    size: ThemeModule.Theme.iconSizeSmall
                     iconColor: ThemeModule.Theme.accent
                     anchors.verticalCenter: parent.verticalCenter
                 }

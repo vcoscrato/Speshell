@@ -53,7 +53,7 @@ PanelWindow {
                 radius: ThemeModule.Theme.borderRadius
                 color: toastMouse.containsMouse ? ThemeModule.Theme.cardHover : ThemeModule.Theme.card
                 border.color: ThemeModule.Theme.cardHover
-                border.width: 1
+                border.width: ThemeModule.Theme.borderWidth
                 clip: true
                 
                 // Add an entrance animation
@@ -168,10 +168,10 @@ PanelWindow {
                     anchors.top: parent.top
                     anchors.topMargin: ThemeModule.Theme.spacingSmall
                     iconName: "close"
-                    size: 24
-                    iconSize: 12
+                    size: ThemeModule.Theme.controlHeightSmall
+                    iconSize: ThemeModule.Theme.iconSizeTiny
                     iconColor: ThemeModule.Theme.overlay
-                    hoverColor: Qt.rgba(ThemeModule.Theme.error.r, ThemeModule.Theme.error.g, ThemeModule.Theme.error.b, 0.14)
+                    hoverColor: ThemeModule.Theme.alpha(ThemeModule.Theme.error, ThemeModule.Theme.tintStrong)
                     tooltipText: "Dismiss notification"
                     onClicked: {
                         Services.NotificationService.dismissPopup(toastCard.modelData.popupId)

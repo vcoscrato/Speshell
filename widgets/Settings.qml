@@ -286,7 +286,7 @@ Components.Card {
 
             Item {
                 width: parent.width
-                height: 32
+                height: ThemeModule.Theme.controlHeight
 
                 Text {
                     text: "Weather"
@@ -315,10 +315,10 @@ Components.Card {
 
                 Rectangle {
                     width: parent.width - locationApply.width - parent.spacing
-                    height: 32
+                    height: ThemeModule.Theme.controlHeight
                     radius: ThemeModule.Theme.borderRadiusSmall
                     color: ThemeModule.Theme.card
-                    border.width: locationInput.activeFocus ? 2 : ThemeModule.Theme.borderWidth
+                    border.width: ThemeModule.Theme.borderWidth
                     border.color: locationInput.activeFocus ? ThemeModule.Theme.accent : ThemeModule.Theme.cardHover
 
                     TextInput {
@@ -380,9 +380,9 @@ Components.Card {
                     width: parent.width
                     implicitHeight: issueText.implicitHeight + ThemeModule.Theme.spacingSmall * 2
                     radius: ThemeModule.Theme.borderRadiusSmall
-                    color: Qt.rgba(ThemeModule.Theme.warning.r, ThemeModule.Theme.warning.g, ThemeModule.Theme.warning.b, 0.09)
+                    color: ThemeModule.Theme.alpha(ThemeModule.Theme.warning, ThemeModule.Theme.tintSubtle)
                     border.width: ThemeModule.Theme.borderWidth
-                    border.color: Qt.rgba(ThemeModule.Theme.warning.r, ThemeModule.Theme.warning.g, ThemeModule.Theme.warning.b, 0.38)
+                    border.color: ThemeModule.Theme.alpha(ThemeModule.Theme.warning, ThemeModule.Theme.tintOutline)
 
                     Text {
                         id: issueText

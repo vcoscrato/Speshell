@@ -17,8 +17,8 @@ Components.Card {
 
     headerActions: Components.IconButton {
         iconName: "trash"
-        iconSize: 14
-        size: 24
+        iconSize: ThemeModule.Theme.iconSizeSmall
+        size: ThemeModule.Theme.controlHeightSmall
         iconColor: ThemeModule.Theme.subtextBright
         visible: Services.ClipboardService.history.length > 0
         tooltipText: "Clear clipboard history"
@@ -80,17 +80,17 @@ Components.Card {
                     required property var modelData
 
                     width: clipboardRows.width
-                    height: Math.max(40, previewText.implicitHeight + 16)
+                    height: Math.max(40, previewText.implicitHeight + ThemeModule.Theme.spacingSmall * 2)
                     radius: ThemeModule.Theme.borderRadiusSmall
                     color: clipMouse.containsMouse
                         ? ThemeModule.Theme.cardHover
                         : (clipRow.modelData.id === Services.ClipboardService.lastCopiedId
-                            ? Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.12)
-                            : Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.10))
-                    border.width: 1
+                            ? ThemeModule.Theme.selectedFill
+                            : ThemeModule.Theme.controlFill)
+                    border.width: ThemeModule.Theme.borderWidth
                     border.color: clipRow.modelData.id === Services.ClipboardService.lastCopiedId
-                        ? Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.45)
-                        : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.18)
+                        ? ThemeModule.Theme.selectedBorder
+                        : ThemeModule.Theme.controlBorder
 
                     Accessible.role: Accessible.Button
                     Accessible.name: "Copy clipboard item"
@@ -100,7 +100,7 @@ Components.Card {
                     Text {
                         id: previewText
                         anchors.fill: parent
-                        anchors.margins: 8
+                        anchors.margins: ThemeModule.Theme.spacingSmall
                         text: clipRow.modelData.preview
                         font.pixelSize: ThemeModule.Theme.fontSizeSmall
                         font.family: ThemeModule.Theme.fontFamily

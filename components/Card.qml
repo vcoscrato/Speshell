@@ -22,7 +22,7 @@ Rectangle {
     implicitWidth: parent ? parent.width : 300
 
     Behavior on implicitHeight {
-        NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
+        NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing }
     }
 
     clip: true
@@ -46,7 +46,7 @@ Rectangle {
 
                 Components.AppIcon {
                     name: root.iconName
-                    size: 14
+                    size: ThemeModule.Theme.iconSizeSmall
                     iconColor: ThemeModule.Theme.subtext
                     anchors.verticalCenter: parent.verticalCenter
                     visible: root.iconName !== ""
@@ -77,7 +77,7 @@ Rectangle {
                 Components.AppIcon {
                     name: root.collapsed ? "chevron-right" : "chevron-down"
                     iconColor: ThemeModule.Theme.subtext
-                    size: 14
+                    size: ThemeModule.Theme.iconSizeSmall
                     visible: root.collapsible
                     anchors.verticalCenter: parent.verticalCenter
 

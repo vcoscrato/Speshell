@@ -5,7 +5,7 @@ import "." as Components
 Components.IconButton {
 
     property bool active: false
-    size: 30
+    size: ThemeModule.Theme.controlHeightSmall
     iconName: active ? "loader" : "refresh"
     iconSize: ThemeModule.Theme.iconSizeSmall
     iconColor: active ? ThemeModule.Theme.warning : ThemeModule.Theme.subtext

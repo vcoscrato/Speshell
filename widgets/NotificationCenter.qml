@@ -116,7 +116,7 @@ Components.Card {
             model: root.notifList
 
             Behavior on height {
-                NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
+                NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing }
             }
 
             ScrollBar.vertical: ScrollBar {
@@ -138,9 +138,7 @@ Components.Card {
                         expandedContent.implicitHeight + ThemeModule.Theme.spacingSmall * 2)
                     : root.notificationRowHeight
                 radius: ThemeModule.Theme.borderRadiusSmall
-                color: notifMouse.containsMouse
-                    ? Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.35)
-                    : Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.18)
+                color: notifMouse.containsMouse ? ThemeModule.Theme.cardHover : ThemeModule.Theme.controlFill
 
                 Accessible.role: Accessible.Button
                 Accessible.name: root.primaryText(notificationRow.modelData)
@@ -148,7 +146,7 @@ Components.Card {
                 Accessible.onPressAction: root.toggleExpanded(notificationRow.modelData)
 
                 Behavior on height {
-                    NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
+                    NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing }
                 }
 
                 Column {
@@ -159,7 +157,7 @@ Components.Card {
                         leftMargin: ThemeModule.Theme.spacingSmall
                         rightMargin: ThemeModule.Theme.spacingTiny
                     }
-                    spacing: 2
+                    spacing: ThemeModule.Theme.spacingMicro
                     visible: !notificationRow.expanded
 
                     Text {
@@ -242,10 +240,10 @@ Components.Card {
                         : (notificationRow.height - height) / 2
                     z: 2
                     iconName: "close"
-                    size: 30
-                    iconSize: 14
+                    size: ThemeModule.Theme.controlHeightSmall
+                    iconSize: ThemeModule.Theme.iconSizeSmall
                     iconColor: containsMouse ? ThemeModule.Theme.error : ThemeModule.Theme.overlay
-                    hoverColor: Qt.rgba(ThemeModule.Theme.error.r, ThemeModule.Theme.error.g, ThemeModule.Theme.error.b, 0.14)
+                    hoverColor: ThemeModule.Theme.alpha(ThemeModule.Theme.error, ThemeModule.Theme.tintStrong)
                     tooltipText: "Dismiss notification"
                     onClicked: Services.NotificationService.removeHistoryAt(notificationRow.index)
                 }
@@ -265,7 +263,7 @@ Components.Card {
             width: parent.width
             spacing: ThemeModule.Theme.spacingSmall
             visible: root.notifList.length === 0
-            height: 30
+            height: ThemeModule.Theme.controlHeight
 
             Text {
                 text: "No notifications"

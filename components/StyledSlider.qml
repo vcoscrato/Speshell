@@ -5,7 +5,7 @@ import "../theme" as ThemeModule
 Controls.Slider {
     id: root
 
-    property color trackColor: Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.5)
+    property color trackColor: ThemeModule.Theme.alpha(ThemeModule.Theme.surface2, 0.5)
     property color progressColor: ThemeModule.Theme.accent
     property color handleColor: ThemeModule.Theme.bg
     property color handleBorderColor: ThemeModule.Theme.accent
@@ -16,7 +16,7 @@ Controls.Slider {
     from: 0
     to: 100
     stepSize: 1
-    height: 32
+    height: ThemeModule.Theme.controlHeight
     focusPolicy: Qt.ClickFocus
 
     MouseArea {
@@ -52,7 +52,7 @@ Controls.Slider {
             color: root.progressColor
 
             Behavior on width {
-                NumberAnimation { duration: 60; easing.type: Easing.OutCubic }
+                NumberAnimation { duration: 60; easing.type: ThemeModule.Theme.animEasing }
             }
 
             Behavior on color {
@@ -72,11 +72,11 @@ Controls.Slider {
         border.color: root.handleBorderColor
 
         Behavior on width {
-            NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing }
         }
 
         Behavior on height {
-            NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing }
         }
 
         MouseArea {

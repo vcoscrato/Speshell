@@ -10,7 +10,7 @@ Rectangle {
     property int iconSize: ThemeModule.Theme.iconSizeMedium
     property color iconColor: ThemeModule.Theme.text
     property color hoverColor: ThemeModule.Theme.cardHover
-    property real size: 36
+    property real size: ThemeModule.Theme.controlHeight
     property real iconXOffset: 0
     property real iconYOffset: 0
     property bool iconSpinning: false
@@ -25,7 +25,7 @@ Rectangle {
     width: size
     height: size
     radius: size / 2
-    opacity: enabled ? 1.0 : 0.45
+    opacity: enabled ? 1.0 : ThemeModule.Theme.disabledOpacity
     color: mouseArea.containsMouse && root.enabled
         ? (mouseArea.pressed ? ThemeModule.Theme.surface2 : root.hoverColor)
         : "transparent"
@@ -57,7 +57,7 @@ Rectangle {
         }
 
         Behavior on scale {
-            NumberAnimation { duration: 100; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: ThemeModule.Theme.animDurationFast; easing.type: ThemeModule.Theme.animEasing }
         }
 
         RotationAnimator on rotation {

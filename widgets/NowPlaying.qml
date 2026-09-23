@@ -29,9 +29,9 @@ Components.Card {
 
         Components.AppIcon {
             name: "media"
-            size: 18
+            size: ThemeModule.Theme.iconSizeMedium
             iconColor: ThemeModule.Theme.overlay
-            opacity: 0.5
+            opacity: ThemeModule.Theme.disabledOpacity
             anchors.verticalCenter: parent.verticalCenter
         }
         Text {
@@ -159,7 +159,7 @@ Components.Card {
         // ── Progress bar ─────────────────────────
         Column {
             width: parent.width
-            spacing: 2
+            spacing: ThemeModule.Theme.spacingMicro
             visible: root.player && root.player.length > 0
 
             Rectangle {

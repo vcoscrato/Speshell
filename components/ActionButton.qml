@@ -12,14 +12,14 @@ Rectangle {
     signal activated()
 
     width: implicitWidth
-    implicitHeight: Math.max(34, contentRow.implicitHeight + ThemeModule.Theme.spacingMedium)
+    implicitHeight: Math.max(ThemeModule.Theme.controlHeight, contentRow.implicitHeight + ThemeModule.Theme.spacingMedium)
     height: implicitHeight
-    implicitWidth: Math.max(34, contentRow.implicitWidth + ThemeModule.Theme.spacingLarge)
+    implicitWidth: Math.max(ThemeModule.Theme.controlHeight, contentRow.implicitWidth + ThemeModule.Theme.spacingLarge)
     radius: ThemeModule.Theme.borderRadiusSmall
-    opacity: enabled ? 1.0 : 0.55
+    opacity: enabled ? 1.0 : ThemeModule.Theme.disabledOpacity
     color: actionArea.containsMouse && root.enabled
-        ? Qt.rgba(root.toneColor.r, root.toneColor.g, root.toneColor.b, 0.16)
-        : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.15)
+        ? ThemeModule.Theme.alpha(root.toneColor, ThemeModule.Theme.tintStrong)
+        : ThemeModule.Theme.controlFill
     border.width: ThemeModule.Theme.borderWidth
     border.color: actionArea.containsMouse && root.enabled
         ? root.toneColor
@@ -39,7 +39,7 @@ Rectangle {
 
         Components.AppIcon {
             name: root.iconName
-            size: 14
+            size: ThemeModule.Theme.iconSizeSmall
             iconColor: actionArea.containsMouse && root.enabled ? root.toneColor : ThemeModule.Theme.text
             anchors.verticalCenter: parent.verticalCenter
             visible: root.iconName !== ""

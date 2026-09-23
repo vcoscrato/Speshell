@@ -86,7 +86,7 @@ PanelWindow {
             property: "opacity"
             to: 1
             duration: ThemeModule.Theme.animDuration
-            easing.type: Easing.OutCubic
+            easing.type: ThemeModule.Theme.animEasing
         }
         NumberAnimation {
             target: activityColumn
@@ -137,7 +137,7 @@ PanelWindow {
                 radius: ThemeModule.Theme.borderRadius
                 color: ThemeModule.Theme.card
                 border.width: ThemeModule.Theme.borderWidth
-                border.color: Qt.rgba(toneColor.r, toneColor.g, toneColor.b, 0.52)
+                border.color: ThemeModule.Theme.alpha(toneColor, ThemeModule.Theme.tintOutline)
                 clip: true
 
                 Rectangle {
@@ -165,12 +165,7 @@ PanelWindow {
                         height: 42
                         radius: ThemeModule.Theme.borderRadiusSmall
                         anchors.verticalCenter: parent.verticalCenter
-                        color: Qt.rgba(
-                            activityCard.toneColor.r,
-                            activityCard.toneColor.g,
-                            activityCard.toneColor.b,
-                            0.14
-                        )
+                        color: ThemeModule.Theme.alpha(activityCard.toneColor, ThemeModule.Theme.tintSubtle)
 
                         Components.AppIcon {
                             id: activityIcon

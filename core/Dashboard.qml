@@ -5,8 +5,6 @@ import QtQuick.Controls
 import QtQuick.Shapes
 import Quickshell
 import Quickshell.Services.SystemTray
-import Quickshell.Networking
-import Quickshell.Bluetooth
 import "../theme" as ThemeModule
 import "../components" as Components
 import "../services" as Services
@@ -97,13 +95,13 @@ Item {
         gradient: Gradient {
             GradientStop {
                 position: 0
-                color: Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0)
+                color: ThemeModule.Theme.alpha(ThemeModule.Theme.accent, 0)
             }
             GradientStop { position: 0.10; color: ThemeModule.Theme.accent }
             GradientStop { position: 0.88; color: ThemeModule.Theme.accent }
             GradientStop {
                 position: 1
-                color: Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0)
+                color: ThemeModule.Theme.alpha(ThemeModule.Theme.accent, 0)
             }
         }
     }
@@ -139,41 +137,17 @@ Item {
         return WidgetRegistry.icon(name);
     }
 
-    function getMicroStatus(widget) {
-        if (widget === "audioControl") return Services.AudioService.outputVolumePercent + "%";
-        if (widget === "audioInputControl") return Services.AudioService.inputVolumePercent + "%";
-        if (widget === "networkPanel") return "";
-        if (widget === "bluetoothPanel") {
-            var adapter = Bluetooth.defaultAdapter;
-            if (!adapter) return "";
-            var n = 0;
-            for (var i = 0; i < adapter.devices.values.length; i++) {
-                if (adapter.devices.values[i].connected) n++;
-            }
-            return n > 0 ? n.toString() : "";
-        }
-        return "";
-    }
-
     function getStatusText(widget) {
         if (widget === "audioControl") return "Volume: " + Services.AudioService.outputVolumePercent + "%";
         if (widget === "audioInputControl") return "Mic: " + Services.AudioService.inputVolumePercent + "%";
         if (widget === "networkPanel") {
-            for (var i = 0; i < Networking.devices.values.length; i++) {
-                var dev = Networking.devices.values[i];
-                if (dev.type === DeviceType.Wifi) {
-                    for (var j = 0; j < dev.networks.values.length; j++) {
-                        var net = dev.networks.values[j];
-                        if (net.connected) return "WiFi: " + net.name;
-                    }
-                }
-            }
-            return Networking.wifiEnabled ? "Disconnected" : "WiFi Off";
+            var wifi = Services.NetworkService.connectedWifi;
+            if (wifi)
+                return "WiFi: " + wifi.name;
+            return Services.NetworkService.wifiOn ? "Disconnected" : "WiFi Off";
         }
-        if (widget === "bluetoothPanel") {
-            var btAdapter = Bluetooth.defaultAdapter;
-            return (btAdapter && btAdapter.enabled) ? "Bluetooth On" : "Bluetooth Off";
-        }
+        if (widget === "bluetoothPanel")
+            return Services.BluetoothService.enabled ? "Bluetooth On" : "Bluetooth Off";
         if (widget === "clipboardManager") {
             var clipCount = Services.ClipboardService.history.length;
             return clipCount > 0 ? "Clipboard (" + clipCount + " item" + (clipCount === 1 ? "" : "s") + ")" : "Clipboard";
@@ -294,7 +268,6 @@ Item {
                         widgetName: wName
                         iconName: dashboard.sidebarIcon(wName)
                         active: dashboard.isSidebarItemCurrent(wName)
-                        microStatus: dashboard.getMicroStatus(wName)
                         statusText: dashboard.getStatusText(wName)
 
                         onActivated: function(name) {
@@ -302,16 +275,10 @@ Item {
                         }
 
                         onWheelDelta: function(delta) {
-                            var step = (Services.ConfigService.config && Services.ConfigService.config.audioScrollStep)
-                                ? Services.ConfigService.config.audioScrollStep
-                                : 5;
-                            if (wName === "audioControl") {
-                                var newVol = Services.AudioService.outputVolumePercent + (delta > 0 ? step : -step);
-                                Services.AudioService.setOutputVolumePercent(Math.max(0, Math.min(100, newVol)));
-                            } else if (wName === "audioInputControl") {
-                                var newVolIn = Services.AudioService.inputVolumePercent + (delta > 0 ? step : -step);
-                                Services.AudioService.setInputVolumePercent(Math.max(0, Math.min(100, newVolIn)));
-                            }
+                            if (wName === "audioControl")
+                                Services.AudioService.stepOutputVolume(delta);
+                            else if (wName === "audioInputControl")
+                                Services.AudioService.stepInputVolume(delta);
                         }
                     }
                 }
@@ -334,7 +301,6 @@ Item {
                         widgetName: wName
                         iconName: dashboard.sidebarIcon(wName)
                         active: dashboard.isSidebarItemCurrent(wName)
-                        microStatus: dashboard.getMicroStatus(wName)
                         statusText: dashboard.getStatusText(wName)
 
                         onActivated: function(name) {
@@ -405,8 +371,8 @@ Item {
                                 Image {
                                     id: sidebarTrayImg
                                     anchors.centerIn: parent
-                                    width: 18
-                                    height: 18
+                                    width: ThemeModule.Theme.iconSizeMedium
+                                    height: ThemeModule.Theme.iconSizeMedium
                                     property string iconPath: {
                                         var icon = sidebarTrayDelegate.modelData.icon;
                                         if (!icon) return "";
@@ -416,48 +382,23 @@ Item {
                                     }
                                     visible: iconPath !== ""
                                     source: iconPath
-                                    sourceSize: Qt.size(18, 18)
+                                    sourceSize: Qt.size(ThemeModule.Theme.iconSizeMedium, ThemeModule.Theme.iconSizeMedium)
                                     fillMode: Image.PreserveAspectFit
                                 }
 
                                 Components.AppIcon {
                                     anchors.centerIn: parent
                                     name: "tray-fallback"
-                                    size: 16
+                                    size: ThemeModule.Theme.iconSizeMedium
                                     iconColor: ThemeModule.Theme.subtext
                                     visible: !sidebarTrayImg.visible
                                 }
 
-                                Rectangle {
-                                    anchors.left: parent.right
-                                    anchors.leftMargin: ThemeModule.Theme.spacingTiny
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: trayLabel.implicitWidth + ThemeModule.Theme.spacingLarge
-                                    height: Math.max(26, trayLabel.implicitHeight + ThemeModule.Theme.spacingSmall)
-                                    radius: ThemeModule.Theme.borderRadiusSmall
+                                Components.HoverLabel {
                                     visible: sidebarTrayDelegate.containingWindowVisible
                                         && sidebarTrayDelegate.pointerInside
                                         && sidebarTrayDelegate.labelText !== ""
-                                    color: ThemeModule.Theme.surface2
-                                    border.width: ThemeModule.Theme.borderWidth
-                                    border.color: Qt.rgba(
-                                        ThemeModule.Theme.accent.r,
-                                        ThemeModule.Theme.accent.g,
-                                        ThemeModule.Theme.accent.b,
-                                        0.42
-                                    )
-                                    z: 100
-
-                                    Text {
-                                        id: trayLabel
-
-                                        anchors.centerIn: parent
-                                        text: sidebarTrayDelegate.labelText
-                                        textFormat: Text.PlainText
-                                        font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                                        font.family: ThemeModule.Theme.fontFamily
-                                        color: ThemeModule.Theme.text
-                                    }
+                                    text: sidebarTrayDelegate.labelText
                                 }
 
                                 QsMenuAnchor {
@@ -513,10 +454,7 @@ Item {
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            anchors.topMargin: ThemeModule.Theme.spacingMedium
-            anchors.rightMargin: ThemeModule.Theme.spacingMedium
-            anchors.leftMargin: ThemeModule.Theme.spacingMedium
-            anchors.bottomMargin: ThemeModule.Theme.spacingMedium
+            anchors.margins: ThemeModule.Theme.panelPadding
 
             // App-owned header.
             Column {
@@ -593,7 +531,7 @@ Item {
                 boundsBehavior: Flickable.StopAtBounds
                 flickDeceleration: 3000
                 readonly property bool needsVerticalScroll: contentHeight > height + 1
-                readonly property int scrollbarInset: ThemeModule.Theme.spacingMedium
+                readonly property int scrollbarInset: ThemeModule.Theme.panelPadding
 
                 ScrollBar.vertical: ScrollBar {
                     policy: middleFlickable.needsVerticalScroll ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
@@ -614,8 +552,8 @@ Item {
                     opacity: dashboard.activePanel !== "" ? 1.0 : 0.0
                     visible: opacity > 0
 
-                    Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                    Behavior on opacity { NumberAnimation { duration: 200 } }
+                    Behavior on x { NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing } }
+                    Behavior on opacity { NumberAnimation { duration: ThemeModule.Theme.animDuration } }
 
                     Loader {
                         id: activePanelLoader

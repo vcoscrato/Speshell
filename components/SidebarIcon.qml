@@ -10,7 +10,6 @@ Rectangle {
     property string iconName: ""
     property bool active: false
     property string statusText: ""
-    property string microStatus: ""
     property string tooltipText: ""
     property bool pointerInside: false
     readonly property bool containingWindowVisible: !!(root.Window
@@ -52,18 +51,18 @@ Rectangle {
         height: 38
         radius: ThemeModule.Theme.borderRadiusSmall
         color: root.active
-            ? Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.14)
+            ? ThemeModule.Theme.selectedFill
             : (root.pointerInside ? ThemeModule.Theme.cardHover : "transparent")
         border.width: root.active ? ThemeModule.Theme.borderWidth : 0
-        border.color: Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.32)
+        border.color: ThemeModule.Theme.selectedBorder
 
         Components.AppIcon {
             name: root.iconName
-            size: 23
+            size: ThemeModule.Theme.iconSizeLarge
             iconColor: root.currentIconColor
             anchors.centerIn: parent
             visible: root.iconName !== ""
-            opacity: root.enabled ? 1 : 0.4
+            opacity: root.enabled ? 1 : ThemeModule.Theme.disabledOpacity
         }
 
         Rectangle {
@@ -78,36 +77,11 @@ Rectangle {
         }
     }
 
-    Rectangle {
-        anchors.left: parent.right
-        anchors.leftMargin: ThemeModule.Theme.spacingTiny
-        anchors.verticalCenter: parent.verticalCenter
-        width: nameTagText.implicitWidth + ThemeModule.Theme.spacingLarge
-        height: Math.max(26, nameTagText.implicitHeight + ThemeModule.Theme.spacingSmall)
-        radius: ThemeModule.Theme.borderRadiusSmall
+    Components.HoverLabel {
         visible: root.containingWindowVisible
             && root.pointerInside
             && root.effectiveTooltipText !== ""
-        color: ThemeModule.Theme.surface2
-        border.width: ThemeModule.Theme.borderWidth
-        border.color: Qt.rgba(
-            ThemeModule.Theme.accent.r,
-            ThemeModule.Theme.accent.g,
-            ThemeModule.Theme.accent.b,
-            0.42
-        )
-        z: 100
-
-        Text {
-            id: nameTagText
-
-            anchors.centerIn: parent
-            text: root.effectiveTooltipText
-            textFormat: Text.PlainText
-            font.pixelSize: ThemeModule.Theme.fontSizeSmall
-            font.family: ThemeModule.Theme.fontFamily
-            color: ThemeModule.Theme.text
-        }
+        text: root.effectiveTooltipText
     }
 
     MouseArea {

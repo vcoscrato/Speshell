@@ -97,7 +97,7 @@ PanelWindow {
             property: "opacity"
             to: 1
             duration: ThemeModule.Theme.animDuration
-            easing.type: Easing.OutCubic
+            easing.type: ThemeModule.Theme.animEasing
         }
 
         NumberAnimation {
@@ -128,12 +128,7 @@ PanelWindow {
         radius: ThemeModule.Theme.borderRadius
         color: ThemeModule.Theme.card
         border.width: ThemeModule.Theme.borderWidth
-        border.color: Qt.rgba(
-            root.indicatorColor.r,
-            root.indicatorColor.g,
-            root.indicatorColor.b,
-            0.48
-        )
+        border.color: ThemeModule.Theme.alpha(root.indicatorColor, ThemeModule.Theme.tintOutline)
         clip: true
 
         Rectangle {
@@ -159,17 +154,12 @@ PanelWindow {
                 height: 46
                 radius: ThemeModule.Theme.borderRadiusSmall
                 anchors.verticalCenter: parent.verticalCenter
-                color: Qt.rgba(
-                    root.indicatorColor.r,
-                    root.indicatorColor.g,
-                    root.indicatorColor.b,
-                    0.14
-                )
+                color: ThemeModule.Theme.alpha(root.indicatorColor, ThemeModule.Theme.tintSubtle)
 
                 Components.AppIcon {
                     anchors.centerIn: parent
                     name: root.indicatorIcon
-                    size: 24
+                    size: ThemeModule.Theme.iconSizeLarge
                     iconColor: root.indicatorColor
                 }
             }
@@ -223,7 +213,7 @@ PanelWindow {
                         Behavior on width {
                             NumberAnimation {
                                 duration: 100
-                                easing.type: Easing.OutCubic
+                                easing.type: ThemeModule.Theme.animEasing
                             }
                         }
                     }

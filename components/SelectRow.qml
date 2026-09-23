@@ -12,13 +12,13 @@ Rectangle {
     signal activated()
 
     width: parent ? parent.width : 300
-    implicitHeight: Math.max(32, Math.max(labelText.implicitHeight, valueRow.implicitHeight)
+    implicitHeight: Math.max(ThemeModule.Theme.controlHeight, Math.max(labelText.implicitHeight, valueRow.implicitHeight)
         + ThemeModule.Theme.spacingSmall * 2)
     height: implicitHeight
     radius: ThemeModule.Theme.borderRadiusSmall
-    opacity: root.enabled ? 1.0 : 0.45
+    opacity: root.enabled ? 1.0 : ThemeModule.Theme.disabledOpacity
     color: selectMouse.containsMouse && root.enabled
-        ? Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.14)
+        ? ThemeModule.Theme.controlFill
         : "transparent"
 
     Accessible.role: Accessible.Button
@@ -65,7 +65,7 @@ Rectangle {
 
         Components.AppIcon {
             name: root.indicatorIconName
-            size: 12
+            size: ThemeModule.Theme.iconSizeTiny
             iconColor: ThemeModule.Theme.subtext
             anchors.verticalCenter: parent.verticalCenter
             visible: root.indicatorIconName !== ""

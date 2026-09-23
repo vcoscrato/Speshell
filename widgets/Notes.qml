@@ -162,9 +162,9 @@ Components.Card {
     }
 
     headerActions: Components.IconButton {
-        size: 24
+        size: ThemeModule.Theme.controlHeightSmall
         iconName: "copy"
-        iconSize: 15
+        iconSize: ThemeModule.Theme.iconSizeSmall
         iconColor: enabled ? ThemeModule.Theme.subtextBright : ThemeModule.Theme.overlay
         enabled: Services.NotesService.loaded && notesInput.text !== ""
         tooltipText: "Copy notes"
@@ -188,7 +188,7 @@ Components.Card {
 
     Flickable {
         width: parent.width
-        height: 24
+        height: ThemeModule.Theme.controlHeightSmall
         contentWidth: tabsRow.width
         contentHeight: height
         boundsBehavior: Flickable.StopAtBounds
@@ -205,19 +205,17 @@ Components.Card {
                     id: tabItem
                     required property string modelData
                     readonly property bool isSelected: Services.NotesService.currentNote === tabItem.modelData
-                    height: 24
-                    width: tabText.implicitWidth + (root.canDeleteNote ? 28 : 16)
+                    height: ThemeModule.Theme.controlHeightSmall
+                    width: tabText.implicitWidth + (root.canDeleteNote ? 28 : ThemeModule.Theme.spacingLarge)
                     radius: ThemeModule.Theme.borderRadiusSmall
                     enabled: Services.NotesService.managementEnabled
-                    opacity: tabItem.enabled ? 1.0 : 0.55
+                    opacity: tabItem.enabled ? 1.0 : ThemeModule.Theme.disabledOpacity
                     color: tabItem.isSelected
-                        ? Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.25)
-                        : (tabHover.hovered
-                            ? Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.4)
-                            : Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.15))
-                    border.width: 1
+                        ? ThemeModule.Theme.alpha(ThemeModule.Theme.accent, ThemeModule.Theme.tintStrong)
+                        : (tabHover.hovered ? ThemeModule.Theme.cardHover : ThemeModule.Theme.controlFill)
+                    border.width: ThemeModule.Theme.borderWidth
                     border.color: tabItem.isSelected
-                        ? Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.6)
+                        ? ThemeModule.Theme.selectedBorder
                         : "transparent"
 
                     Accessible.role: Accessible.PageTab
@@ -246,7 +244,7 @@ Components.Card {
                         id: tabText
                         text: tabItem.modelData
                         anchors.left: parent.left
-                        anchors.leftMargin: 8
+                        anchors.leftMargin: ThemeModule.Theme.spacingSmall
                         anchors.verticalCenter: parent.verticalCenter
                         font.family: ThemeModule.Theme.fontFamily
                         font.pixelSize: ThemeModule.Theme.fontSizeSmall
@@ -256,11 +254,11 @@ Components.Card {
                     Components.IconButton {
                         id: deleteButton
                         anchors.right: parent.right
-                        anchors.rightMargin: 2
+                        anchors.rightMargin: ThemeModule.Theme.spacingMicro
                         anchors.verticalCenter: parent.verticalCenter
                         size: 18
                         iconName: "trash"
-                        iconSize: 11
+                        iconSize: ThemeModule.Theme.iconSizeTiny
                         iconColor: deleteButton.containsMouse
                             ? ThemeModule.Theme.error
                             : ThemeModule.Theme.subtext
@@ -277,27 +275,25 @@ Components.Card {
 
             Rectangle {
                 id: newTabButton
-                height: 24
-                width: root.creatingNote ? 110 : 24
+                height: ThemeModule.Theme.controlHeightSmall
+                width: root.creatingNote ? 110 : ThemeModule.Theme.controlHeightSmall
                 radius: ThemeModule.Theme.borderRadiusSmall
                 color: root.creatingNote
-                    ? Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.5)
-                    : (newTabHover.hovered
-                        ? Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.4)
-                        : Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.15))
-                border.width: 1
+                    ? ThemeModule.Theme.card
+                    : (newTabHover.hovered ? ThemeModule.Theme.cardHover : ThemeModule.Theme.controlFill)
+                border.width: ThemeModule.Theme.borderWidth
                 border.color: root.creatingNote
                     ? ThemeModule.Theme.accent
                     : "transparent"
                 enabled: Services.NotesService.managementEnabled
-                opacity: newTabButton.enabled ? 1.0 : 0.55
+                opacity: newTabButton.enabled ? 1.0 : ThemeModule.Theme.disabledOpacity
 
                 Accessible.role: Accessible.Button
                 Accessible.name: "Create note"
                 Accessible.onPressAction: root.beginCreatingNote()
 
                 Behavior on width {
-                    NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
+                    NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing }
                 }
 
                 HoverHandler {
@@ -314,7 +310,7 @@ Components.Card {
 
                 Components.AppIcon {
                     name: "plus"
-                    size: 14
+                    size: ThemeModule.Theme.iconSizeSmall
                     iconColor: ThemeModule.Theme.subtext
                     anchors.centerIn: parent
                     visible: !root.creatingNote
@@ -323,8 +319,8 @@ Components.Card {
                 TextInput {
                     id: newNoteInput
                     anchors.fill: parent
-                    anchors.leftMargin: 6
-                    anchors.rightMargin: 6
+                    anchors.leftMargin: ThemeModule.Theme.spacingSmall
+                    anchors.rightMargin: ThemeModule.Theme.spacingSmall
                     verticalAlignment: TextInput.AlignVCenter
                     visible: root.creatingNote
                     color: ThemeModule.Theme.text
@@ -366,11 +362,11 @@ Components.Card {
 
         visible: pendingName !== ""
         width: parent.width
-        height: visible ? 32 : 0
+        height: visible ? ThemeModule.Theme.controlHeight : 0
         radius: ThemeModule.Theme.borderRadiusSmall
-        color: Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.34)
+        color: ThemeModule.Theme.alpha(ThemeModule.Theme.warning, ThemeModule.Theme.tintSubtle)
         border.width: ThemeModule.Theme.borderWidth
-        border.color: Qt.rgba(ThemeModule.Theme.warning.r, ThemeModule.Theme.warning.g, ThemeModule.Theme.warning.b, 0.42)
+        border.color: ThemeModule.Theme.alpha(ThemeModule.Theme.warning, ThemeModule.Theme.tintOutline)
         clip: true
 
         Accessible.role: Accessible.AlertMessage
@@ -394,7 +390,7 @@ Components.Card {
 
             Components.AppIcon {
                 name: "trash"
-                size: 13
+                size: ThemeModule.Theme.iconSizeSmall
                 iconColor: ThemeModule.Theme.warning
                 anchors.verticalCenter: parent.verticalCenter
             }
@@ -403,7 +399,7 @@ Components.Card {
                 width: Math.max(0, deleteUndoBar.width
                     - undoDeleteButton.width
                     - ThemeModule.Theme.spacingSmall * 4
-                    - 13)
+                    - ThemeModule.Theme.iconSizeSmall)
                 text: deleteUndoBar.pendingName + " deleted"
                 elide: Text.ElideRight
                 color: ThemeModule.Theme.text
@@ -430,7 +426,7 @@ Components.Card {
             anchors.left: parent.left
             anchors.bottom: parent.bottom
             width: parent.width * deleteUndoBar.progress
-            height: 1
+            height: ThemeModule.Theme.separatorThickness
             color: ThemeModule.Theme.warning
         }
 
@@ -448,11 +444,11 @@ Components.Card {
         width: parent.width
         height: Math.min(root.editorMaximumHeight, Math.max(root.editorMinimumHeight, root.editorPreferredHeight))
         radius: ThemeModule.Theme.borderRadiusSmall
-        color: Qt.rgba(ThemeModule.Theme.surface2.r, ThemeModule.Theme.surface2.g, ThemeModule.Theme.surface2.b, 0.22)
-        border.width: 1
+        color: ThemeModule.Theme.controlFill
+        border.width: ThemeModule.Theme.borderWidth
         border.color: (!root.previewMode && notesInput.activeFocus)
             ? ThemeModule.Theme.accent
-            : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.24)
+            : ThemeModule.Theme.controlBorder
 
         Flickable {
             id: notesFlickable

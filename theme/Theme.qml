@@ -61,38 +61,67 @@ QtObject {
     readonly property int fontSizeEmphasis:   Math.round(14 * root.textScale)
     readonly property int fontSizeLarge:      Math.round(16 * root.textScale)
     readonly property int fontSizeTitle:      Math.round(20 * root.textScale)
-    readonly property int fontSizeXL:         Math.round(24 * root.textScale)
     readonly property int fontSizeHuge:       Math.round(40 * root.textScale)
 
     // Icons are geometry, not typography. Keep them stable when only text scales.
-    readonly property int iconSizeSmall:  13
-    readonly property int iconSizeMedium: 16
-    readonly property int iconSizeLarge:  24
+    readonly property int iconSizeTiny:   12   // inline markers, chevrons, chip icons
+    readonly property int iconSizeSmall:  14   // card headers, compact buttons
+    readonly property int iconSizeMedium: 18   // row icons, standard buttons
+    readonly property int iconSizeLarge:  24   // sidebar, OSDs, primary actions
 
     // ── Spacing ─────────────────────────────────────────────
+    readonly property int spacingMicro:  2     // stacked title/subtitle lines
     readonly property int spacingTiny:   4
     readonly property int spacingSmall:  8
     readonly property int spacingMedium: 12
     readonly property int spacingLarge:  16
     readonly property int spacingXL:     24
+    readonly property int panelPadding:  root.spacingMedium
+
+    // ── Controls ────────────────────────────────────────────
+    // Floors: controls holding text still grow with textScale.
+    readonly property int controlHeightSmall: 24   // tabs, compact and header buttons
+    readonly property int controlHeight:      32   // rows, fields, sliders, buttons
 
     // ── Geometry ────────────────────────────────────────────
     readonly property int borderRadius:      4
     readonly property int borderRadiusSmall: 3
     readonly property int surfaceCornerCut:  16
     readonly property int borderWidth:       1
+
+    // ── Interaction states ──────────────────────────────────
+    // Neutral controls rest on controlFill/controlBorder and use cardHover on hover.
+    // Tone-colored controls tint their tone: tintSubtle at rest, tintStrong when
+    // hovered, armed, or selected among filled siblings, tintOutline for borders
+    // (tintOutlineStrong when armed or selected).
+    readonly property real tintSubtle:  0.12
+    readonly property real tintStrong:  0.2
+    readonly property real tintOutline: 0.45
+    readonly property real tintOutlineStrong: 0.85
+    readonly property real disabledOpacity: 0.45
+    readonly property color controlFill:    root.alpha(root.overlay, root.tintSubtle)
+    readonly property color controlBorder:  root.alpha(root.overlay, 0.24)
+    readonly property color selectedFill:   root.alpha(root.accent, root.tintSubtle)
+    readonly property color selectedBorder: root.alpha(root.accent, root.tintOutline)
+
     // ── Animation ───────────────────────────────────────────
+    readonly property int animDurationFast: 100
     readonly property int animDuration:     200
     readonly property int animDurationSlow: 350
+    readonly property int animEasing:       Easing.OutCubic
 
     // ── Layout ──────────────────────────────────────────────
     readonly property int sidebarWidth:       60
     readonly property int sidebarIconSize:    52
     readonly property int reservedBottomPanelHeight: 256
     readonly property int separatorThickness: 1
-    readonly property color separator:        Qt.rgba(surface2.r, surface2.g, surface2.b, 0.72)
+    readonly property color separator:        root.alpha(root.surface2, 0.72)
 
     // ── Helpers ─────────────────────────────────────────────
+    function alpha(color, value) {
+        return Qt.rgba(color.r, color.g, color.b, value);
+    }
+
     function toneColor(tone) {
         if (tone === "success") return root.success;
         if (tone === "warning") return root.warning;

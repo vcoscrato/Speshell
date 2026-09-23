@@ -137,7 +137,7 @@ PanelWindow {
 
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(ThemeModule.Theme.crust.r, ThemeModule.Theme.crust.g, ThemeModule.Theme.crust.b, 0.30)
+        color: ThemeModule.Theme.alpha(ThemeModule.Theme.crust, 0.30)
 
         MouseArea {
             anchors.fill: parent
@@ -187,7 +187,7 @@ PanelWindow {
                     anchors.leftMargin: ThemeModule.Theme.spacingMedium
                     anchors.verticalCenter: parent.verticalCenter
                     name: "search"
-                    size: 19
+                    size: ThemeModule.Theme.iconSizeMedium
                     iconColor: searchField.activeFocus ? ThemeModule.Theme.accent : ThemeModule.Theme.subtext
                 }
 
@@ -276,10 +276,10 @@ PanelWindow {
                     radius: ThemeModule.Theme.borderRadiusSmall
                     opacity: modelData.activatable === false ? 0.72 : 1.0
                     color: resultRow.index === root.selectedIndex
-                        ? Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.16)
+                        ? ThemeModule.Theme.selectedFill
                         : (resultMouse.containsMouse ? ThemeModule.Theme.card : "transparent")
                     border.width: resultRow.index === root.selectedIndex ? ThemeModule.Theme.borderWidth : 0
-                    border.color: Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.42)
+                    border.color: ThemeModule.Theme.selectedBorder
 
                     Item {
                         id: resultIcon
@@ -301,7 +301,7 @@ PanelWindow {
                         Components.AppIcon {
                             anchors.centerIn: parent
                             name: resultRow.modelData.iconName || "apps"
-                            size: 22
+                            size: ThemeModule.Theme.iconSizeLarge
                             iconColor: resultRow.modelData.kind === "error"
                                 ? ThemeModule.Theme.error
                                 : ThemeModule.Theme.subtext
@@ -381,7 +381,7 @@ PanelWindow {
 
                     Components.AppIcon {
                         name: "search"
-                        size: 17
+                        size: ThemeModule.Theme.iconSizeMedium
                         iconColor: ThemeModule.Theme.overlay
                         anchors.verticalCenter: parent.verticalCenter
                     }

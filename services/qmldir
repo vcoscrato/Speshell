@@ -3,12 +3,14 @@ singleton ActivityService 1.0 ActivityService.qml
 ActivityProcessAdapter 1.0 ActivityProcessAdapter.qml
 singleton AudioService 1.0 AudioService.qml
 singleton BluetoothService 1.0 BluetoothService.qml
+singleton BrightnessService 1.0 BrightnessService.qml
 singleton SystemState 1.0 SystemState.qml
 singleton DisplayService 1.0 DisplayService.qml
 singleton WeatherService 1.0 WeatherService.qml
 singleton ClipboardService 1.0 ClipboardService.qml
 singleton NotesService 1.0 NotesService.qml
 singleton FeatureSupport 1.0 FeatureSupport.qml
+singleton FocusTimerService 1.0 FocusTimerService.qml
 singleton LauncherService 1.0 LauncherService.qml
 singleton NetworkService 1.0 NetworkService.qml
 singleton PowerService 1.0 PowerService.qml

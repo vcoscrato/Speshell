@@ -30,7 +30,7 @@ Item {
             radius: ThemeModule.Theme.borderRadiusSmall
             height: Math.max(16, countText.implicitHeight + ThemeModule.Theme.spacingTiny)
             width: countText.width + 10
-            color: Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.2)
+            color: ThemeModule.Theme.alpha(ThemeModule.Theme.overlay, ThemeModule.Theme.tintStrong)
 
             Text {
                 id: countText
@@ -47,7 +47,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        height: 1
-        color: Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.14)
+        height: ThemeModule.Theme.separatorThickness
+        color: ThemeModule.Theme.controlFill
     }
 }

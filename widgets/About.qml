@@ -67,8 +67,8 @@ Components.Card {
 
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        size: 28
-                        iconSize: 17
+                        size: ThemeModule.Theme.controlHeightSmall
+                        iconSize: ThemeModule.Theme.iconSizeMedium
                         iconName: "github"
                         iconColor: containsMouse
                             ? ThemeModule.Theme.accent

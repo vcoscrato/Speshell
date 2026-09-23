@@ -29,7 +29,7 @@ Components.Card {
         // Wi-Fi Header / Controls
         Item {
             width: parent.width
-            height: 36
+            height: ThemeModule.Theme.controlHeight
 
             Text {
                 text: "Wi-Fi"
@@ -107,14 +107,14 @@ Components.Card {
                 Components.AppIcon {
                     id: connectedSignalText
                     name: root.network.signalIcon(root.network.signalPercent(root.network.connectedWifi ? root.network.connectedWifi.signalStrength : 0))
-                    size: 18
+                    size: ThemeModule.Theme.iconSizeMedium
                     iconColor: ThemeModule.Theme.success
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 Column {
                     width: parent.width - connectedSignalText.width - ThemeModule.Theme.spacingSmall
-                    spacing: 1
+                    spacing: ThemeModule.Theme.spacingMicro
                     anchors.verticalCenter: parent.verticalCenter
 
                     Text {
@@ -139,7 +139,7 @@ Components.Card {
 
                         Components.AppIcon {
                             name: "lock"
-                            size: 11
+                            size: ThemeModule.Theme.iconSizeTiny
                             iconColor: ThemeModule.Theme.subtext
                             visible: root.network.connectedWifi && root.network.connectedWifi.security !== WifiSecurityType.Open
                         }
@@ -163,7 +163,7 @@ Components.Card {
         Item {
             visible: root.network.connectingNetwork !== null && root.network.connectedWifi === null
             width: parent.width
-            height: 36
+            height: ThemeModule.Theme.controlHeight
 
             Row {
                 anchors.centerIn: parent
@@ -171,7 +171,7 @@ Components.Card {
 
                 Components.AppIcon {
                     name: "loader"
-                    size: 17
+                    size: ThemeModule.Theme.iconSizeMedium
                     iconColor: ThemeModule.Theme.accent
                     anchors.verticalCenter: parent.verticalCenter
 
@@ -218,11 +218,11 @@ Components.Card {
 
                     width: parent.width
                     spacing: ThemeModule.Theme.spacingSmall
-                    opacity: modelData.live && !modelData.stateChanging ? 1.0 : 0.55
+                    opacity: modelData.live && !modelData.stateChanging ? 1.0 : ThemeModule.Theme.disabledOpacity
 
                     Rectangle {
                         width: parent.width
-                        height: 34
+                        height: ThemeModule.Theme.controlHeight
                         radius: ThemeModule.Theme.borderRadiusSmall
                         color: nearbyRowMouse.containsMouse && nearbyRowMouse.enabled
                             ? ThemeModule.Theme.cardHover
@@ -252,7 +252,7 @@ Components.Card {
                             Components.AppIcon {
                                 id: nearbySignalText
                                 name: root.network.signalIcon(nearbyNetworkDelegate.modelData.signalLevel)
-                                size: 18
+                                size: ThemeModule.Theme.iconSizeMedium
                                 iconColor: ThemeModule.Theme.success
                                 anchors.verticalCenter: parent.verticalCenter
                             }
@@ -278,7 +278,7 @@ Components.Card {
                             Components.AppIcon {
                                 visible: nearbyNetworkDelegate.modelData.security !== WifiSecurityType.Open
                                 name: "lock"
-                                size: 11
+                                size: ThemeModule.Theme.iconSizeTiny
                                 iconColor: ThemeModule.Theme.subtext
                                 anchors.verticalCenter: parent.verticalCenter
                             }
@@ -301,11 +301,11 @@ Components.Card {
                     Rectangle {
                         visible: root.network.passwordRowName === nearbyNetworkDelegate.modelData.name
                         width: parent.width
-                        height: 32
+                        height: ThemeModule.Theme.controlHeight
                         radius: ThemeModule.Theme.borderRadiusSmall
                         color: ThemeModule.Theme.card
                         border.width: ThemeModule.Theme.borderWidth
-                        border.color: Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.5)
+                        border.color: passwordInput.activeFocus ? ThemeModule.Theme.accent : ThemeModule.Theme.cardHover
 
                         TextInput {
                             id: passwordInput

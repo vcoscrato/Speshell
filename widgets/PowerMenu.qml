@@ -107,14 +107,14 @@ Components.Card {
         height: 68
         radius: ThemeModule.Theme.borderRadiusSmall
         enabled: root.canRun("lock")
-        opacity: enabled ? 1.0 : 0.52
+        opacity: enabled ? 1.0 : ThemeModule.Theme.disabledOpacity
         color: lockMouse.containsMouse && enabled
-            ? Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.14)
-            : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.12)
+            ? ThemeModule.Theme.alpha(ThemeModule.Theme.accent, ThemeModule.Theme.tintStrong)
+            : ThemeModule.Theme.controlFill
         border.width: ThemeModule.Theme.borderWidth
         border.color: lockMouse.containsMouse && enabled
             ? ThemeModule.Theme.accent
-            : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.28)
+            : ThemeModule.Theme.controlBorder
 
         Accessible.role: Accessible.Button
         Accessible.name: "Lock screen"
@@ -132,20 +132,20 @@ Components.Card {
             Rectangle {
                 width: 40
                 height: 40
-                radius: 20
-                color: Qt.rgba(ThemeModule.Theme.accent.r, ThemeModule.Theme.accent.g, ThemeModule.Theme.accent.b, 0.16)
+                radius: width / 2
+                color: ThemeModule.Theme.alpha(ThemeModule.Theme.accent, ThemeModule.Theme.tintStrong)
 
                 Components.AppIcon {
                     anchors.centerIn: parent
                     name: "lock"
-                    size: 20
+                    size: ThemeModule.Theme.iconSizeMedium
                     iconColor: lockAction.enabled ? ThemeModule.Theme.accent : ThemeModule.Theme.subtext
                 }
             }
 
             Column {
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 2
+                spacing: ThemeModule.Theme.spacingMicro
 
                 Text {
                     text: Services.PowerService.activeAction === "lock" ? "Locking…" : "Lock screen"
@@ -205,14 +205,14 @@ Components.Card {
                 height: 72
                 radius: ThemeModule.Theme.borderRadiusSmall
                 enabled: root.canRun(modelData.id)
-                opacity: enabled ? 1.0 : 0.5
+                opacity: enabled ? 1.0 : ThemeModule.Theme.disabledOpacity
                 color: actionMouse.containsMouse && enabled
-                    ? Qt.rgba(toneColor.r, toneColor.g, toneColor.b, 0.14)
-                    : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.10)
+                    ? ThemeModule.Theme.alpha(toneColor, ThemeModule.Theme.tintStrong)
+                    : ThemeModule.Theme.controlFill
                 border.width: root.pendingAction === modelData.id ? 2 : ThemeModule.Theme.borderWidth
                 border.color: root.pendingAction === modelData.id
                     ? toneColor
-                    : Qt.rgba(ThemeModule.Theme.overlay.r, ThemeModule.Theme.overlay.g, ThemeModule.Theme.overlay.b, 0.24)
+                    : ThemeModule.Theme.controlBorder
 
                 Accessible.role: Accessible.Button
                 Accessible.name: modelData.label
@@ -226,22 +226,22 @@ Components.Card {
                     spacing: ThemeModule.Theme.spacingSmall
 
                     Rectangle {
-                        width: 32
-                        height: 32
-                        radius: 16
-                        color: Qt.rgba(powerAction.toneColor.r, powerAction.toneColor.g, powerAction.toneColor.b, 0.14)
+                        width: ThemeModule.Theme.controlHeight
+                        height: ThemeModule.Theme.controlHeight
+                        radius: width / 2
+                        color: ThemeModule.Theme.alpha(powerAction.toneColor, ThemeModule.Theme.tintStrong)
 
                         Components.AppIcon {
                             anchors.centerIn: parent
                             name: powerAction.modelData.iconName
-                            size: 17
+                            size: ThemeModule.Theme.iconSizeMedium
                             iconColor: powerAction.toneColor
                         }
                     }
 
                     Column {
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 2
+                        spacing: ThemeModule.Theme.spacingMicro
 
                         Text {
                             text: Services.PowerService.activeAction === powerAction.modelData.id
@@ -279,12 +279,12 @@ Components.Card {
         width: parent.width
         height: visible ? confirmationContent.implicitHeight + ThemeModule.Theme.spacingMedium * 2 : 0
         radius: ThemeModule.Theme.borderRadiusSmall
-        color: Qt.rgba(ThemeModule.Theme.warning.r, ThemeModule.Theme.warning.g, ThemeModule.Theme.warning.b, 0.10)
+        color: ThemeModule.Theme.alpha(ThemeModule.Theme.warning, ThemeModule.Theme.tintSubtle)
         border.width: ThemeModule.Theme.borderWidth
-        border.color: Qt.rgba(ThemeModule.Theme.warning.r, ThemeModule.Theme.warning.g, ThemeModule.Theme.warning.b, 0.45)
+        border.color: ThemeModule.Theme.alpha(ThemeModule.Theme.warning, ThemeModule.Theme.tintOutline)
 
         Behavior on height {
-            NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing }
         }
 
         Column {

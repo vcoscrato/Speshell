@@ -19,12 +19,12 @@ Rectangle {
     implicitHeight: Math.max(22, chipContent.implicitHeight + ThemeModule.Theme.spacingSmall)
     height: implicitHeight
     width: chipContent.width + 16
-    opacity: enabled ? 1.0 : 0.45
-    color: chipMouse.containsMouse
-        ? Qt.rgba(toneColor().r, toneColor().g, toneColor().b, armed ? 0.32 : 0.24)
-        : Qt.rgba(toneColor().r, toneColor().g, toneColor().b, armed ? 0.24 : 0.12)
+    opacity: enabled ? 1.0 : ThemeModule.Theme.disabledOpacity
+    color: ThemeModule.Theme.alpha(root.toneColor(),
+        (chipMouse.containsMouse ? ThemeModule.Theme.tintStrong : ThemeModule.Theme.tintSubtle)
+            + (root.armed ? ThemeModule.Theme.tintSubtle : 0))
     border.width: ThemeModule.Theme.borderWidth
-    border.color: Qt.rgba(toneColor().r, toneColor().g, toneColor().b, armed ? 0.85 : 0.45)
+    border.color: ThemeModule.Theme.alpha(root.toneColor(), root.armed ? ThemeModule.Theme.tintOutlineStrong : ThemeModule.Theme.tintOutline)
 
     Accessible.role: Accessible.Button
     Accessible.name: root.text
@@ -36,11 +36,11 @@ Rectangle {
     Row {
         id: chipContent
         anchors.centerIn: parent
-        spacing: 4
+        spacing: ThemeModule.Theme.spacingTiny
 
         Components.AppIcon {
             name: root.iconName
-            size: 11
+            size: ThemeModule.Theme.iconSizeTiny
             iconColor: root.toneColor()
             visible: root.iconName !== ""
             anchors.verticalCenter: parent.verticalCenter
