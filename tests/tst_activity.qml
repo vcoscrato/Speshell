@@ -83,4 +83,23 @@ TestCase {
         compare(ActivityLogic.elapsedText(0, 125000), "2m 5s");
         compare(ActivityLogic.elapsedText(0, 7380000), "2h 3m");
     }
+
+    function test_detectProcessActivities() {
+        compare(ActivityLogic.detectProcessActivities("").length, 0);
+
+        var recording = ActivityLogic.detectProcessActivities("/usr/bin/wf-recorder -f out.mp4\nnvim ~/.local/bin/dictate-toggle\n");
+        compare(recording.length, 1);
+        compare(recording[0].id, "screen-recording");
+
+        var listening = ActivityLogic.detectProcessActivities("pw-record --channels=1 /tmp/dictate.wav");
+        compare(listening[0].state, "active");
+
+        var toggling = ActivityLogic.detectProcessActivities("bash /home/user/.local/bin/dictate-toggle");
+        compare(toggling[0].state, "busy");
+
+        var transcribing = ActivityLogic.detectProcessActivities("whisper-cli -m base.bin -f /tmp/dictate.wav");
+        compare(transcribing[0].state, "busy");
+
+        compare(ActivityLogic.detectProcessActivities("less wf-recorder.log\npw-record /tmp/other.wav").length, 0);
+    }
 }

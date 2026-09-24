@@ -44,7 +44,7 @@ Optional integrations:
 - **wf-recorder** for screen recording activity detection and control
 - **whisper.cpp** for dictation transcription activity detection
 - **wl-clipboard** for clipboard capture and every copy action, including calculator results and error reports
-- **xdg-utils** to open the config when `$VISUAL` and `$EDITOR` are unset
+- **xdg-utils** to open the config when `$VISUAL` and `$EDITOR` are unset or no terminal is found
 
 Speshell starts its own `wl-paste --watch cliphist store` process while running; a separate clipboard-history watcher is not required.
 
@@ -74,7 +74,9 @@ Package upgrades do not replace your config or runtime data.
 Notes remain ordinary text files under `~/.local/share/speshell/notes/`; the
 selected note is recorded in the adjacent `.active` file. Writes replace files
 atomically, and an existing `~/.local/share/speshell/scratchpad.txt` is moved to
-`notes/Scratchpad.txt` on first launch after upgrading.
+`notes/Scratchpad.txt` on first launch after upgrading. Edits made to the open
+note by other programs appear in Speshell; if Speshell also has unsaved text, it
+keeps that text and warns before the next save replaces the outside change.
 
 Notes render as Markdown until clicked. While editing, **Enter** finishes and
 **Shift+Enter** inserts a new line; clicking elsewhere also finishes. Deleting
@@ -94,6 +96,7 @@ panelMargin = 16
 Configure the matching special workspace, keybinds, and startup hook in Hyprland Lua:
 
 ```lua
+-- Must match [Appearance] panelWorkspace without the "special:" prefix.
 local speshell_workspace = "dash"
 
 hl.bind("SUPER + GRAVE", hl.dsp.workspace.toggle_special(speshell_workspace))
@@ -122,23 +125,7 @@ The INI format intentionally replaces the earlier `config.jsonc` format without 
 
 Gruvbox is the default color scheme. Catppuccin, Nord, Dracula, Tokyo Night, Rosé Pine, Solarized Dark, and Everforest remain available. The Settings panel uses compact category pages for common appearance, audio, launcher, integration, and notification options; advanced mappings and commands remain in `config.ini`.
 
-Speshell validates malformed lines and the settings that can put the runtime into a bad state: enums, booleans, numeric ranges, URL templates, and launcher bangs. Other entries are ignored. Validation failures open a line-aware diagnostic window; correct the file and select **Retry**. Comments use `#` or `;` on their own line. Important numeric constraints are:
-
-Output-volume changes made outside the dashboard, including the standard `wpctl` media-key bindings, show a compact on-screen volume indicator. Changes made with Speshell's own slider or sidebar wheel stay quiet.
-
-### Activities
-
-Long-running foreground utilities appear in a compact activity control at the top of the focused display. Speshell detects `wf-recorder` automatically and provides a **Stop** action. It also follows the existing `dictate-toggle` workflow through its `pw-record` and `whisper-cli` processes, showing distinct listening and transcribing states with a **Finish** action while listening. Existing Hyprland bindings that launch `record-toggle` or `dictate-toggle` do not need to change.
-
-Other tools can publish the same generic activity model over IPC:
-
-```bash
-speshell activity set sync active "Syncing files" "Uploading changes" refresh info
-speshell activity list
-speshell activity clear sync
-```
-
-Valid active states are `active`, `busy`, `paused`, and `error`; `idle`, `inactive`, `stopped`, or `complete` clear the published activity. Icons use Speshell's semantic icon names and tones may be `neutral`, `success`, `warning`, `error`, or `info`. Process adapters remain separate from the shared model, so future utilities can integrate without adding service-specific properties to the activity UI.
+Speshell validates malformed lines and the settings that can put the runtime into a bad state: enums, booleans, numeric ranges, URL templates, and launcher bangs. Other entries are ignored. Validation failures open a line-aware diagnostic window; saving a corrected file reloads it automatically, or select **Retry**. Comments use `#` or `;` on their own line. Important numeric constraints are:
 
 | INI property | Valid values |
 |---|---|
@@ -149,6 +136,26 @@ Valid active states are `active`, `busy`, `paused`, and `error`; `idle`, `inacti
 | `[Launcher] width` | `280`–`1200` |
 | `[Launcher] visibleRows` | `1`–`20` |
 | `[Notifications] maxVisible` | `-1` or `1`–`50` |
+
+Speshell watches `config.ini` and applies valid edits immediately. If an edit is invalid, the previous settings stay active and **Settings** shows the first error. **Settings → Advanced → Open** edits the file in `$VISUAL` or `$EDITOR` inside your terminal (`$TERMINAL`, `xdg-terminal-exec`, or a common emulator), or with the desktop's default application when no editor is set.
+
+`[Notifications] maxVisible` limits how many notification toasts are on screen at once; older toasts are dismissed first. Toasts open on the focused monitor. Do Not Disturb persists across restarts and still shows critical notifications.
+
+Output-volume changes made outside the dashboard, including the standard `wpctl` media-key bindings, show a compact on-screen volume indicator. Changes made with Speshell's own slider or sidebar wheel stay quiet.
+
+### Activities
+
+Long-running foreground utilities appear in a compact activity control at the top of the focused display. When `wf-recorder` or `dictate-toggle` is installed, Speshell checks the process list every two seconds (every second while an activity is running); otherwise it does not poll. It detects `wf-recorder` automatically and provides a **Stop** action. It also follows the existing `dictate-toggle` workflow through its `pw-record` and `whisper-cli` processes, showing distinct listening and transcribing states with a **Finish** action while listening. Existing Hyprland bindings that launch `record-toggle` or `dictate-toggle` do not need to change.
+
+Other tools can publish the same generic activity model over IPC:
+
+```bash
+speshell activity set sync active "Syncing files" "Uploading changes" refresh info
+speshell activity list
+speshell activity clear sync
+```
+
+Valid active states are `active`, `busy`, `paused`, and `error`; `idle`, `inactive`, `stopped`, or `complete` clear the published activity. Icons use Speshell's semantic icon names and tones may be `neutral`, `success`, `warning`, `error`, or `info`. Process adapters remain separate from the shared model, so future utilities can integrate without adding service-specific properties to the activity UI.
 
 ### Layout
 
@@ -199,7 +206,7 @@ Open it with `speshell launcher`; `speshell launcher close` and `speshell launch
 
 | Input | Result |
 |---|---|
-| Plain text | Search installed applications |
+| Plain text | Search installed applications and Speshell panels by name, keyword, initials (`vsc`), or letters in order; offer a web search when nothing matches |
 | `= expression` | Force calculator mode |
 | Unambiguous expression | Calculate without the `=` prefix |
 | `!name` | Open an available Speshell panel or use a web bang |
@@ -220,15 +227,15 @@ Panel bangs are navigation only. The launcher lists every built-in destination s
 | `!about` | `about` | `!audio` | `audioControl` |
 | `!battery` | `batteryStatus` | `!bluetooth` | `bluetoothPanel` |
 | `!calendar` | `calendar` | `!clipboard` | `clipboardManager` |
-| `!clock` | `clock` | `!config` | `settings` |
-| `!display` | `displayControl` | `!home` | `main` |
-| `!media` | `nowPlaying` | `!network` | `networkPanel` |
+| `!clock` | `clock` | `!display` | `displayControl` |
+| `!home` | `main` | `!media` | `nowPlaying` |
+| `!mic` | `audioInputControl` | `!network` | `networkPanel` |
 | `!notes` | `notes` | `!notifications` | `notificationCenter` |
-| `!power` | `powerMenu` | | |
+| `!power` | `powerMenu` | `!settings` (or `!config`) | `settings` |
 
 The calculator supports `+`, `-`, `*`, `/`, `%`, `^`, parentheses, unary signs, `pi`, `e`, and these functions: `sqrt`, `abs`, `round`, `floor`, `ceil`, `sin`, `cos`, `tan`, `log`, `ln`, `min`, and `max`. Activating a result copies it.
 
-Keyboard controls are **Up/Down** to select, **Enter** to activate, and **Escape** to close.
+Keyboard controls are **Up/Down** to select, **Enter** to activate, **Tab** to complete the selected bang, and **Escape** to close. Selecting a configured bang without search terms completes it instead of opening an empty search. Applications marked `Terminal=true` open in your terminal emulator.
 
 Configure web search and custom bangs with HTTPS URL templates containing exactly one `{query}` placeholder. Bang names use lowercase letters, digits, and hyphens; built-in panel aliases are reserved.
 
@@ -299,6 +306,8 @@ Run deterministic tests and QML linting locally:
 make test
 make lint
 ```
+
+`bin/speshell` is the same command the package installs as `/usr/bin/speshell`. Run from a checkout, it uses that checkout's QML files, so `bin/speshell launcher` or `bin/speshell activity list` exercise local changes; set `SPESHELL_QML_DIR` to point it elsewhere.
 
 Hardware and compositor behavior is intentionally verified on a real Hyprland session. See [`tests/manual.md`](tests/manual.md) for the focused manual checklist.
 

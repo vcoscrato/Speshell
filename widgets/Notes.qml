@@ -456,7 +456,9 @@ Components.Card {
             anchors.margins: root.editorPadding
             readonly property bool needsVerticalScroll: contentHeight > height + 1
             readonly property int scrollbarInset: root.editorScrollbarInset
-            contentWidth: Math.max(0, width - (needsVerticalScroll ? scrollbarInset : 0))
+            // Always reserve the scrollbar gutter: making the text width depend on
+            // needsVerticalScroll creates a binding loop through the wrapped height.
+            contentWidth: Math.max(0, width - scrollbarInset)
             contentHeight: Math.max(
                 root.previewMode ? markdownText.implicitHeight : notesInput.implicitHeight,
                 height

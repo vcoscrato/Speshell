@@ -5,6 +5,7 @@ import Quickshell.Io
 import "AppProvider.js" as AppProvider
 import "CalculatorProvider.js" as CalculatorProvider
 import "BangProvider.js" as BangProvider
+import "Shell.js" as Shell
 
 Singleton {
     id: root
@@ -100,7 +101,11 @@ Singleton {
             root.results = root.calculatorResults(calculation);
             return;
         }
-        root.results = AppProvider.search(root.appIndex, trimmed, root.usage, 100);
+        var panels = AppProvider.buildExtraIndex(BangProvider.panelSearchItems(DashboardService.availablePanelNames));
+        var apps = AppProvider.search(root.appIndex.concat(panels), trimmed, root.usage, 100);
+        root.results = apps.length === 0 && trimmed !== ""
+            ? BangProvider.searchResult("?" + trimmed, root.launcherConfig)
+            : apps;
     }
 
     function recordLaunch(appId) {
@@ -125,14 +130,39 @@ Singleton {
         root.saveUsage();
     }
 
+    // DesktopEntry.execute() ignores Terminal=true, so wrap those commands.
+    function launchEntry(entry) {
+        var command = [];
+        var source = entry.command || [];
+        for (var i = 0; i < source.length; i++)
+            command.push(String(source[i]));
+        if (!entry.runInTerminal || command.length === 0) {
+            entry.execute();
+            return;
+        }
+        var context = { command: Shell.terminalCommand(command) };
+        if (entry.workingDirectory)
+            context.workingDirectory = entry.workingDirectory;
+        Quickshell.execDetached(context);
+    }
+
+    function complete(result) {
+        if (result && result.completion)
+            root.setQuery(result.completion);
+    }
+
     function activate(result) {
         root.activationError = "";
         if (!result || result.activatable === false)
             return false;
+        if (result.completeOnActivate) {
+            root.complete(result);
+            return false;
+        }
         var payload = result.payload || ({});
         if (result.kind === "app" && payload.entry) {
             root.recordLaunch(payload.appId);
-            payload.entry.execute();
+            root.launchEntry(payload.entry);
             return true;
         }
         if (result.kind === "calculator") {

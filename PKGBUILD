@@ -30,7 +30,7 @@ optdepends=(
   'wf-recorder: screen recording activity integration'
   'whisper-cpp: dictation transcription activity integration'
   'wl-clipboard: clipboard capture and copy actions'
-  'xdg-utils: opening the config when VISUAL and EDITOR are unset'
+  'xdg-utils: opening the config when VISUAL and EDITOR are unset or no terminal is found'
 )
 provides=('speshell')
 conflicts=('speshell')
@@ -58,108 +58,7 @@ package() {
   install -Dm644 assets/icons/tabler/LICENSE \
     "$pkgdir/usr/share/licenses/$pkgname/LICENSE.tabler-icons"
 
-  install -Dm755 /dev/stdin "$pkgdir/usr/bin/speshell" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-
-readonly app_dir="${SPESHELL_QML_DIR:-/usr/share/speshell}"
-readonly config_root="${XDG_CONFIG_HOME:-$HOME/.config}"
-readonly data_root="${XDG_DATA_HOME:-$HOME/.local/share}"
-readonly config_dir="$config_root/speshell"
-readonly data_dir="$data_root/speshell"
-readonly config_file="$config_dir/config.ini"
-
-if [[ ! -r "$app_dir/shell.qml" ]]; then
-  printf 'speshell: shell.qml not found in %s\n' "$app_dir" >&2
-  exit 1
-fi
-
-install -d -m755 "$config_root" "$data_root"
-install -d -m755 "$config_dir" "$data_dir"
-
-if [[ ! -e "$config_file" && ! -L "$config_file" ]]; then
-  install -m644 "$app_dir/config.example.ini" "$config_file"
-fi
-
-ipc_call() {
-  local output
-  if output="$(/usr/bin/quickshell ipc --any-display -p "$app_dir" call "$@" 2>/dev/null)"; then
-    if [[ -n "$output" ]]; then
-      printf '%s\n' "$output"
-    fi
-    return 0
-  fi
-
-  /usr/bin/quickshell -p "$app_dir" --no-duplicate --daemonize
-
-  for _ in $(seq 1 30); do
-    if output="$(/usr/bin/quickshell ipc --any-display -p "$app_dir" call "$@" 2>/dev/null)"; then
-      if [[ -n "$output" ]]; then
-        printf '%s\n' "$output"
-      fi
-      return 0
-    fi
-    sleep 0.05
-  done
-
-  printf 'speshell: failed to contact IPC target %s\n' "${1:-unknown}" >&2
-  return 1
-}
-
-if [[ "${1:-}" == "launcher" ]]; then
-  shift
-  action="${1:-open}"
-  case "$action" in
-    open|close|toggle) ;;
-    *)
-      printf 'speshell: unknown launcher action: %s\n' "$action" >&2
-      printf 'usage: speshell launcher [open|close|toggle]\n' >&2
-      exit 2
-      ;;
-  esac
-
-  ipc_call launcher "$action" >/dev/null
-  exit 0
-fi
-
-if [[ "${1:-}" == "activity" ]]; then
-  shift
-  action="${1:-list}"
-  shift || true
-
-  case "$action" in
-    set)
-      if [[ $# -lt 3 || $# -gt 6 ]]; then
-        printf 'usage: speshell activity set ID STATE LABEL [DETAIL] [ICON] [TONE]\n' >&2
-        exit 2
-      fi
-      ipc_call activity publish "$1" "$2" "$3" "${4:-}" "${5:-info}" "${6:-neutral}" >/dev/null
-      ;;
-    clear)
-      if [[ $# -ne 1 ]]; then
-        printf 'usage: speshell activity clear ID\n' >&2
-        exit 2
-      fi
-      ipc_call activity clear "$1" >/dev/null
-      ;;
-    list)
-      if [[ $# -ne 0 ]]; then
-        printf 'usage: speshell activity list\n' >&2
-        exit 2
-      fi
-      ipc_call activity list
-      ;;
-    *)
-      printf 'speshell: unknown activity action: %s\n' "$action" >&2
-      printf 'usage: speshell activity [set|clear|list] ...\n' >&2
-      exit 2
-      ;;
-  esac
-  exit 0
-fi
-
-exec /usr/bin/quickshell -p "$app_dir" "$@"
-EOF
+  install -Dm755 bin/speshell "$pkgdir/usr/bin/speshell"
 
   # Qt portals identify the process through its desktop ID. Keep the metadata
   # entry hidden from launchers: Speshell is opened through Hyprland bindings.

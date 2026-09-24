@@ -11,8 +11,9 @@ Singleton {
     property int scanDurationMs: 30000
     property int cacheMaxAgeMs: 10 * 60 * 1000
     property var cachedNetworks: []
-    property int cacheUpdatedAtMs: 0
-    property int nowMs: Date.now()
+    // Millisecond timestamps exceed the 32-bit int range; keep them as doubles.
+    property double cacheUpdatedAtMs: 0
+    property double nowMs: Date.now()
     property int networkListRevision: 0
     property bool nearbyExpanded: true
 
@@ -132,7 +133,7 @@ Singleton {
             return;
         }
 
-        var now = root.nowMs;
+        var now = Date.now();
         var byKey = {};
         var kept = [];
 

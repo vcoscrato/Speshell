@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Wayland
 import "../components" as Components
 import "../services" as Services
@@ -17,27 +16,13 @@ PanelWindow {
     property var targetScreen: null
     property double nowMs: Date.now()
 
-    function screenForMonitor(name) {
-        for (var i = 0; i < Quickshell.screens.length; i++) {
-            if (Quickshell.screens[i].name === name)
-                return Quickshell.screens[i];
-        }
-        return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
-    }
-
-    function focusedScreen() {
-        return Hyprland.focusedMonitor
-            ? root.screenForMonitor(Hyprland.focusedMonitor.name)
-            : root.screenForMonitor("");
-    }
-
     function syncActivities() {
         var active = Services.ActivityService.activities;
         if (active.length > 0) {
             root.displayedActivities = active.slice();
             exitAnimation.stop();
             if (!root.shown) {
-                root.targetScreen = root.focusedScreen();
+                root.targetScreen = Services.DashboardService.focusedScreen();
                 activityColumn.opacity = 0;
                 activityColumn.scale = 0.97;
                 root.shown = true;

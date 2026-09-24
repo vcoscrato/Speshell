@@ -122,15 +122,9 @@ Item {
         return WidgetRegistry.source(name);
     }
 
-    function isWidgetSupported(name) {
-        if (name === "batteryStatus") return Services.FeatureSupport.supportsBattery;
-        if (name === "bluetoothPanel") return Services.FeatureSupport.supportsBluetooth;
-        if (name === "displayControl") return Services.FeatureSupport.supportsDisplayControl;
-        return true;
-    }
-
     function isWidgetAvailable(name) {
-        return !!name && dashboard.widgetSource(name) !== "" && dashboard.isWidgetSupported(name);
+        return !!name && dashboard.widgetSource(name) !== ""
+            && Services.DashboardService.isPanelSupported(name);
     }
 
     function sidebarIcon(name) {
@@ -198,13 +192,6 @@ Item {
                 item.quickSwitchDevices = cfg.audioInputQuickSwitch || [];
             if ("deviceDisplayNames" in item)
                 item.deviceDisplayNames = cfg.audioInputDeviceNames || ({});
-        }
-
-        if ((widgetName === "notificationCenter" || WidgetRegistry.isPrimaryPanel(widgetName))
-                && "maxVisibleNotifications" in item) {
-            item.maxVisibleNotifications = cfg.maxVisibleNotification !== undefined
-                ? cfg.maxVisibleNotification
-                : 3;
         }
     }
 

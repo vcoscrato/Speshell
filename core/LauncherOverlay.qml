@@ -32,20 +32,6 @@ PanelWindow {
     readonly property int resultViewportHeight: root.configuredVisibleRows * root.resultRowHeight
         + Math.max(0, root.configuredVisibleRows - 1) * root.resultSpacing
 
-    function screenForMonitor(name) {
-        for (var i = 0; i < Quickshell.screens.length; i++) {
-            if (Quickshell.screens[i].name === name)
-                return Quickshell.screens[i];
-        }
-        return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
-    }
-
-    function focusedScreen() {
-        return Hyprland.focusedMonitor
-            ? root.screenForMonitor(Hyprland.focusedMonitor.name)
-            : root.screenForMonitor("");
-    }
-
     function clampSelected() {
         root.selectedIndex = root.resultCount <= 0
             ? 0
@@ -60,7 +46,7 @@ PanelWindow {
     }
 
     function openLauncher() {
-        root.targetScreen = root.focusedScreen();
+        root.targetScreen = Services.DashboardService.focusedScreen();
         Services.LauncherService.clearQuery();
         root.selectedIndex = 0;
         root.opened = true;
@@ -226,6 +212,10 @@ PanelWindow {
                         } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                             root.activateSelected();
                             event.accepted = true;
+                        } else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) {
+                            if (root.resultCount > 0)
+                                Services.LauncherService.complete(root.results[root.selectedIndex]);
+                            event.accepted = true;
                         }
                     }
                 }
@@ -233,7 +223,7 @@ PanelWindow {
                 Text {
                     anchors.left: searchField.left
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Search apps, calculate, type !, or search with ?"
+                    text: "Search apps and panels, calculate, type !, or search with ?"
                     color: ThemeModule.Theme.subtext
                     font.family: ThemeModule.Theme.fontFamily
                     font.pixelSize: ThemeModule.Theme.fontSizeNormal

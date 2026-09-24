@@ -4,74 +4,50 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "." as Services
+import "ActivityLogic.js" as ActivityLogic
 
+// Detects wf-recorder and the dictate-toggle workflow. Polling only runs when
+// one of those tools is installed, and slows down while nothing is active.
 Scope {
     id: root
 
-    property string lastProbeState: ""
+    property bool toolsAvailable: false
+    property string lastSignature: ""
+    property bool anyActive: false
 
-    function applyProbeState(value) {
-        var state = String(value || "").trim();
-        if (state === root.lastProbeState)
+    function applyProbeOutput(value) {
+        var entries = ActivityLogic.detectProcessActivities(value);
+        var signature = entries.map(function(entry) { return entry.id + ":" + entry.state; }).join(",");
+        root.anyActive = entries.length > 0;
+        if (signature === root.lastSignature)
             return;
-        root.lastProbeState = state;
-
-        var entries = [];
-        var lines = state === "" ? [] : state.split("\n");
-        for (var i = 0; i < lines.length; i++) {
-            var parts = lines[i].split("\t");
-            if (parts[0] === "screen-recording") {
-                entries.push({
-                    id: "screen-recording",
-                    state: "active",
-                    label: "Screen recording",
-                    detail: "Recording display",
-                    iconName: "screen-recording",
-                    tone: "error",
-                    priority: 10,
-                    sortOrder: 0,
-                    actions: [{ id: "stop", label: "Stop", iconName: "close", tone: "error" }]
-                });
-            } else if (parts[0] === "dictation" && parts[1] === "busy") {
-                entries.push({
-                    id: "dictation",
-                    state: "busy",
-                    label: "Dictation",
-                    detail: "Transcribing…",
-                    iconName: "loader",
-                    tone: "info",
-                    priority: 10,
-                    sortOrder: 1
-                });
-            } else if (parts[0] === "dictation") {
-                entries.push({
-                    id: "dictation",
-                    state: "active",
-                    label: "Dictation",
-                    detail: "Listening…",
-                    iconName: "audio-input",
-                    tone: "info",
-                    priority: 10,
-                    sortOrder: 1,
-                    actions: [{ id: "finish", label: "Finish", iconName: "check", tone: "info" }]
-                });
-            }
-        }
+        root.lastSignature = signature;
         Services.ActivityService.replaceProvider("process", entries);
     }
 
     function refresh() {
-        if (!probeProc.running)
+        if (root.toolsAvailable && !probeProc.running)
             probeProc.running = true;
     }
 
-    Component.onCompleted: root.refresh()
     Component.onDestruction: Services.ActivityService.clearProvider("process")
 
-    Timer {
-        interval: 750
-        repeat: true
+    Process {
         running: true
+        command: [
+            "sh", "-c",
+            "command -v wf-recorder >/dev/null 2>&1 || command -v dictate-toggle >/dev/null 2>&1"
+        ]
+        onExited: function(exitCode) {
+            root.toolsAvailable = exitCode === 0;
+            root.refresh();
+        }
+    }
+
+    Timer {
+        interval: root.anyActive ? 1000 : 2000
+        repeat: true
+        running: root.toolsAvailable
         onTriggered: root.refresh()
     }
 
@@ -79,18 +55,9 @@ Scope {
         id: probeProc
 
         running: false
-        command: [
-            "sh", "-c",
-            "if pgrep -x wf-recorder >/dev/null 2>&1; then printf 'screen-recording\\tactive\\n'; fi; "
-                + "if pgrep -f '[w]hisper-cli.*dictate\\.wav' >/dev/null 2>&1 "
-                + "|| { pgrep -f '[d]ictate-toggle' >/dev/null 2>&1 "
-                + "&& ! pgrep -f '[p]w-record.*dictate\\.wav' >/dev/null 2>&1; }; then "
-                + "printf 'dictation\\tbusy\\n'; "
-                + "elif pgrep -f '[p]w-record.*dictate\\.wav' >/dev/null 2>&1; then "
-                + "printf 'dictation\\tactive\\n'; fi"
-        ]
+        command: ["ps", "-e", "-o", "args="]
         stdout: StdioCollector { id: probeOutput }
-        onExited: root.applyProbeState(probeOutput.text)
+        onExited: root.applyProbeOutput(probeOutput.text)
     }
 
     Connections {

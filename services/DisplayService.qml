@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 import "DisplayLogic.js" as DisplayLogic
+import "Shell.js" as Shell
 
 Singleton {
     id: root
@@ -35,10 +36,6 @@ Singleton {
 
     readonly property var draftActiveMonitors: root.buildActiveMonitors(root.draftMonitors)
     readonly property string draftLayoutMode: root.detectLayoutMode(root.draftMonitors)
-
-    function shellQuote(value) {
-        return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
-    }
 
     function monitorName(monitor) {
         return DisplayLogic.monitorName(monitor);
@@ -253,7 +250,7 @@ Singleton {
             if (command === "") {
                 continue;
             }
-            script += "hyprctl eval " + root.shellQuote(command) + "\n";
+            script += "hyprctl eval " + Shell.quote(command) + "\n";
             hasCommand = true;
         }
 
@@ -261,7 +258,7 @@ Singleton {
             return false;
         }
 
-        applyProc.command = ["sh", "-lc", script];
+        applyProc.command = ["sh", "-c", script];
         applyProc.running = true;
         root.applying = true;
         root.operationKind = operation || "apply";

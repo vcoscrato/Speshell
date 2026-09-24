@@ -10,10 +10,6 @@ Singleton {
     property string appVersion: "Unknown"
     readonly property string appDir: Qt.resolvedUrl("..").toString().replace(/^file:\/\//, "")
 
-    function shellQuote(value) {
-        return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
-    }
-
     Process {
         id: appVersionProc
         running: false
@@ -29,7 +25,7 @@ Singleton {
     Component.onCompleted: {
         appVersionProc.command = [
             "sh", "-c",
-            "app_dir=" + root.shellQuote(root.appDir) + "; "
+            "app_dir=$1; "
                 + "if command -v git >/dev/null 2>&1 "
                 + "&& git -C \"$app_dir\" rev-parse --is-inside-work-tree >/dev/null 2>&1; then "
                 + "printf 'r%s.g%s\\n' "
@@ -37,7 +33,9 @@ Singleton {
                 + "\"$(git -C \"$app_dir\" rev-parse --short=7 HEAD)\"; "
                 + "elif package_info=$(pacman -Q speshell-git 2>/dev/null || pacman -Q speshell 2>/dev/null); then "
                 + "set -- $package_info; version=$2; printf '%s\\n' \"${version%-*}\"; "
-                + "else printf 'Unknown\\n'; fi"
+                + "else printf 'Unknown\\n'; fi",
+            "speshell-version",
+            root.appDir
         ];
         appVersionProc.running = true;
     }

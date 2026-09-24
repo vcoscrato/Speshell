@@ -92,7 +92,7 @@ Components.Card {
             iconName: Services.NotificationService.dndEnabled ? "bell-off" : "bell"
             tone: Services.NotificationService.dndEnabled ? "warning" : "neutral"
             armed: Services.NotificationService.dndEnabled
-            onActivated: Services.NotificationService.dndEnabled = !Services.NotificationService.dndEnabled
+            onActivated: Services.NotificationService.setDndEnabled(!Services.NotificationService.dndEnabled)
         }
     }
 

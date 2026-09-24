@@ -6,7 +6,6 @@ Column {
     id: root
 
     property bool presented: false
-    property alias maxVisibleNotifications: notifications.maxVisibleNotifications
 
     width: parent ? parent.width : 0
     spacing: ThemeModule.Theme.spacingXL
@@ -17,7 +16,6 @@ Column {
     }
 
     NotificationCenter {
-        id: notifications
         width: parent.width
         presented: root.presented
     }

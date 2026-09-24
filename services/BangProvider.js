@@ -17,7 +17,8 @@ function panelResult(panel) {
         iconSource: "",
         badge: "PANEL",
         activatable: true,
-        payload: { panel: panel.panel }
+        payload: { panel: panel.panel },
+        completion: "!" + panel.bang
     };
 }
 
@@ -41,14 +42,36 @@ function configuredBangResults(prefix, bangs) {
     for (var i = 0; i < names.length; i++) {
         if (names[i].indexOf(prefix) !== 0)
             continue;
-        results.push(webResult(
+        var suggestion = webResult(
             "bang:" + names[i],
             "!" + names[i],
-            "Search the configured site",
+            "Type a search for this site · Tab to complete",
             urlFromTemplate(bangs[names[i]], "")
-        ));
+        );
+        // Activating a bare bang completes it instead of opening an empty search.
+        suggestion.completion = "!" + names[i] + " ";
+        suggestion.completeOnActivate = true;
+        results.push(suggestion);
     }
     return results;
+}
+
+function matchesBangPrefix(panel, prefix) {
+    return [panel.bang].concat(panel.aliases).some(function(bang) { return bang.indexOf(prefix) === 0; });
+}
+
+// Available panels as searchable launcher items for plain-text queries.
+function panelSearchItems(availablePanelNames) {
+    return panels.filter(function(panel) {
+        return panelAvailable(panel, availablePanelNames);
+    }).map(function(panel) {
+        return {
+            id: "panel:" + panel.panel,
+            title: panel.title,
+            keywords: [panel.bang].concat(panel.aliases).concat(["speshell", "panel"]).join(" "),
+            result: panelResult(panel)
+        };
+    });
 }
 
 function panelAvailable(panel, availablePanelNames) {
@@ -69,7 +92,7 @@ function bangResults(query, launcherConfig, availablePanelNames) {
         var suggestions = [];
         for (var i = 0; i < panels.length; i++) {
             if (panelAvailable(panels[i], availablePanelNames)
-                    && panels[i].bang.indexOf(alias) === 0)
+                    && matchesBangPrefix(panels[i], alias))
                 suggestions.push(panelResult(panels[i]));
         }
         suggestions = suggestions.concat(configuredBangResults(alias, bangs));
@@ -77,8 +100,9 @@ function bangResults(query, launcherConfig, availablePanelNames) {
             return suggestions;
     }
 
+    var bangPanel = WidgetRegistry.panelForBang(alias);
     for (var j = 0; j < panels.length; j++) {
-        if (panels[j].bang === alias) {
+        if (bangPanel !== "" && panels[j].panel === bangPanel) {
             return panelAvailable(panels[j], availablePanelNames)
                 ? [panelResult(panels[j])]
                 : [];

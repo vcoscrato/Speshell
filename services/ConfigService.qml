@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "../core/Config.js" as Config
+import "Shell.js" as Shell
 
 Singleton {
     id: root
@@ -27,10 +28,6 @@ Singleton {
     readonly property bool invalid: root.status === "invalid"
     readonly property bool loading: root.status === "loading"
     readonly property string errorReport: root.buildErrorReport()
-
-    function shellQuote(value) {
-        return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
-    }
 
     function load() {
         if (configLoadProc.running) {
@@ -55,11 +52,13 @@ Singleton {
                 + "mkdir -p \"$config_dir\" \"$data_dir\" || exit 20; "
                 + "printf '%s\\n%s\\n' \"$config_dir\" \"$data_dir\"; "
                 + "if [ ! -e \"$ini_file\" ] && [ ! -L \"$ini_file\" ]; then "
-                + "cp " + root.shellQuote(root.bundledExamplePath) + " \"$ini_file\" 2>/dev/null || true; "
+                + "cp \"$1\" \"$ini_file\" 2>/dev/null || true; "
                 + "fi; "
                 + "if [ -e \"$ini_file\" ] || [ -L \"$ini_file\" ]; then "
                 + "cat \"$ini_file\" || exit 21; "
-                + "else cat " + root.shellQuote(root.bundledExamplePath) + " || exit 22; fi"
+                + "else cat \"$1\" || exit 22; fi",
+            "speshell-config-loader",
+            root.bundledExamplePath
         ];
         configLoadProc.running = true;
     }
@@ -109,9 +108,10 @@ Singleton {
         if (!root.valid || root.savingConfig)
             return false;
 
-        var currentText = root.sourceText;
+        // Start from the file on disk so edits made outside Speshell are kept.
+        var currentText = root.readConfigFile();
         if (String(currentText || "").trim() === "")
-            currentText = configFile.text();
+            currentText = root.sourceText;
 
         var updatedText = Config.setIniProperty(currentText, section, key, value);
         var parsed = Config.parseAndValidate(updatedText);
@@ -135,6 +135,43 @@ Singleton {
 
         configFile.setText(root.writeText);
         return true;
+    }
+
+    function readConfigFile() {
+        if (root.configPath === "")
+            return "";
+        configFile.reload();
+        configFile.waitForJob();
+        return configFile.text();
+    }
+
+    function applyExternalChange() {
+        if (root.savingConfig || root.loading)
+            return;
+        if (root.invalid) {
+            root.load();
+            return;
+        }
+        if (!root.valid)
+            return;
+
+        var text = root.readConfigFile();
+        if (text === root.sourceText || String(text || "").trim() === "")
+            return;
+
+        var parsed = Config.parseAndValidate(text);
+        if (!parsed.ok) {
+            root.operationFailed = true;
+            root.operationMessage = "config.ini has errors, so the previous settings stay active. "
+                + root.diagnosticText(parsed.errors[0]);
+            return;
+        }
+
+        root.sourceText = text;
+        root.config = parsed.config;
+        root.operationFailed = false;
+        root.operationMessage = "";
+        console.info("[Speshell] Applied config.ini changes.");
     }
 
     function setColorScheme(colorScheme) {
@@ -242,18 +279,12 @@ Singleton {
     function openConfig() {
         if (openConfigProc.running)
             return;
-        var pathAssignment = root.configPath !== ""
-            ? "path=" + root.shellQuote(root.configPath) + "; "
-            : "path=\"${XDG_CONFIG_HOME:-$HOME/.config}/speshell/config.ini\"; ";
+        var configHome = Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config");
         root.operationMessage = "";
         root.operationFailed = false;
-        openConfigProc.command = [
-            "sh", "-c",
-            pathAssignment
-                + "if [ -n \"${VISUAL:-}\" ]; then exec \"$VISUAL\" \"$path\"; "
-                + "elif [ -n \"${EDITOR:-}\" ]; then exec \"$EDITOR\" \"$path\"; "
-                + "else exec xdg-open \"$path\"; fi"
-        ];
+        openConfigProc.command = Shell.editFileCommand(
+            root.configPath !== "" ? root.configPath : configHome + "/speshell/config.ini"
+        );
         openConfigProc.running = true;
     }
 
@@ -263,8 +294,7 @@ Singleton {
         root.operationMessage = "";
         root.operationFailed = false;
         copyReportProc.command = [
-            "sh", "-c",
-            "printf '%s' " + root.shellQuote(root.errorReport) + " | wl-copy"
+            "sh", "-c", "printf '%s' \"$1\" | wl-copy", "speshell-copy", root.errorReport
         ];
         copyReportProc.running = true;
     }
@@ -289,6 +319,8 @@ Singleton {
         blockLoading: true
         atomicWrites: true
         printErrors: false
+        watchChanges: true
+        onFileChanged: root.applyExternalChange()
         onSaved: root.finishConfigWrite(true)
         onSaveFailed: root.finishConfigWrite(false)
     }

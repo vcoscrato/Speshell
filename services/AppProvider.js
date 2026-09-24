@@ -23,6 +23,27 @@ function joinList(value) {
     return String(value || "");
 }
 
+// First letters of each name word, including camelCase parts: "vsc" for
+// "Visual Studio Code", "ghd" for "GitHub Desktop".
+function initials(name) {
+    var words = normalizeWords(String(name || "").replace(/([a-z])([A-Z])/g, "$1 $2"));
+    return words.map(function(word) { return word.charAt(0); }).join("");
+}
+
+// Characters of word in order within text; lower spread scores better.
+function subsequenceSpread(text, word) {
+    var start = -1;
+    var position = -1;
+    for (var i = 0; i < word.length; i++) {
+        position = text.indexOf(word.charAt(i), position + 1);
+        if (position < 0)
+            return -1;
+        if (start < 0)
+            start = position;
+    }
+    return position - start - (word.length - 1);
+}
+
 function buildIndex(entries) {
     var result = [];
     for (var i = 0; i < entries.length; i++) {
@@ -45,10 +66,28 @@ function buildIndex(entries) {
             entry: entry,
             nameLower: lower(entry.name),
             genericLower: lower(entry.genericName),
+            initialsLower: initials(entry.name),
             searchLower: lower(searchable)
         });
     }
     return result;
+}
+
+// Non-app items ({ id, title, keywords, result }) ranked with apps. They only
+// appear for non-empty queries and activate their prebuilt result.
+function buildExtraIndex(items) {
+    return (items || []).map(function(item) {
+        return {
+            id: item.id,
+            title: item.title,
+            nameLower: lower(item.title),
+            genericLower: "",
+            initialsLower: initials(item.title),
+            searchLower: lower(item.title + " " + (item.keywords || "")),
+            requiresQuery: true,
+            result: item.result
+        };
+    });
 }
 
 function usageCount(usage, id) {
@@ -75,6 +114,10 @@ function score(item, words) {
             wordScore = 80 + item.genericLower.indexOf(word);
         else if (item.searchLower.indexOf(word) >= 0)
             wordScore = 140 + item.searchLower.indexOf(word);
+        else if (word.length >= 2 && item.initialsLower.indexOf(word) === 0)
+            wordScore = 60 + item.initialsLower.length;
+        else if (word.length >= 3 && subsequenceSpread(item.nameLower, word) >= 0)
+            wordScore = 400 + subsequenceSpread(item.nameLower, word);
         if (wordScore < 0)
             return -1;
         total += wordScore;
@@ -86,6 +129,8 @@ function search(index, query, usage, limit) {
     var words = normalizeWords(query);
     var matches = [];
     for (var i = 0; i < index.length; i++) {
+        if (index[i].requiresQuery && words.length === 0)
+            continue;
         var baseScore = score(index[i], words);
         if (baseScore < 0)
             continue;
@@ -105,6 +150,10 @@ function search(index, query, usage, limit) {
     var count = Math.min(matches.length, limit || 100);
     for (var j = 0; j < count; j++) {
         var item = matches[j].item;
+        if (item.result) {
+            results.push(item.result);
+            continue;
+        }
         results.push({
             id: "app:" + item.id,
             kind: "app",

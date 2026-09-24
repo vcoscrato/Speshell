@@ -1,7 +1,7 @@
 Validation before handing changes back ONLY WHEN NEEDED:
 
 ```bash
-qmllint shell.qml core/*.qml components/*.qml services/*.qml theme/*.qml widgets/*.qml
+make lint test
 git diff --check
 timeout 5s quickshell --no-color -p .
 ```
@@ -27,7 +27,7 @@ Prefer deleting unused QML modules over keeping broad helper surfaces. This repo
 
 The Arch `PKGBUILD` uses the Git repository source, so plain `makepkg -si` is for normal package installs. Use `make local-package-install` when pacman must install a package built from the dirty checkout.
 
-The package owns `/usr/share/speshell` and `/usr/bin/speshell`. User config and data live under:
+The package owns `/usr/share/speshell` and `/usr/bin/speshell`, which is installed from `bin/speshell`. User config and data live under:
 
 - `~/.config/speshell/config.ini`
 - `~/.local/share/speshell`

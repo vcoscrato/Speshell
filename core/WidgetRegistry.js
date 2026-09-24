@@ -16,10 +16,12 @@ var entries = ({
     notificationCenter: { source: "../widgets/NotificationCenter.qml", icon: "bell", capability: "",                  bang: "notifications", label: "Notifications" },
     nowPlaying:         { source: "../widgets/NowPlaying.qml",         icon: "media", capability: "",                 bang: "media",         label: "Now playing" },
     powerMenu:          { source: "../widgets/PowerMenu.qml",          icon: "power", capability: "",                 bang: "power",         label: "Power menu" },
-    settings:           { source: "../widgets/Settings.qml",           icon: "config", capability: "",                bang: "config",        label: "Settings" }
+    settings:           { source: "../widgets/Settings.qml",           icon: "config", capability: "",                bang: "settings",      label: "Settings" }
 });
 
 var aliases = ({ configPanel: "settings" });
+// Extra launcher bangs that open a panel; the entry's own bang stays primary.
+var bangAliases = ({ config: "settings" });
 var primaryPanel = "main";
 var primaryPanelWidgets = ["nowPlaying", "notificationCenter"];
 var headerPanel = "clock";
@@ -94,7 +96,11 @@ function panelForBang(bang) {
         if (entries[widgetNames[i]].bang === requested)
             return widgetNames[i];
     }
-    return "";
+    return Object.prototype.hasOwnProperty.call(bangAliases, requested) ? bangAliases[requested] : "";
+}
+
+function bangAliasesFor(name) {
+    return Object.keys(bangAliases).filter(function(alias) { return bangAliases[alias] === name; });
 }
 
 function bangPanels() {
@@ -104,6 +110,7 @@ function bangPanels() {
         var widget = widgetNames[i];
         result.push({
             bang: entries[widget].bang,
+            aliases: bangAliasesFor(widget),
             panel: widget,
             title: entries[widget].label,
             icon: entries[widget].icon

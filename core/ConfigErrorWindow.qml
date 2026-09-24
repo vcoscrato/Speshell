@@ -15,21 +15,7 @@ PanelWindow {
 
     property bool active: false
     property bool focusGrabActive: false
-    readonly property var targetScreen: root.focusedScreen()
-
-    function screenForMonitor(name) {
-        for (var i = 0; i < Quickshell.screens.length; i++) {
-            if (Quickshell.screens[i].name === name)
-                return Quickshell.screens[i];
-        }
-        return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
-    }
-
-    function focusedScreen() {
-        return Hyprland.focusedMonitor
-            ? root.screenForMonitor(Hyprland.focusedMonitor.name)
-            : root.screenForMonitor("");
-    }
+    readonly property var targetScreen: Services.DashboardService.focusedScreen()
 
     visible: root.active && root.targetScreen !== null
     screen: root.targetScreen

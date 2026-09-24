@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import "../components" as Components
 import "../services" as Services
+import "../services/Shell.js" as Shell
 import "../theme" as ThemeModule
 
 Components.Card {
@@ -133,10 +134,6 @@ Components.Card {
             root.weatherLocationDraft = String(root.settingsConfig.weatherLocation || "");
     }
 
-    function shellQuote(value) {
-        return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
-    }
-
     function relaunch() {
         if (root.relaunching || Services.ConfigService.savingConfig)
             return;
@@ -152,7 +149,7 @@ Components.Card {
             + "sleep 0.1; "
             + "exec \"$launcher\" --daemonize";
         if (shellPath !== "")
-            command += " -p " + root.shellQuote(shellPath);
+            command += " -p " + Shell.quote(shellPath);
 
         Quickshell.execDetached(["sh", "-c", command]);
         Qt.quit();

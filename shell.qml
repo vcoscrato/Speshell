@@ -20,6 +20,7 @@ ShellRoot {
         Services.WeatherService.enabled = configValue.weatherEnabled;
         Services.FeatureSupport.configuredBacklightDevice = configValue.backlightDevice;
         Services.PowerService.lockCommand = configValue.powerMenu.lockCommand;
+        Services.NotificationService.maxVisible = configValue.maxVisibleNotification;
     }
 
     Connections {

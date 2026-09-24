@@ -3,6 +3,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Io
 import "../core/WidgetRegistry.js" as WidgetRegistry
 
@@ -30,6 +31,15 @@ Singleton {
         return true;
     }
 
+    function isPanelSupported(panelName) {
+        return root.panelSupported(
+            panelName,
+            FeatureSupport.supportsBattery,
+            FeatureSupport.supportsBluetooth,
+            FeatureSupport.supportsDisplayControl
+        );
+    }
+
     function filterAvailablePanels(panelNames, batterySupported, bluetoothSupported, displaySupported) {
         var result = [];
         var seen = ({});
@@ -50,13 +60,19 @@ Singleton {
         return root.availablePanelNames.indexOf(String(panelName || "")) >= 0;
     }
 
+    // Screen for the focused Hyprland monitor, falling back to the first screen.
+    function focusedScreen() {
+        var name = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : "";
+        for (var i = 0; i < Quickshell.screens.length; i++) {
+            if (Quickshell.screens[i].name === name)
+                return Quickshell.screens[i];
+        }
+        return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
+    }
+
     function workspaceArgument() {
         var value = String(root.workspaceName || "special:term");
         return value.indexOf("special:") === 0 ? value.substring(8) : value;
-    }
-
-    function shellQuote(value) {
-        return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
     }
 
     function luaQuote(value) {
@@ -82,8 +98,11 @@ Singleton {
             openWorkspaceProc.command = [
                 "sh", "-c",
                 "if hyprctl status 2>/dev/null | grep -q '^configProvider: lua$'; then "
-                    + "exec hyprctl dispatch " + root.shellQuote(luaDispatcher) + "; "
-                    + "else exec hyprctl dispatch togglespecialworkspace " + root.shellQuote(workspace) + "; fi"
+                    + "exec hyprctl dispatch \"$1\"; "
+                    + "else exec hyprctl dispatch togglespecialworkspace \"$2\"; fi",
+                "speshell-open-workspace",
+                luaDispatcher,
+                workspace
             ];
             openWorkspaceProc.running = true;
         }

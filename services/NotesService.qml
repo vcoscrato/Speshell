@@ -35,6 +35,7 @@ Singleton {
     property string pendingDeleteNote: ""
     property int pendingDeleteIndex: -1
     property string bootstrapDataDir: ""
+    property bool externalReload: false
 
     readonly property string notesDir: AppServices.ConfigService.dataDir !== ""
         ? AppServices.ConfigService.dataDir + "/notes"
@@ -150,6 +151,7 @@ Singleton {
         root.mutationOriginalIndex = -1;
         root.pendingDeleteNote = "";
         root.pendingDeleteIndex = -1;
+        root.externalReload = false;
         root.errorText = "";
     }
 
@@ -201,6 +203,7 @@ Singleton {
         root.loaded = false;
         root.loading = true;
         root.dirty = false;
+        root.externalReload = false;
         root.currentNote = name;
         root.loadTarget = name;
         root.errorText = "";
@@ -230,6 +233,29 @@ Singleton {
         root.loaded = false;
         root.errorText = "Could not read " + root.currentNote + ". Your other notes were not changed.";
         catalogRefreshTimer.restart();
+    }
+
+    // Another program changed the open note. Speshell's own saves are ignored
+    // because the reloaded text matches savedText.
+    function handleExternalChange() {
+        if (!root.loaded || root.loading || root.saving)
+            return;
+        root.externalReload = true;
+        notesFile.reload();
+    }
+
+    function applyExternalText(nextText) {
+        var next = String(nextText);
+        if (next === root.savedText)
+            return;
+        if (root.dirty) {
+            root.errorText = root.currentNote + " changed outside Speshell. Your unsaved text is still open and will replace that change when saved.";
+            return;
+        }
+        saveTimer.stop();
+        root.text = next;
+        root.savedText = next;
+        root.errorText = "";
     }
 
     function persistActiveNote(name) {
@@ -541,9 +567,23 @@ Singleton {
         atomicWrites: true
         blockWrites: false
         printErrors: false
+        watchChanges: true
 
-        onLoaded: root.finishLoad(notesFile.text())
-        onLoadFailed: root.failLoad()
+        onFileChanged: root.handleExternalChange()
+        onLoaded: {
+            if (root.externalReload) {
+                root.externalReload = false;
+                root.applyExternalText(notesFile.text());
+            } else {
+                root.finishLoad(notesFile.text());
+            }
+        }
+        onLoadFailed: {
+            if (root.externalReload)
+                root.externalReload = false;
+            else
+                root.failLoad();
+        }
         onSaved: root.finishSave(true)
         onSaveFailed: root.finishSave(false)
     }

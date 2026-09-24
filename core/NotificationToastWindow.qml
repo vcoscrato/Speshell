@@ -7,6 +7,20 @@ import "../theme" as ThemeModule
 import "../components" as Components
 
 PanelWindow {
+    id: root
+
+    property var targetScreen: Services.DashboardService.focusedScreen()
+
+    // Each new toast opens on the focused monitor.
+    Connections {
+        target: Services.NotificationService
+
+        function onPopupCounterChanged() {
+            root.targetScreen = Services.DashboardService.focusedScreen();
+        }
+    }
+
+    screen: root.targetScreen
 
     // ── Prevent focus stealing from games and other apps ──
     // Explicitly non-focusable: the toast must never take keyboard focus.
@@ -44,6 +58,8 @@ PanelWindow {
             delegate: Rectangle {
                 id: toastCard
                 required property var modelData
+                // Replaced notifications update the live object in place.
+                readonly property var live: modelData.notification
                 readonly property string notificationIcon: modelData.image || (
                     modelData.appIcon ? Quickshell.iconPath(modelData.appIcon, true) : ""
                 )
@@ -117,7 +133,7 @@ PanelWindow {
                     }
 
                     Text {
-                        text: toastCard.modelData.summary || ""
+                        text: (toastCard.live ? toastCard.live.summary : toastCard.modelData.summary) || ""
                         textFormat: Text.PlainText
                         font.pixelSize: ThemeModule.Theme.fontSizeNormal
                         font.family: ThemeModule.Theme.fontFamily
@@ -129,7 +145,7 @@ PanelWindow {
                     }
 
                     Text {
-                        text: toastCard.modelData.body || ""
+                        text: (toastCard.live ? toastCard.live.body : toastCard.modelData.body) || ""
                         textFormat: Text.PlainText
                         font.pixelSize: ThemeModule.Theme.fontSizeSmall
                         font.family: ThemeModule.Theme.fontFamily

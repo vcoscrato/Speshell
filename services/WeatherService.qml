@@ -41,6 +41,15 @@ Singleton {
         onTriggered: root.fetchWeather()
     }
 
+    // A failed lookup (often no network yet at login) retries sooner than the
+    // regular refresh.
+    Timer {
+        id: retryTimer
+        interval: 120000
+        repeat: false
+        onTriggered: root.fetchWeather()
+    }
+
     onLocationChanged: {
         if (root.enabled)
             root.fetchWeather();
@@ -52,6 +61,7 @@ Singleton {
             root.fetchWeather();
         } else {
             root.fetchQueued = false;
+            retryTimer.stop();
             weatherProc.running = false;
             root.currentWeatherStr = "";
         }
@@ -62,8 +72,8 @@ Singleton {
             return;
         if (!weatherProc.running) {
             var loc = String(root.location || "").trim();
-            var url = loc !== "" ? ("wttr.in/" + encodeURIComponent(loc) + "?format=%c+%t+%l") : "wttr.in/?format=%c+%t+%l";
-            weatherProc.command = ["curl", "-fsS", "--max-time", "8", url];
+            var url = "https://wttr.in/" + (loc !== "" ? encodeURIComponent(loc) : "") + "?format=%c+%t+%l";
+            weatherProc.command = ["curl", "-fsS", "--proto", "=https", "--max-time", "8", url];
             weatherProc.running = true;
         } else {
             root.fetchQueued = true;
@@ -72,7 +82,6 @@ Singleton {
 
     Process {
         id: weatherProc
-        command: ["curl", "-fsS", "--max-time", "8", "wttr.in/?format=%c+%t+%l"]
         running: false
 
         property string output: ""
@@ -103,6 +112,10 @@ Singleton {
             weatherProc.output = "";
             weatherProc.errorOutput = "";
             root.currentWeatherStr = root.normalizeWeatherText(text, exitCode, errorText);
+            if (exitCode !== 0 && root.enabled)
+                retryTimer.restart();
+            else
+                retryTimer.stop();
 
             if (root.fetchQueued) {
                 root.fetchQueued = false;

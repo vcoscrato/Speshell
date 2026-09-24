@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 // qmllint disable uncreatable-type unqualified unresolved-type
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Wayland
 import "../components" as Components
 import "../services" as Services
@@ -21,22 +20,8 @@ PanelWindow {
         ? "audio-output-muted"
         : (root.displayedVolume <= 35 ? "audio-output-low" : "audio-output-high")
 
-    function screenForMonitor(name) {
-        for (var i = 0; i < Quickshell.screens.length; i++) {
-            if (Quickshell.screens[i].name === name)
-                return Quickshell.screens[i];
-        }
-        return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
-    }
-
-    function focusedScreen() {
-        return Hyprland.focusedMonitor
-            ? root.screenForMonitor(Hyprland.focusedMonitor.name)
-            : root.screenForMonitor("");
-    }
-
     function showState(volumePercent, muted) {
-        root.targetScreen = root.focusedScreen();
+        root.targetScreen = Services.DashboardService.focusedScreen();
         root.displayedVolume = Math.max(0, Math.min(100, Math.round(Number(volumePercent) || 0)));
         root.displayedMuted = !!muted;
         hideTimer.restart();

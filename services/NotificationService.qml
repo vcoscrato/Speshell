@@ -2,14 +2,45 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 
 Singleton {
     id: root
 
     property bool dndEnabled: false
+    property bool dndChangedThisSession: false
+    // Maximum simultaneous toasts; -1 shows every toast.
+    property int maxVisible: 3
     property var notificationHistory: []
     property var activePopups: []
     property int popupCounter: 0
+    readonly property string statePath: ConfigService.dataDir !== ""
+        ? ConfigService.dataDir + "/notifications.json"
+        : ""
+
+    function setDndEnabled(enabled) {
+        root.dndEnabled = !!enabled;
+        root.dndChangedThisSession = true;
+        if (root.statePath !== "")
+            stateFile.setText(JSON.stringify({ dndEnabled: root.dndEnabled }));
+    }
+
+    // Do Not Disturb still lets critical notifications through.
+    function showsPopup(urgency) {
+        return !root.dndEnabled || urgency === 2;
+    }
+
+    function pushPopup(popup) {
+        var popups = root.activePopups.slice();
+        popups.push(popup);
+        while (root.maxVisible > 0 && popups.length > root.maxVisible) {
+            var evicted = popups.shift();
+            if (evicted.notification && evicted.notification.tracked)
+                evicted.notification.expire();
+        }
+        root.activePopups = popups;
+        root.schedulePopupExpiry();
+    }
 
     function popupById(popupId) {
         for (var i = 0; i < root.activePopups.length; i++) {
@@ -113,13 +144,11 @@ Singleton {
         });
         root.notificationHistory = history.slice(0, 50);
 
-        if (root.dndEnabled)
+        if (!root.showsPopup(1))
             return;
 
-        var popupId = root.popupCounter++;
-        var popups = root.activePopups.slice();
-        popups.push({
-            popupId: popupId,
+        root.pushPopup({
+            popupId: root.popupCounter++,
             id: notificationId,
             desktopEntry: "",
             appName: "Speshell",
@@ -135,13 +164,6 @@ Singleton {
             resident: false,
             expiresAt: Date.now() + 8000
         });
-        if (popups.length > 5) {
-            var evicted = popups.shift();
-            if (evicted.notification && evicted.notification.tracked)
-                evicted.notification.expire();
-        }
-        root.activePopups = popups;
-        root.schedulePopupExpiry();
     }
 
     function removeHistoryAt(index) {
@@ -206,6 +228,44 @@ Singleton {
         root.schedulePopupExpiry();
     }
 
+    function historyEntry(notification, receivedAt) {
+        return {
+            id: notification.id,
+            desktopEntry: notification.desktopEntry,
+            appName: notification.appName,
+            appIcon: notification.appIcon,
+            summary: notification.summary,
+            body: notification.body,
+            urgency: notification.urgency,
+            time: receivedAt
+        };
+    }
+
+    // Apps can replace a tracked notification in place (progress, track
+    // changes). Toasts bind to the live object; history and expiry need a sync.
+    function updateNotification(notification) {
+        if (!notification || !notification.tracked)
+            return;
+        var receivedAt = new Date();
+        var history = root.notificationHistory.slice();
+        for (var i = 0; i < history.length; i++) {
+            if (history[i].id === notification.id) {
+                history[i] = root.historyEntry(notification, receivedAt);
+                root.notificationHistory = history;
+                break;
+            }
+        }
+        for (var j = 0; j < root.activePopups.length; j++) {
+            var popup = root.activePopups[j];
+            if (popup.notification === notification) {
+                var timeout = root.timeoutForNotification(notification);
+                popup.expiresAt = timeout < 0 ? -1 : Date.now() + timeout;
+                root.schedulePopupExpiry();
+                break;
+            }
+        }
+    }
+
     function addNotification(notification) {
         if (!notification)
             return;
@@ -218,58 +278,61 @@ Singleton {
                 if (root.notificationHistory[historyIndex].id !== notification.id)
                     history.push(root.notificationHistory[historyIndex]);
             }
-            history.unshift({
-                id: notification.id,
-                desktopEntry: notification.desktopEntry,
-                appName: notification.appName,
-                appIcon: notification.appIcon,
-                summary: notification.summary,
-                body: notification.body,
-                urgency: notification.urgency,
-                time: receivedAt
-            });
+            history.unshift(root.historyEntry(notification, receivedAt));
             root.notificationHistory = history.slice(0, 50);
         }
 
-        if (!root.dndEnabled) {
-            var popupId = root.popupCounter++;
-            var timeout = root.timeoutForNotification(notification);
-            var popupObj = {
-                popupId: popupId,
-                id: notification.id,
-                desktopEntry: notification.desktopEntry,
-                appName: notification.appName,
-                appIcon: notification.appIcon,
-                image: notification.image,
-                summary: notification.summary,
-                body: notification.body,
-                urgency: notification.urgency,
-                time: receivedAt,
-                notification: notification,
-                defaultAction: actions.defaultAction,
-                actions: actions.actions,
-                resident: notification.resident,
-                expiresAt: timeout < 0 ? -1 : Date.now() + timeout
-            };
-
-            notification.closed.connect(function() { root.removePopup(popupId); });
-            var currentPopups = root.activePopups.slice();
-            currentPopups.push(popupObj);
-            if (currentPopups.length > 5) {
-                var evicted = currentPopups.shift();
-                if (evicted.notification && evicted.notification.tracked)
-                    evicted.notification.expire();
-            }
-            root.activePopups = currentPopups;
-            root.schedulePopupExpiry();
-        } else if (notification.tracked) {
-            notification.expire();
+        if (!root.showsPopup(notification.urgency)) {
+            if (notification.tracked)
+                notification.expire();
+            return;
         }
+
+        var popupId = root.popupCounter++;
+        var timeout = root.timeoutForNotification(notification);
+        var update = function() { root.updateNotification(notification); };
+        notification.summaryChanged.connect(update);
+        notification.bodyChanged.connect(update);
+        notification.closed.connect(function() { root.removePopup(popupId); });
+        root.pushPopup({
+            popupId: popupId,
+            id: notification.id,
+            desktopEntry: notification.desktopEntry,
+            appName: notification.appName,
+            appIcon: notification.appIcon,
+            image: notification.image,
+            summary: notification.summary,
+            body: notification.body,
+            urgency: notification.urgency,
+            time: receivedAt,
+            notification: notification,
+            defaultAction: actions.defaultAction,
+            actions: actions.actions,
+            resident: notification.resident,
+            expiresAt: timeout < 0 ? -1 : Date.now() + timeout
+        });
     }
 
     Timer {
         id: popupExpiryTimer
         repeat: false
         onTriggered: root.expireDuePopups()
+    }
+
+    FileView {
+        id: stateFile
+        path: root.statePath
+        atomicWrites: true
+        printErrors: false
+        onLoaded: {
+            if (root.dndChangedThisSession)
+                return;
+            try {
+                var state = JSON.parse(stateFile.text() || "{}");
+                root.dndEnabled = !!(state && state.dndEnabled === true);
+            } catch (stateError) {
+                console.warn("[Speshell] Ignoring unreadable notification state:", stateError);
+            }
+        }
     }
 }

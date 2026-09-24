@@ -22,10 +22,6 @@ Singleton {
     property string pendingCopyId: ""
     readonly property string liveUpdateWarning: "Live clipboard updates are unavailable."
 
-    function shellQuote(value) {
-        return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
-    }
-
     function startWatching() {
         if (!clipboardWatchProc.running) {
             clipboardWatchProc.running = true;
@@ -128,7 +124,7 @@ Singleton {
 
     Process {
         id: cliphistListProc
-        command: ["sh", "-lc", "cliphist list | head -n " + root.maxItems]
+        command: ["sh", "-c", "cliphist list | head -n \"$1\"", "speshell-cliphist", String(root.maxItems)]
         running: false
         
         property string buffer: ""
@@ -163,8 +159,7 @@ Singleton {
                     if (tabIndex > 0) {
                         newHistory.push({
                             "id": line.substring(0, tabIndex),
-                            "preview": line.substring(tabIndex + 1),
-                            "raw": line
+                            "preview": line.substring(tabIndex + 1)
                         });
                     }
                 }
@@ -187,16 +182,11 @@ Singleton {
             return;
         }
 
-        // cliphist decode expects the full "id\tpreview" line, not just the id
-        var fullLine = entry.raw || (entry.id + "\t" + (entry.preview || ""));
-
         root.pendingCopyId = entry.id;
         root.feedbackText = "Copying…";
         root.feedbackTone = "info";
         copyProc.command = [
-            "sh",
-            "-lc",
-            "printf '%s\\n' " + root.shellQuote(fullLine) + " | cliphist decode | wl-copy"
+            "sh", "-c", "cliphist decode \"$1\" | wl-copy", "speshell-copy", String(entry.id)
         ];
         copyProc.running = true;
     }
@@ -210,11 +200,7 @@ Singleton {
         root.pendingCopyId = "";
         root.feedbackText = "Copying...";
         root.feedbackTone = "info";
-        copyProc.command = [
-            "sh",
-            "-lc",
-            "printf '%s' " + root.shellQuote(value) + " | wl-copy"
-        ];
+        copyProc.command = ["sh", "-c", "printf '%s' \"$1\" | wl-copy", "speshell-copy", value];
         copyProc.running = true;
     }
 
@@ -247,7 +233,7 @@ Singleton {
 
     Process {
         id: clearProc
-        command: ["sh", "-lc", "cliphist wipe"]
+        command: ["cliphist", "wipe"]
         running: false
         onExited: function(exitCode) {
             if (exitCode === 0) {
