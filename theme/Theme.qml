@@ -8,8 +8,20 @@ QtObject {
     // Active palette name — loaded from config
     property string paletteName: "gruvbox"
 
+    // Skin overrides: a partial palette merged over the configured one, and an accent color.
+    property var paletteOverride: null
+    property string accentOverride: ""
+
     // Resolve palette
-    readonly property var _p: ThemeModule.Palettes.getPalette(paletteName)
+    readonly property var _p: {
+        var base = ThemeModule.Palettes.getPalette(paletteName);
+        if (!paletteOverride)
+            return base;
+        var merged = {};
+        for (var key in base)
+            merged[key] = paletteOverride[key] !== undefined ? paletteOverride[key] : base[key];
+        return merged;
+    }
 
     // ── Colors ──────────────────────────────────────────────
     readonly property color bg:        _p.base
@@ -25,6 +37,8 @@ QtObject {
     readonly property color subtextBright: _p.subtext1
 
     readonly property color accent: {
+        if (accentOverride !== "")
+            return accentOverride;
         switch(paletteName) {
             case "nord": return _p.blue;
             case "dracula": return _p.pink;

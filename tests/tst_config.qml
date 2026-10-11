@@ -8,6 +8,7 @@ TestCase {
     property string validConfig: [
         "[Appearance]",
         "colorScheme = nord",
+        "wallpapers = ~/Pictures/Wallpapers",
         "textScale = 1.15",
         "panelWorkspace = special:dash",
         "panelWidth = 600",
@@ -60,6 +61,7 @@ TestCase {
         var result = Config.parseAndValidate(validConfig);
         verify(result.ok, result.errors.length > 0 ? result.errors[0].message : "");
         compare(result.config.colorScheme, "nord");
+        compare(result.config.wallpapers, "~/Pictures/Wallpapers");
         compare(result.config.textScale, 1.15);
         compare(result.config.panelWorkspace, "special:dash");
         compare(result.config.panelWidth, 600);
@@ -83,6 +85,8 @@ TestCase {
         var result = Config.parseAndValidate("[Appearance]\n");
         verify(result.ok);
         compare(result.config.textScale, 1.0);
+        compare(result.config.wallpapers, "");
+        compare(Config.parseAndValidate("[Appearance]\nwallpapers = /srv/walls").config.wallpapers, "/srv/walls");
         compare(result.config.panelMargin, 16);
         compare(result.config.audioPanelMode, "combined");
         compare(result.config.launcher.visibleRows, 5);
@@ -92,6 +96,7 @@ TestCase {
     function test_invalid_data() {
         return [
             { tag: "bad margin", text: "[Appearance]\npanelMargin = -1", message: "Expected a value from 0 to 128" },
+            { tag: "relative wallpaper folder", text: "[Appearance]\nwallpapers = Pictures", message: "absolute path or start with ~/" },
             { tag: "bad text scale", text: "[Appearance]\ntextScale = 1.75", message: "Expected a value from 0.8 to 1.5" },
             { tag: "malformed text scale", text: "[Appearance]\ntextScale = large", message: "Expected a number" },
             { tag: "partial integer", text: "[Launcher]\nvisibleRows = 5rows", message: "Expected a whole number" },

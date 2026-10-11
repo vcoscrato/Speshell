@@ -8,6 +8,7 @@ import Quickshell.Wayland
 import Quickshell.Widgets
 import "../components" as Components
 import "../services" as Services
+import "../services/WallpaperProvider.js" as WallpaperProvider
 import "../theme" as ThemeModule
 
 PanelWindow {
@@ -15,10 +16,16 @@ PanelWindow {
 
     property var config: null
     property bool opened: false
+    // Mapped on screen; outlives `opened` while a skin transition plays the exit.
+    property bool presenting: false
     property bool focusGrabActive: false
     property var targetScreen: null
     property int selectedIndex: 0
     readonly property bool mapped: root.visible && root.backingWindowVisible
+    // Latched per presentation so a skin change, e.g. from picking a wallpaper, lets
+    // the old skin finish its exit.
+    property Component transition: null
+    readonly property bool transitionReady: transitionLoader.status === Loader.Ready
     readonly property var results: Services.LauncherService.results || []
     readonly property int resultCount: root.results.length
     readonly property var launcherConfig: root.config && root.config.launcher ? root.config.launcher : ({})
@@ -49,12 +56,29 @@ PanelWindow {
         root.targetScreen = Services.DashboardService.focusedScreen();
         Services.LauncherService.clearQuery();
         root.selectedIndex = 0;
+        closeSafetyTimer.stop();
+        if (!root.presenting)
+            root.transition = Services.SkinService.launcherTransition;
         root.opened = true;
+        root.presenting = true;
         resultsList.contentY = 0;
     }
 
     function closeLauncher() {
         root.opened = false;
+        root.focusGrabActive = false;
+        if (root.transitionReady)
+            closeSafetyTimer.restart();
+        else
+            root.finishPresentation();
+    }
+
+    // Unmap once the exit is over; the query clears only now so the exit shows the last frame.
+    function finishPresentation() {
+        if (root.opened)
+            return;
+        closeSafetyTimer.stop();
+        root.presenting = false;
         Services.LauncherService.clearQuery();
         root.selectedIndex = 0;
     }
@@ -77,7 +101,7 @@ PanelWindow {
         return Quickshell.iconPath(result.iconSource, true);
     }
 
-    visible: root.opened && root.targetScreen !== null
+    visible: root.presenting && root.targetScreen !== null
     screen: root.targetScreen
     color: "transparent"
     focusable: true
@@ -87,13 +111,24 @@ PanelWindow {
 
     WlrLayershell.namespace: "speshell-launcher"
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: root.visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: root.visible && root.opened ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    // Click-through while the exit transition plays.
+    mask: root.opened ? null : passThrough
 
     anchors { left: true; right: true; top: true; bottom: true }
+
+    Region { id: passThrough }
 
     HyprlandFocusGrab {
         active: root.focusGrabActive
         windows: [root]
+    }
+
+    // A skin transition must emit closingFinished(); this bounds a broken one.
+    Timer {
+        id: closeSafetyTimer
+        interval: 2500
+        onTriggered: root.finishPresentation()
     }
 
     onResultCountChanged: root.clampSelected()
@@ -113,7 +148,7 @@ PanelWindow {
         interval: 60
         repeat: false
         onTriggered: {
-            if (!root.mapped)
+            if (!root.mapped || !root.opened)
                 return;
             searchField.forceActiveFocus();
             searchField.cursorPosition = searchField.text.length;
@@ -124,6 +159,12 @@ PanelWindow {
     Rectangle {
         anchors.fill: parent
         color: ThemeModule.Theme.alpha(ThemeModule.Theme.crust, 0.30)
+        opacity: root.opened ? 1 : 0
+
+        Behavior on opacity {
+            enabled: root.transitionReady
+            NumberAnimation { duration: ThemeModule.Theme.animDurationSlow; easing.type: ThemeModule.Theme.animEasing }
+        }
 
         MouseArea {
             anchors.fill: parent
@@ -132,6 +173,7 @@ PanelWindow {
     }
 
     Rectangle {
+        id: launcherPanel
         z: 1
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
@@ -288,6 +330,16 @@ PanelWindow {
                             visible: resultRow.nativeIconPath !== ""
                         }
 
+                        Image {
+                            id: resultThumbnail
+                            anchors.fill: parent
+                            source: WallpaperProvider.fileUrl(resultRow.modelData.thumbnail || "")
+                            sourceSize: Qt.size(64, 64)
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                            visible: status === Image.Ready
+                        }
+
                         Components.AppIcon {
                             anchors.centerIn: parent
                             name: resultRow.modelData.iconName || "apps"
@@ -295,7 +347,7 @@ PanelWindow {
                             iconColor: resultRow.modelData.kind === "error"
                                 ? ThemeModule.Theme.error
                                 : ThemeModule.Theme.subtext
-                            visible: resultRow.nativeIconPath === ""
+                            visible: resultRow.nativeIconPath === "" && !resultThumbnail.visible
                         }
                     }
 
@@ -396,5 +448,40 @@ PanelWindow {
                 visible: text !== ""
             }
         }
+    }
+
+    // Skin transition (see README "Skins"): draws above the panel, and may capture it with
+    // a ShaderEffectSource to animate the panel itself. Alive only while the launcher is mapped.
+    Loader {
+        id: transitionLoader
+        z: 2
+        anchors.fill: parent
+        active: root.transition !== null && root.presenting
+        sourceComponent: root.transition
+    }
+
+    Binding {
+        target: transitionLoader.item
+        property: "panel"
+        value: launcherPanel
+    }
+
+    Binding {
+        target: transitionLoader.item
+        property: "panelRect"
+        value: Qt.rect(launcherPanel.x, launcherPanel.y, launcherPanel.width, launcherPanel.height)
+    }
+
+    Binding {
+        target: transitionLoader.item
+        property: "active"
+        value: root.opened
+    }
+
+    Connections {
+        target: transitionLoader.item
+        ignoreUnknownSignals: true
+
+        function onClosingFinished() { root.finishPresentation(); }
     }
 }

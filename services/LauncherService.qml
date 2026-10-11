@@ -5,6 +5,7 @@ import Quickshell.Io
 import "AppProvider.js" as AppProvider
 import "CalculatorProvider.js" as CalculatorProvider
 import "BangProvider.js" as BangProvider
+import "WallpaperProvider.js" as WallpaperProvider
 import "Shell.js" as Shell
 
 Singleton {
@@ -21,6 +22,7 @@ Singleton {
     property string saveError: ""
     property var pendingLaunches: ({})
     property string activationError: ""
+    property bool browsingWallpapers: false
     readonly property string usagePath: ConfigService.dataDir !== ""
         ? ConfigService.dataDir + "/launcher-usage.json"
         : ""
@@ -83,12 +85,29 @@ Singleton {
 
     function rebuild() {
         var trimmed = root.query.trim();
+        var wasBrowsingWallpapers = root.browsingWallpapers;
+        root.browsingWallpapers = false;
         if (trimmed.indexOf("!") === 0) {
-            root.results = BangProvider.bangResults(
+            var wallpaperBang = WallpaperService.enabled ? WallpaperProvider.parseBang(trimmed) : null;
+            if (wallpaperBang && wallpaperBang.complete) {
+                // Rescan on entering !wall so new files and skins show up.
+                if (!wasBrowsingWallpapers)
+                    WallpaperService.scan();
+                root.browsingWallpapers = true;
+                root.results = WallpaperProvider.results(WallpaperService.wallpapers, WallpaperService.skins,
+                    WallpaperService.current, wallpaperBang.terms);
+                return;
+            }
+            var bangs = BangProvider.bangResults(
                 trimmed,
                 root.launcherConfig,
                 DashboardService.availablePanelNames
             );
+            root.results = wallpaperBang
+                ? [WallpaperProvider.suggestion()].concat(bangs.filter(function(result) {
+                    return result.id.indexOf("bang:passthrough:") !== 0;
+                }))
+                : bangs;
             return;
         }
         if (trimmed.indexOf("?") === 0) {
@@ -101,7 +120,10 @@ Singleton {
             root.results = root.calculatorResults(calculation);
             return;
         }
-        var panels = AppProvider.buildExtraIndex(BangProvider.panelSearchItems(DashboardService.availablePanelNames));
+        var extras = BangProvider.panelSearchItems(DashboardService.availablePanelNames);
+        if (WallpaperService.enabled)
+            extras = extras.concat(WallpaperProvider.searchItems());
+        var panels = AppProvider.buildExtraIndex(extras);
         var apps = AppProvider.search(root.appIndex.concat(panels), trimmed, root.usage, 100);
         root.results = apps.length === 0 && trimmed !== ""
             ? BangProvider.searchResult("?" + trimmed, root.launcherConfig)
@@ -175,6 +197,13 @@ Singleton {
                 root.activationError = DashboardService.errorMessage;
             return opened;
         }
+        if (result.kind === "wallpaper") {
+            if (payload.folder !== undefined)
+                WallpaperService.shuffle(payload.folder);
+            else
+                WallpaperService.set(payload.path || "");
+            return true;
+        }
         if (result.kind === "web" && payload.url) {
             Qt.openUrlExternally(payload.url);
             return true;
@@ -185,6 +214,8 @@ Singleton {
 
     function emptyMessage() {
         var trimmed = root.query.trim();
+        if (root.browsingWallpapers)
+            return "No matching wallpapers in " + WallpaperService.libraryDir;
         if (trimmed.indexOf("?") === 0)
             return "Type a web search after ?";
         if (trimmed.indexOf("!") === 0)
@@ -289,5 +320,12 @@ Singleton {
     Connections {
         target: DashboardService
         function onAvailablePanelNamesChanged() { root.rebuild(); }
+    }
+
+    Connections {
+        target: WallpaperService
+        function onWallpapersChanged() { root.rebuild(); }
+        function onCurrentChanged() { root.rebuild(); }
+        function onEnabledChanged() { root.rebuild(); }
     }
 }

@@ -236,6 +236,11 @@ function parseAndValidate(iniText) {
     if (colorEntry && !isPaletteName(colorScheme))
         addError(errors, pathFor("Appearance", "colorScheme"), colorEntry.line, "Unknown color scheme '" + colorScheme + "'.");
 
+    var wallpapers = stringValue(document, "Appearance", "wallpapers", "", errors, true);
+    var wallpapersEntry = entry(document, "Appearance", "wallpapers");
+    if (wallpapersEntry && wallpapers !== "" && wallpapers.charAt(0) !== "/" && wallpapers.indexOf("~/") !== 0)
+        addError(errors, pathFor("Appearance", "wallpapers"), wallpapersEntry.line, "The wallpaper folder must be an absolute path or start with ~/.");
+
     var lockCommand = stringValue(document, "Power", "lockCommand", "hyprlock", errors, false);
     var lockArguments = sectionList(document, "Power.Arguments", errors);
     var maxVisibleEntry = entry(document, "Notifications", "maxVisible");
@@ -245,6 +250,7 @@ function parseAndValidate(iniText) {
 
     var config = {
         colorScheme: colorScheme,
+        wallpapers: wallpapers,
         textScale: realValue(document, "Appearance", "textScale", 1.0, 0.8, 1.5, errors),
         panelWorkspace: stringValue(document, "Appearance", "panelWorkspace", "special:term", errors, false),
         panelWidth: integerValue(document, "Appearance", "panelWidth", 420, 240, 1200, errors),

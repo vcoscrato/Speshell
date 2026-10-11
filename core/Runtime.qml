@@ -104,7 +104,21 @@ Scope {
         function list(): string { return Services.ActivityService.listJson(); }
     }
 
+    IpcHandler {
+        target: "wallpaper"
+
+        function set(path: string): void { Services.WallpaperService.set(path); }
+        function shuffle(folder: string): void { Services.WallpaperService.shuffle(folder === "*" ? undefined : folder); }
+        function get(): string { return Services.WallpaperService.current; }
+    }
+
     Services.ActivityProcessAdapter {}
+
+    Variants {
+        model: Services.WallpaperService.enabled ? Quickshell.screens : []
+
+        WallpaperWindow {}
+    }
 
     LauncherOverlay {
         id: launcherOverlay

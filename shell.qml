@@ -15,6 +15,7 @@ ShellRoot {
             return;
         ThemeModule.Theme.paletteName = configValue.colorScheme;
         ThemeModule.Theme.textScale = configValue.textScale;
+        Services.WallpaperService.directory = configValue.wallpapers;
         Services.AudioService.scrollStep = configValue.audioScrollStep;
         Services.WeatherService.location = configValue.weatherLocation;
         Services.WeatherService.enabled = configValue.weatherEnabled;
@@ -30,6 +31,24 @@ ShellRoot {
             if (Services.ConfigService.config)
                 root.applyConfig(Services.ConfigService.config);
         }
+    }
+
+    Binding {
+        target: Services.SkinService
+        property: "skin"
+        value: Services.WallpaperService.skin
+    }
+
+    Binding {
+        target: ThemeModule.Theme
+        property: "paletteOverride"
+        value: Services.SkinService.palette
+    }
+
+    Binding {
+        target: ThemeModule.Theme
+        property: "accentOverride"
+        value: Services.SkinService.accent
     }
 
     LazyLoader {

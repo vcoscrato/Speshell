@@ -13,6 +13,14 @@ relevant scenarios from this list on a real Hyprland session.
 - Complete a bang with **Tab**, search by initials (`vsc`), and type a query that
   matches no application to get the web-search fallback.
 - Launch a `Terminal=true` application such as `btop`.
+- With a skin that has a launcher transition, type during the entrance, close
+  with **Escape** and by launching an app, reopen during the exit, and confirm
+  clicks pass through while the exit plays.
+- With `wallpapers` set, browse `!wall`, filter it, shuffle a folder, and pick
+  wallpapers that switch between two skins and to no skin. Confirm the colors,
+  launcher transition, and wallpaper transition follow, the old skin's launcher
+  exit finishes, and the choice survives a relaunch. Break a skin's `Skin.qml`
+  and confirm a notification appears and the launcher still opens.
 
 ## Displays
 

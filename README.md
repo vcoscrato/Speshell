@@ -24,6 +24,7 @@ Speshell is especially useful for heavy fullscreen applications. If you need qui
 - Notification daemon with history and DND
 - Activity controls for screen recording, dictation, and other long-running tools
 - Calendar, battery status, power actions, and system tray
+- Optional wallpaper with a launcher picker, and skins chosen by the wallpaper
 
 Unsupported widgets hide automatically. For example, a desktop without a battery does not show the battery widget.
 
@@ -251,6 +252,61 @@ yt = https://www.youtube.com/results?search_query={query}
 ```
 
 Unknown bangs are passed intact to `[Launcher] searchUrl`, which enables provider-native bangs when the selected search engine supports them.
+
+### Wallpapers and skins
+
+Speshell can draw the wallpaper. Set `[Appearance] wallpapers` to a folder (absolute, or starting with `~/`), and stop any other wallpaper daemon. Leave it empty to keep using your own.
+
+```ini
+[Appearance]
+wallpapers = ~/Pictures/Wallpapers
+```
+
+Type `!wall` in the launcher to browse the folder with thumbnails, and add words to filter by name or subfolder. A **Shuffle** entry for each subfolder with several wallpapers picks one of them at random. Speshell remembers the choice across restarts and starts from a random wallpaper the first time. The same actions are available from a terminal:
+
+```bash
+speshell wallpaper set ~/Pictures/Wallpapers/fire/agni-kai.jpg
+speshell wallpaper shuffle fire     # or no folder for the whole library
+speshell wallpaper get
+```
+
+The wallpaper picks the skin. A skin is a directory under `~/.local/share/speshell/skins`; a wallpaper inside a top-level subfolder with the same name applies that skin, so every wallpaper in `Wallpapers/fire/` (including nested folders) uses the `fire` skin. Wallpapers anywhere else use no skin. If a skin fails to load, Speshell shows a notification and keeps its default look.
+
+A skin directory holds a `Skin.qml` whose root object declares skin API version 1. Every other property is optional:
+
+```qml
+import QtQuick
+
+QtObject {
+    readonly property int apiVersion: 1
+    // Merged over the configured color scheme, using the scheme's keys (base, surface0, text, ...).
+    readonly property var palette: ({ base: "#1d1416", text: "#f1e2d6" })
+    readonly property string accent: "#f58a3a"
+    readonly property Component launcherTransition: Component { MyLauncherTransition {} }
+    readonly property Component wallpaperTransition: Component { MyWallpaperTransition {} }
+}
+```
+
+**Launcher transition.** Created when the launcher is shown and destroyed after it hides. It fills the launcher's full-screen surface and draws above the panel. Speshell sets these properties on it:
+
+| Property | Meaning |
+|---|---|
+| `panel` | The launcher panel item. Capture it with a `ShaderEffectSource` (`hideSource: true`) to draw the panel yourself. |
+| `panelRect` | The panel's geometry in surface coordinates. It changes as the result list grows or shrinks. |
+| `active` | `true` while the launcher is open. It turns `false` when the launcher closes, and can turn `true` again if the launcher reopens during the exit. |
+
+When the exit animation is done, the transition must emit `closingFinished()`. If the signal does not arrive within 2.5 seconds, Speshell hides the launcher anyway. While the exit plays, the launcher ignores input and keyboard focus returns to the previous window. The search field accepts typing during the entrance. Each opening keeps the transition it started with, so picking a wallpaper lets the old skin finish its exit.
+
+**Wallpaper transition.** Created when the wallpaper changes to one that uses the skin, once the new image has loaded. It fills the screen above both wallpapers. Speshell sets two properties on it:
+
+| Property | Meaning |
+|---|---|
+| `outgoing` | The old wallpaper's image item. It sits on top of the new one, so the transition must hide it (for example through a `ShaderEffectSource` with `hideSource: true`) and draw it going away. |
+| `incoming` | The new wallpaper's image item. It already shows beneath; capture it with `hideSource: true` only to draw it distorted. |
+
+When done, the transition emits `finished()`; Speshell removes it after 5 seconds otherwise. Without a wallpaper transition, the old wallpaper fades out.
+
+Speshell destroys a transition inside its finishing signal's handler, so nothing may run after the emit. Keep effects light: advance animation clocks at about 60 Hz with a `Timer` rather than per-frame animations, so high-refresh displays do not repaint full-screen surfaces hundreds of times per second.
 
 ### Integrations and power
 

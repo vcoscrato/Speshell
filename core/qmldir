@@ -6,5 +6,7 @@ ConfigErrorWindow 1.0 ConfigErrorWindow.qml
 LauncherOverlay 1.0 LauncherOverlay.qml
 NotificationToastWindow 1.0 NotificationToastWindow.qml
 VolumeOsdWindow 1.0 VolumeOsdWindow.qml
+WallpaperView 1.0 WallpaperView.qml
+WallpaperWindow 1.0 WallpaperWindow.qml
 Runtime 1.0 Runtime.qml
 SpecialWorkspaceTracker 1.0 SpecialWorkspaceTracker.qml

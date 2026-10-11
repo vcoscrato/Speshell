@@ -105,4 +105,36 @@ if [[ "${1:-}" == "activity" ]]; then
   exit 0
 fi
 
+if [[ "${1:-}" == "wallpaper" ]]; then
+  shift
+  action="${1:-get}"
+  shift || true
+
+  case "$action" in
+    set)
+      if [[ $# -ne 1 ]]; then
+        printf 'usage: speshell wallpaper set PATH\n' >&2
+        exit 2
+      fi
+      ipc_call wallpaper set "$(realpath -s -- "$1")" >/dev/null
+      ;;
+    shuffle)
+      if [[ $# -gt 1 ]]; then
+        printf 'usage: speshell wallpaper shuffle [FOLDER]\n' >&2
+        exit 2
+      fi
+      ipc_call wallpaper shuffle "${1:-*}" >/dev/null
+      ;;
+    get)
+      ipc_call wallpaper get
+      ;;
+    *)
+      printf 'speshell: unknown wallpaper action: %s\n' "$action" >&2
+      printf 'usage: speshell wallpaper [get|set PATH|shuffle [FOLDER]]\n' >&2
+      exit 2
+      ;;
+  esac
+  exit 0
+fi
+
 exec /usr/bin/quickshell -p "$app_dir" "$@"
