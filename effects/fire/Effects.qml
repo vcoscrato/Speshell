@@ -1,0 +1,16 @@
+import QtQuick
+
+// Fire effects: a launcher that burns in and out, and wallpapers that burn away
+// to the next.
+// A theme picks them with `effects = fire` in its theme.ini.
+QtObject {
+    readonly property int apiVersion: 1
+
+    readonly property Component launcherTransition: Component {
+        FireTransition {}
+    }
+
+    readonly property Component wallpaperTransition: Component {
+        FireWallpaper {}
+    }
+}

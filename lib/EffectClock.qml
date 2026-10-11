@@ -1,6 +1,6 @@
 import QtQuick
 
-// Effect clock shared by every skin. Emits `advanced(dt)` about 60 times a second
+// Effect clock shared by every effect. Emits `advanced(dt)` about 60 times a second
 // with the elapsed time, and steps `simTime` in fixed 1/60 s increments so
 // simulations look the same on any display refresh rate.
 //

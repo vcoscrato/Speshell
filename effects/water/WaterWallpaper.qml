@@ -6,7 +6,7 @@ import "common"
 Item {
     id: root
 
-    // ── Speshell skin API v1 ────────────────────────────────
+    // ── Speshell effects API v1 ────────────────────────────────
     property Item outgoing: null
     property Item incoming: null
     signal finished()

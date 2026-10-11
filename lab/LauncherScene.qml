@@ -1,7 +1,7 @@
 import QtQuick
 import Quickshell
 
-// Mimics Speshell's launcher host: a mock panel, plus the skin's transition bound the
+// Mimics Speshell's launcher host: a mock panel, plus the effects' transition bound the
 // same way LauncherOverlay binds it. Opens at t=0 and closes at CLOSE_AT seconds.
 Item {
     id: root
@@ -11,8 +11,8 @@ Item {
     readonly property real closeAt: Number(Quickshell.env("CLOSE_AT") || 2.2)
     readonly property bool opened: labTime < closeAt
 
-    property var skin: {
-        const component = Qt.createComponent("file://" + Quickshell.env("SKIN_DIR") + "/Skin.qml");
+    property var effects: {
+        const component = Qt.createComponent("file://" + Quickshell.env("EFFECTS_DIR") + "/Effects.qml");
         if (component.status !== Component.Ready) {
             console.error(component.errorString());
             return null;
@@ -49,7 +49,7 @@ Item {
         z: 2
         anchors.fill: parent
         active: root.presenting
-        sourceComponent: root.skin ? root.skin.launcherTransition : null
+        sourceComponent: root.effects ? root.effects.launcherTransition : null
     }
 
     Binding { target: transition.item; property: "panel"; value: panel }

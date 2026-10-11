@@ -1,12 +1,12 @@
 #!/bin/sh
-# usage: lab/preview.sh SKIN SCENE  (SCENE: launcher | wallpaper)
-# Renders offscreen into lab/out/SKIN-SCENE.mp4 and SKIN-SCENE-strip.png, and prints
+# usage: lab/preview.sh EFFECT SCENE  (SCENE: launcher | wallpaper)
+# Renders offscreen into lab/out/EFFECT-SCENE.mp4 and EFFECT-SCENE-strip.png, and prints
 # the transition's lifecycle log. Env: CLOSE_AT, SWITCH_AT, WALL_A, WALL_B, SPESHELL_DIR.
 set -e
 LAB=$(cd "$(dirname "$0")" && pwd)
-SKIN=$1
+EFFECT=$1
 SCENE=${2:-launcher}
-NAME="$SKIN-$SCENE"
+NAME="$EFFECT-$SCENE"
 OUT="$LAB/out/$NAME"
 SAMPLES="$LAB/out/samples"
 
@@ -31,7 +31,7 @@ esac
 
 rm -rf "$OUT" && mkdir -p "$OUT"
 LOG="$LAB/out/$NAME.log"
-SKIN_DIR="$LAB/../skins/$SKIN" SCENE="$LAB/$(echo "$SCENE" | sed 's/./\U&/')Scene.qml" \
+EFFECTS_DIR="$LAB/../effects/$EFFECT" SCENE="$LAB/$(echo "$SCENE" | sed 's/./\U&/')Scene.qml" \
     DURATION="$END" OUT="$OUT" WALL_A="$WALL_A" WALL_B="$WALL_B" SPESHELL_DIR="$SPESHELL_DIR" \
     QT_FORCE_STDERR_LOGGING=1 timeout 90 quickshell --no-color -p "$LAB/shell.qml" >"$LOG" 2>&1 || true
 grep -E "closingFinished|transition|ERROR|rror:|WARN" "$LOG" | grep -v "window masks" || true

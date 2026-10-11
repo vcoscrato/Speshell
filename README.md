@@ -1,8 +1,8 @@
 # Speshell Elements
 
-Elemental [Speshell](https://github.com/vcoscrato/Speshell) skins. Each element brings its own launcher entrance and exit, a wallpaper transition, and a matching palette. There is one skin per element: fire, air, water, and earth.
+Elemental effects and themes for [Speshell](https://github.com/vcoscrato/Speshell). Each element brings its own launcher entrance, an animation while the launcher is open, an exit, and a wallpaper transition. Each nation's theme pairs its element's effects with a matching palette: Fire Nation, Air Nomads, Water Tribe, and Earth Kingdom.
 
-The effects are original work inspired by the four elements. This repository ships no third-party artwork. Bring your own wallpapers.
+The effects and wallpapers are original work inspired by the four elements; this repository ships no third-party artwork. Each theme comes with one plain, unbranded wallpaper, and you can add your own.
 
 ## Fire
 
@@ -34,31 +34,28 @@ The effects are original work inspired by the four elements. This repository shi
 
 ## Use
 
-Requires Speshell with skin API v1 and Qt 6 shader tools (`qt6-shadertools` on Arch).
+Requires Speshell with effects API v1, [just](https://github.com/casey/just), and Qt 6 shader tools (`qt6-shadertools` on Arch).
 
 ```bash
-make link    # compile shaders and symlink skins into ~/.local/share/speshell/skins
+just link     # compile shaders and symlink the effects into ~/.local/share/speshell/effects
+just themes   # copy the nation themes and wallpapers into ~/.config/speshell/themes (keeps existing files)
 ```
 
-Speshell picks the skin from the wallpaper. Point it at a wallpaper folder and give each skin a subfolder:
-
-```ini
-# ~/.config/speshell/config.ini
-[Appearance]
-wallpapers = ~/Pictures/Wallpapers
-```
+Each theme in `themes/` is a `theme.ini` with the nation's colors and its element's effects, plus a default wallpaper: Fire Nation (a volcano at ember dusk), Air Nomads (spires above a sea of clouds), Water Tribe (a polar night sea), and Earth Kingdom (mesas at golden hour). Add your own wallpapers next to them:
 
 ```
-~/Pictures/Wallpapers/
-├── fire/          any wallpaper in here, including nested folders, uses the fire skin
-│   └── zuko/
-├── air/
-└── misc.jpg       no skin
+~/.config/speshell/themes/
+├── fire-nation/
+│   ├── theme.ini
+│   ├── agni-kai.jpg
+│   └── zuko/ember-island.png
+└── air-nomads/
+    └── theme.ini
 ```
 
-Then pick a wallpaper with `!wall` in the launcher, or `speshell wallpaper set PATH`.
+Then pick a theme with `!theme` in the launcher. For Speshell to draw the wallpapers, set `drawWallpaper = true` under `[Appearance]` in its `config.ini`; then `!wall` picks a wallpaper too. Any other theme can use these effects with `effects = fire` (or `air`, `water`, `earth`) in its `theme.ini`.
 
-Qt caches compiled QML, so edits to a skin's `.qml` files take effect after restarting Speshell. Shader edits need `make` and a restart too. Use the lab to iterate without restarting.
+Qt caches compiled QML, so edits to an effect's `.qml` files take effect after restarting Speshell. Shader edits need `just shaders` and a restart too. Use the lab to iterate without restarting. Edits to a `theme.ini` apply the next time the theme list is scanned, for example when opening `!theme`.
 
 ## How it works
 
@@ -69,9 +66,9 @@ Each element draws its motion in shaders, in flat, anti-aliased color bands for 
 - **Water** draws its whip as a shaded tube along a spiral, its streams as tubes along the launcher's rounded border, and the sheet and ripple as refraction of the captured panel or wallpapers.
 - **Earth** builds its stone, cracks, and shards from Voronoi cells, its boulders as faceted convex polygons, and draws dust and rock chips analytically.
 
-GPU time per frame at 1080p on an RTX 3070 (`make perf`). The open launcher is measured once the entrance has finished; the transitions are averaged over their whole run.
+GPU time per frame at 1080p on an RTX 3070 (`just perf`). The open launcher is measured once the entrance has finished; the transitions are averaged over their whole run.
 
-| Skin | Launcher open | Launcher entrance and exit | Wallpaper |
+| Effects | Launcher open | Launcher entrance and exit | Wallpaper |
 |---|---|---|---|
 | Fire | 0.33 ms | 0.29 ms | 0.20 ms |
 | Air | 0.27 ms | 0.44 ms | 0.25 ms |
@@ -82,27 +79,29 @@ Each effect covers only the area around the launcher it needs. Nothing runs whil
 
 ## Development
 
-The lab renders skins offscreen through an invisible 1×1 overlay surface, so nothing appears on screen. It needs a running Wayland session.
+The lab renders effects offscreen through an invisible 1×1 overlay surface, so nothing appears on screen. It needs a running Wayland session.
 
 ```bash
-make preview SKIN=fire SCENE=launcher    # or SCENE=wallpaper
-make check                               # every skin and scene; fails on warnings
-make perf SKIN=fire SCENE=launcher       # GPU time per frame at 1080p
+just preview fire launcher   # or: just preview water wallpaper
+just check                   # every effect and scene; fails on warnings
+just perf fire launcher      # GPU time per frame at 1080p
 ```
 
-`make preview` writes `lab/out/<skin>-<scene>.mp4`, a five-frame contact strip `<skin>-<scene>-strip.png`, the raw frames, and the log. It takes a few seconds.
+`just preview` writes `lab/out/<effect>-<scene>.mp4`, a five-frame contact strip `<effect>-<scene>-strip.png`, the raw frames, and the log. It takes a few seconds.
 
 - **Frame-exact time.** Lab scenes drive the shared `EffectClock` with virtual time, 1/60 s per rendered frame, so captures match real playback however slowly frames are saved. Effects must take their time from `EffectClock`, never from their own timers or `Date`.
 - **Wallpapers.** The lab generates two plain stand-in wallpapers. Set `WALL_A=... WALL_B=...` to preview against your own.
 - **Real host.** The wallpaper scene runs Speshell's own `core/WallpaperView.qml` from `SPESHELL_DIR`, which defaults to `../speshell` and then `/usr/share/speshell`. The launcher scene mimics `LauncherOverlay` with a mock panel, and likewise destroys the transition inside its finishing signal.
 - **Timing.** `CLOSE_AT` sets when the launcher scene closes, and `SWITCH_AT` sets when the wallpaper scene switches.
-- **Cost.** `make perf` renders 1 and then many offscreen copies of a scene every frame and reports the slope, which is the GPU time of one instance. It doubles the copies, up to 96, until the frame time clearly rises above the display's refresh interval; below that, the result is an upper bound. To measure only the open launcher, keep it open and start late: `CLOSE_AT=30 PERF_FROM=1.5 DURATION=4.5 make perf SKIN=air`.
+- **Cost.** `just perf` renders 1 and then many offscreen copies of a scene every frame and reports the slope, which is the GPU time of one instance. It doubles the copies, up to 96, until the frame time clearly rises above the display's refresh interval; below that, the result is an upper bound. To measure only the open launcher, keep it open and start late: `CLOSE_AT=30 PERF_FROM=1.5 DURATION=4.5 just perf air`.
 
 Layout:
 
 - `lib/` holds `common.glsl` (noise, curl, signed distances, banding, burn fronts, spiral strokes, Voronoi cells, arc length around a rounded rect) and `EffectClock.qml`.
-- `skins/<element>/Skin.qml` is the entry point Speshell loads. Each skin reaches `lib/` through its `common` symlink, which keeps working when the skin itself is symlinked into Speshell.
-- `skins/<element>/shaders/*.frag` are the GLSL sources. `make` compiles them to `.qsb`.
+- `effects/<element>/Effects.qml` is the entry point Speshell loads. Each effect reaches `lib/` through its `common` symlink, which keeps working when the effect itself is symlinked into Speshell.
+- `effects/<element>/shaders/*.frag` are the GLSL sources. `just shaders` compiles them to `.qsb`.
+- `themes/<nation>/` holds each nation's `theme.ini` and default wallpaper, which `just themes` installs.
+- `backgrounds/*.frag` paint the default wallpapers. `just backgrounds` re-renders them at 3840×2160 into `themes/`.
 - `lab/` holds the harness, the scenes, and the preview, check, and perf scripts.
 
-Adding an element: create `skins/<name>/` with a `common -> ../../lib` symlink and a `Skin.qml` that declares `apiVersion: 1`. Then iterate with `make preview SKIN=<name>` and finish with `make check`.
+Adding an element: create `effects/<name>/` with a `common -> ../../lib` symlink and an `Effects.qml` that declares `apiVersion: 1`. Then iterate with `just preview <name>` and finish with `just check`.
