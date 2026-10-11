@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import "../components" as Components
 import "../services" as Services
 import "../theme" as ThemeModule
 
@@ -26,10 +27,20 @@ PanelWindow {
         right: true
     }
 
+    // The default wallpaper, under any theme wallpaper: the Speshell mark on the
+    // theme's darkest color.
+    Components.SpeshellMark {
+        anchors.centerIn: parent
+        size: 29 * Math.max(2, Math.round(root.height * 0.16 / 29))
+        leftColor: ThemeModule.Theme.surface2
+        // Opaque, so the overlapping strokes do not show their seams.
+        rightColor: Qt.tint(ThemeModule.Theme.crust, ThemeModule.Theme.alpha(ThemeModule.Theme.accent, 0.6))
+    }
+
     WallpaperView {
         anchors.fill: parent
-        path: Services.WallpaperService.current
-        transition: Services.SkinService.wallpaperTransition
+        path: Services.ThemeService.wallpaper
+        transition: Services.EffectsService.wallpaperTransition
         pixelRatio: root.devicePixelRatio
     }
 }

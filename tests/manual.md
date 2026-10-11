@@ -1,6 +1,6 @@
 # Speshell manual test checklist
 
-Run automated checks first with `make lint` and `make test`, then exercise the
+Run automated checks first with `just lint` and `just test`, then exercise the
 relevant scenarios from this list on a real Hyprland session.
 
 ## Dashboard and launcher
@@ -13,14 +13,20 @@ relevant scenarios from this list on a real Hyprland session.
 - Complete a bang with **Tab**, search by initials (`vsc`), and type a query that
   matches no application to get the web-search fallback.
 - Launch a `Terminal=true` application such as `btop`.
-- With a skin that has a launcher transition, type during the entrance, close
-  with **Escape** and by launching an app, reopen during the exit, and confirm
-  clicks pass through while the exit plays.
-- With `wallpapers` set, browse `!wall`, filter it, shuffle a folder, and pick
-  wallpapers that switch between two skins and to no skin. Confirm the colors,
-  launcher transition, and wallpaper transition follow, the old skin's launcher
-  exit finishes, and the choice survives a relaunch. Break a skin's `Skin.qml`
-  and confirm a notification appears and the launcher still opens.
+- With a theme whose effects have a launcher transition, type during the
+  entrance, close with **Escape** and by launching an app, reopen during the
+  exit, and confirm clicks pass through while the exit plays.
+- With `drawWallpaper` off, confirm Speshell leaves the background alone and
+  `!wall` is not offered; toggle it in **Settings → Appearance** and confirm the
+  background appears and disappears.
+- With theme folders in `~/.config/speshell/themes`, switch themes with
+  `!theme`, **Settings → Appearance**, and by picking wallpapers with `!wall`,
+  including a built-in scheme and a theme without effects. Confirm the colors,
+  wallpaper, launcher transition, and wallpaper transition follow, the old
+  effects' launcher exit finishes, and the choice survives a relaunch with the
+  right colors from the first frame. Put a bad color in the active theme's
+  `theme.ini` and break an `Effects.qml`; confirm notifications appear and the
+  launcher still opens.
 
 ## Displays
 

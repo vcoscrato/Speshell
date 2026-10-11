@@ -24,7 +24,7 @@ Speshell is especially useful for heavy fullscreen applications. If you need qui
 - Notification daemon with history and DND
 - Activity controls for screen recording, dictation, and other long-running tools
 - Calendar, battery status, power actions, and system tray
-- Optional wallpaper with a launcher picker, and skins chosen by the wallpaper
+- Themes: color schemes, your own theme folders with wallpapers, and animated effects
 
 Unsupported widgets hide automatically. For example, a desktop without a battery does not show the battery widget.
 
@@ -124,7 +124,7 @@ Edit `~/.config/speshell/config.ini`. The bundled `config.example.ini` is the ca
 
 The INI format intentionally replaces the earlier `config.jsonc` format without an automatic migration. If you have an old config, copy the settings you still want into `config.ini`; the old file is left untouched and ignored.
 
-Gruvbox is the default color scheme. Catppuccin, Nord, Dracula, Tokyo Night, Rosé Pine, Solarized Dark, and Everforest remain available. The Settings panel uses compact category pages for common appearance, audio, launcher, integration, and notification options; advanced mappings and commands remain in `config.ini`.
+Colors come from the active theme (see [Themes](#themes)), not from `config.ini`. The Settings panel uses compact category pages for common appearance, audio, launcher, integration, and notification options; advanced mappings and commands remain in `config.ini`.
 
 Speshell validates malformed lines and the settings that can put the runtime into a bad state: enums, booleans, numeric ranges, URL templates, and launcher bangs. Other entries are ignored. Validation failures open a line-aware diagnostic window; saving a corrected file reloads it automatically, or select **Retry**. Comments use `#` or `;` on their own line. Important numeric constraints are:
 
@@ -253,35 +253,66 @@ yt = https://www.youtube.com/results?search_query={query}
 
 Unknown bangs are passed intact to `[Launcher] searchUrl`, which enables provider-native bangs when the selected search engine supports them.
 
-### Wallpapers and skins
+### Themes
 
-Speshell can draw the wallpaper. Set `[Appearance] wallpapers` to a folder (absolute, or starting with `~/`), and stop any other wallpaper daemon. Leave it empty to keep using your own.
+A theme sets Speshell's colors, and can bring wallpapers and animated effects. Gruvbox, Catppuccin, Nord, Dracula, Tokyo Night, Rosé Pine, Solarized Dark, and Everforest are built in. Gruvbox is the default.
+
+Your own themes are folders under `~/.config/speshell/themes`. Each holds an optional `theme.ini` and any wallpapers (`.jpg`, `.png`, `.webp`, in nested folders too):
+
+```
+~/.config/speshell/themes/
+├── fire-nation/
+│   ├── theme.ini
+│   ├── agni-kai.jpg
+│   └── zuko/ember-island.png
+└── original/
+    └── gargantua.jpg     a folder without theme.ini uses Gruvbox colors
+```
+
+```ini
+# ~/.config/speshell/themes/fire-nation/theme.ini
+[Theme]
+name = Fire Nation
+# Built-in scheme for any color not set under [Colors] (default gruvbox).
+scheme = gruvbox
+# Optional effects from ~/.local/share/speshell/effects.
+effects = fire
+
+[Colors]
+base = #1d1315
+text = #f3e3d3
+accent = #f0702f
+```
+
+`[Colors]` accepts `#rrggbb` values for `base`, `mantle`, `crust`, `surface0`, `surface1`, `surface2`, `overlay0`, `text`, `subtext0`, `subtext1`, `red`, `peach`, `yellow`, `green`, `teal`, `sky`, `blue`, `lavender`, `mauve`, `pink`, `rosewater`, and `accent`. A folder named after a built-in scheme replaces it. Problems in the active theme's file show up as a notification, and the rest of the file still applies.
+
+Pick a theme with `!theme` in the launcher or in **Settings → Appearance**. Speshell remembers the choice across restarts. Themes set colors and effects either way; wallpapers need `drawWallpaper`:
 
 ```ini
 [Appearance]
-wallpapers = ~/Pictures/Wallpapers
+# Off by default, so another wallpaper tool stays in charge of the background.
+drawWallpaper = true
 ```
 
-Type `!wall` in the launcher to browse the folder with thumbnails, and add words to filter by name or subfolder. A **Shuffle** entry for each subfolder with several wallpapers picks one of them at random. Speshell remembers the choice across restarts and starts from a random wallpaper the first time. The same actions are available from a terminal:
+With it on, Speshell draws the desktop background, so stop other wallpaper daemons. Choosing a theme shows one of its wallpapers at random, and a theme without wallpapers, such as a built-in scheme, shows the default wallpaper: the Speshell mark in the theme's colors. `!wall` picks a wallpaper, which brings its theme along, and lists a **Shuffle** entry for each theme with several. **Settings → Appearance → Draw Wallpaper** toggles the option. From a terminal:
 
 ```bash
-speshell wallpaper set ~/Pictures/Wallpapers/fire/agni-kai.jpg
-speshell wallpaper shuffle fire     # or no folder for the whole library
-speshell wallpaper get
+speshell theme list
+speshell theme set fire-nation
+speshell theme shuffle                 # another wallpaper from the current theme
+speshell wallpaper set ~/.config/speshell/themes/fire-nation/agni-kai.jpg
+speshell theme rescan                  # after adding themes or wallpapers outside the launcher
 ```
 
-The wallpaper picks the skin. A skin is a directory under `~/.local/share/speshell/skins`; a wallpaper inside a top-level subfolder with the same name applies that skin, so every wallpaper in `Wallpapers/fire/` (including nested folders) uses the `fire` skin. Wallpapers anywhere else use no skin. If a skin fails to load, Speshell shows a notification and keeps its default look.
+### Effects
 
-A skin directory holds a `Skin.qml` whose root object declares skin API version 1. Every other property is optional:
+Effects animate the launcher and wallpaper changes. They are code, kept apart from themes: an effects directory under `~/.local/share/speshell/effects` holds an `Effects.qml` whose root object declares effects API version 1, and a theme uses it with `effects = <directory name>`. If effects fail to load, Speshell shows a notification and runs without them. Both transitions are optional:
 
 ```qml
 import QtQuick
 
 QtObject {
     readonly property int apiVersion: 1
-    // Merged over the configured color scheme, using the scheme's keys (base, surface0, text, ...).
-    readonly property var palette: ({ base: "#1d1416", text: "#f1e2d6" })
-    readonly property string accent: "#f58a3a"
     readonly property Component launcherTransition: Component { MyLauncherTransition {} }
     readonly property Component wallpaperTransition: Component { MyWallpaperTransition {} }
 }
@@ -295,9 +326,9 @@ QtObject {
 | `panelRect` | The panel's geometry in surface coordinates. It changes as the result list grows or shrinks. |
 | `active` | `true` while the launcher is open. It turns `false` when the launcher closes, and can turn `true` again if the launcher reopens during the exit. |
 
-When the exit animation is done, the transition must emit `closingFinished()`. If the signal does not arrive within 2.5 seconds, Speshell hides the launcher anyway. While the exit plays, the launcher ignores input and keyboard focus returns to the previous window. The search field accepts typing during the entrance. Each opening keeps the transition it started with, so picking a wallpaper lets the old skin finish its exit.
+When the exit animation is done, the transition must emit `closingFinished()`. If the signal does not arrive within 2.5 seconds, Speshell hides the launcher anyway. While the exit plays, the launcher ignores input and keyboard focus returns to the previous window. The search field accepts typing during the entrance. Each opening keeps the transition it started with, so switching themes from the launcher lets the old effects finish their exit.
 
-**Wallpaper transition.** Created when the wallpaper changes to one that uses the skin, once the new image has loaded. It fills the screen above both wallpapers. Speshell sets two properties on it:
+**Wallpaper transition.** Created when the wallpaper changes to one whose theme uses the effects, once the new image has loaded. It fills the screen above both wallpapers. Speshell sets two properties on it:
 
 | Property | Meaning |
 |---|---|
@@ -356,11 +387,11 @@ After startup, Speshell emits one aggregated warning when an explicitly configur
 
 ## Development
 
-Run deterministic tests and QML linting locally:
+Run deterministic tests and QML linting locally with [just](https://github.com/casey/just):
 
 ```bash
-make test
-make lint
+just test
+just lint
 ```
 
 `bin/speshell` is the same command the package installs as `/usr/bin/speshell`. Run from a checkout, it uses that checkout's QML files, so `bin/speshell launcher` or `bin/speshell activity list` exercise local changes; set `SPESHELL_QML_DIR` to point it elsewhere.

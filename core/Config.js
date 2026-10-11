@@ -1,18 +1,8 @@
 .pragma library
 .import "WidgetRegistry.js" as WidgetRegistry
 
-var paletteNames = ({
-    "catppuccin-frappe": true, "catppuccin-latte": true, "catppuccin-macchiato": true,
-    "catppuccin-mocha": true, "dracula": true, "everforest": true, "gruvbox": true,
-    "nord": true, "rose-pine": true, "solarized-dark": true, "tokyo-night": true
-});
-
 function hasOwn(value, key) {
     return Object.prototype.hasOwnProperty.call(value, key);
-}
-
-function isPaletteName(value) {
-    return typeof value === "string" && hasOwn(paletteNames, value);
 }
 
 function addError(errors, path, line, message) {
@@ -231,16 +221,6 @@ function parseAndValidate(iniText) {
     var document = parseIni(source);
     var errors = document.errors.slice();
 
-    var colorScheme = stringValue(document, "Appearance", "colorScheme", "gruvbox", errors, false);
-    var colorEntry = entry(document, "Appearance", "colorScheme");
-    if (colorEntry && !isPaletteName(colorScheme))
-        addError(errors, pathFor("Appearance", "colorScheme"), colorEntry.line, "Unknown color scheme '" + colorScheme + "'.");
-
-    var wallpapers = stringValue(document, "Appearance", "wallpapers", "", errors, true);
-    var wallpapersEntry = entry(document, "Appearance", "wallpapers");
-    if (wallpapersEntry && wallpapers !== "" && wallpapers.charAt(0) !== "/" && wallpapers.indexOf("~/") !== 0)
-        addError(errors, pathFor("Appearance", "wallpapers"), wallpapersEntry.line, "The wallpaper folder must be an absolute path or start with ~/.");
-
     var lockCommand = stringValue(document, "Power", "lockCommand", "hyprlock", errors, false);
     var lockArguments = sectionList(document, "Power.Arguments", errors);
     var maxVisibleEntry = entry(document, "Notifications", "maxVisible");
@@ -249,8 +229,7 @@ function parseAndValidate(iniText) {
         : integerValue(document, "Notifications", "maxVisible", 3, 1, 50, errors);
 
     var config = {
-        colorScheme: colorScheme,
-        wallpapers: wallpapers,
+        drawWallpaper: booleanValue(document, "Appearance", "drawWallpaper", false, errors),
         textScale: realValue(document, "Appearance", "textScale", 1.0, 0.8, 1.5, errors),
         panelWorkspace: stringValue(document, "Appearance", "panelWorkspace", "special:term", errors, false),
         panelWidth: integerValue(document, "Appearance", "panelWidth", 420, 240, 1200, errors),

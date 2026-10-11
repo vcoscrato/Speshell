@@ -38,69 +38,8 @@ Item {
             ? ThemeModule.Theme.selectedFill
             : "transparent"
 
-        Item {
+        Components.SpeshellMark {
             anchors.centerIn: parent
-            width: 29
-            height: 29
-
-            Rectangle {
-                x: 0
-                y: 2
-                width: 2
-                height: 25
-                color: ThemeModule.Theme.text
-            }
-            Rectangle {
-                x: 0
-                y: 2
-                width: 9
-                height: 2
-                color: ThemeModule.Theme.text
-            }
-            Rectangle {
-                x: 0
-                y: 25
-                width: 9
-                height: 2
-                color: ThemeModule.Theme.text
-            }
-
-            Rectangle {
-                x: 27
-                y: 2
-                width: 2
-                height: 25
-                color: ThemeModule.Theme.accent
-            }
-            Rectangle {
-                x: 20
-                y: 2
-                width: 9
-                height: 2
-                color: ThemeModule.Theme.accent
-            }
-            Rectangle {
-                x: 20
-                y: 25
-                width: 9
-                height: 2
-                color: ThemeModule.Theme.accent
-            }
-
-            Repeater {
-                model: [0, 60, -60]
-
-                delegate: Rectangle {
-                    required property real modelData
-
-                    anchors.centerIn: parent
-                    width: 2
-                    height: 15
-                    radius: 1
-                    rotation: modelData
-                    color: ThemeModule.Theme.accent
-                }
-            }
         }
 
         Rectangle {

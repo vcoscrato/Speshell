@@ -11,6 +11,7 @@ RefreshButton 1.0 RefreshButton.qml
 SelectRow 1.0 SelectRow.qml
 SelectMenuRow 1.0 SelectMenuRow.qml
 SidebarIcon 1.0 SidebarIcon.qml
+SpeshellMark 1.0 SpeshellMark.qml
 SpeshellMarkButton 1.0 SpeshellMarkButton.qml
 StatusBadge 1.0 StatusBadge.qml
 StyledSlider 1.0 StyledSlider.qml

@@ -49,6 +49,7 @@ var files = ({
     "media-previous": "player-track-prev",
     "missing": "help-circle",
     "notes": "pencil",
+    "palette": "palette",
     "photo": "photo",
     "plug": "plug",
     "plus": "plus",

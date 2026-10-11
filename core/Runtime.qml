@@ -105,17 +105,28 @@ Scope {
     }
 
     IpcHandler {
+        target: "theme"
+
+        function list(): string {
+            return Services.ThemeService.themes.map(function(theme) { return theme.id + "\t" + theme.name; }).join("\n");
+        }
+        function get(): string { return Services.ThemeService.themeId; }
+        function set(id: string): bool { return Services.ThemeService.setTheme(id); }
+        function shuffle(id: string): bool { return Services.ThemeService.shuffle(id === "*" ? "" : id); }
+        function rescan(): void { Services.ThemeService.scan(); }
+    }
+
+    IpcHandler {
         target: "wallpaper"
 
-        function set(path: string): void { Services.WallpaperService.set(path); }
-        function shuffle(folder: string): void { Services.WallpaperService.shuffle(folder === "*" ? undefined : folder); }
-        function get(): string { return Services.WallpaperService.current; }
+        function set(path: string): bool { return Services.ThemeService.setWallpaper(path); }
+        function get(): string { return Services.ThemeService.wallpaper; }
     }
 
     Services.ActivityProcessAdapter {}
 
     Variants {
-        model: Services.WallpaperService.enabled ? Quickshell.screens : []
+        model: Services.ThemeService.wallpaperEnabled ? Quickshell.screens : []
 
         WallpaperWindow {}
     }

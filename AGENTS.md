@@ -1,7 +1,7 @@
 Validation before handing changes back ONLY WHEN NEEDED:
 
 ```bash
-make lint test
+just lint test
 git diff --check
 timeout 5s quickshell --no-color -p .
 ```
@@ -25,7 +25,7 @@ Prefer deleting unused QML modules over keeping broad helper surfaces. This repo
 
 ## Packaging Notes
 
-The Arch `PKGBUILD` uses the Git repository source, so plain `makepkg -si` is for normal package installs. Use `make local-package-install` when pacman must install a package built from the dirty checkout.
+The Arch `PKGBUILD` uses the Git repository source, so plain `makepkg -si` is for normal package installs. Use `just local-package-install` when pacman must install a package built from the dirty checkout.
 
 The package owns `/usr/share/speshell` and `/usr/bin/speshell`, which is installed from `bin/speshell`. User config and data live under:
 

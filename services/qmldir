@@ -18,5 +18,5 @@ singleton ConfigService 1.0 ConfigService.qml
 singleton NotificationService 1.0 NotificationService.qml
 singleton MediaService 1.0 MediaService.qml
 singleton DashboardService 1.0 DashboardService.qml
-singleton SkinService 1.0 SkinService.qml
-singleton WallpaperService 1.0 WallpaperService.qml
+singleton EffectsService 1.0 EffectsService.qml
+singleton ThemeService 1.0 ThemeService.qml

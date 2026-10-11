@@ -105,6 +105,51 @@ if [[ "${1:-}" == "activity" ]]; then
   exit 0
 fi
 
+if [[ "${1:-}" == "theme" ]]; then
+  shift
+  action="${1:-get}"
+  shift || true
+
+  case "$action" in
+    list|get)
+      if [[ $# -ne 0 ]]; then
+        printf 'usage: speshell theme %s\n' "$action" >&2
+        exit 2
+      fi
+      ipc_call theme "$action"
+      ;;
+    set)
+      if [[ $# -ne 1 ]]; then
+        printf 'usage: speshell theme set ID\n' >&2
+        exit 2
+      fi
+      if [[ "$(ipc_call theme set "$1")" != "true" ]]; then
+        printf 'speshell: unknown theme: %s (see speshell theme list)\n' "$1" >&2
+        exit 1
+      fi
+      ;;
+    shuffle)
+      if [[ $# -gt 1 ]]; then
+        printf 'usage: speshell theme shuffle [ID]\n' >&2
+        exit 2
+      fi
+      if [[ "$(ipc_call theme shuffle "${1:-*}")" != "true" ]]; then
+        printf 'speshell: no other wallpaper to shuffle to\n' >&2
+        exit 1
+      fi
+      ;;
+    rescan)
+      ipc_call theme rescan >/dev/null
+      ;;
+    *)
+      printf 'speshell: unknown theme action: %s\n' "$action" >&2
+      printf 'usage: speshell theme [list|get|set ID|shuffle [ID]|rescan]\n' >&2
+      exit 2
+      ;;
+  esac
+  exit 0
+fi
+
 if [[ "${1:-}" == "wallpaper" ]]; then
   shift
   action="${1:-get}"
@@ -116,21 +161,18 @@ if [[ "${1:-}" == "wallpaper" ]]; then
         printf 'usage: speshell wallpaper set PATH\n' >&2
         exit 2
       fi
-      ipc_call wallpaper set "$(realpath -s -- "$1")" >/dev/null
-      ;;
-    shuffle)
-      if [[ $# -gt 1 ]]; then
-        printf 'usage: speshell wallpaper shuffle [FOLDER]\n' >&2
-        exit 2
+      if [[ "$(ipc_call wallpaper set "$(realpath -s -- "$1")")" != "true" ]]; then
+        printf 'speshell: cannot show %s: it must be inside a theme folder in %s/themes,\n' "$1" "$config_dir" >&2
+        printf 'and [Appearance] drawWallpaper must be true\n' >&2
+        exit 1
       fi
-      ipc_call wallpaper shuffle "${1:-*}" >/dev/null
       ;;
     get)
       ipc_call wallpaper get
       ;;
     *)
       printf 'speshell: unknown wallpaper action: %s\n' "$action" >&2
-      printf 'usage: speshell wallpaper [get|set PATH|shuffle [FOLDER]]\n' >&2
+      printf 'usage: speshell wallpaper [get|set PATH]\n' >&2
       exit 2
       ;;
   esac

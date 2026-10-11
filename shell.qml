@@ -13,9 +13,8 @@ ShellRoot {
     function applyConfig(configValue) {
         if (!configValue)
             return;
-        ThemeModule.Theme.paletteName = configValue.colorScheme;
         ThemeModule.Theme.textScale = configValue.textScale;
-        Services.WallpaperService.directory = configValue.wallpapers;
+        Services.ThemeService.wallpaperEnabled = configValue.drawWallpaper;
         Services.AudioService.scrollStep = configValue.audioScrollStep;
         Services.WeatherService.location = configValue.weatherLocation;
         Services.WeatherService.enabled = configValue.weatherEnabled;
@@ -34,21 +33,27 @@ ShellRoot {
     }
 
     Binding {
-        target: Services.SkinService
-        property: "skin"
-        value: Services.WallpaperService.skin
+        target: ThemeModule.Theme
+        property: "paletteName"
+        value: Services.ThemeService.scheme
     }
 
     Binding {
         target: ThemeModule.Theme
         property: "paletteOverride"
-        value: Services.SkinService.palette
+        value: Services.ThemeService.colors
     }
 
     Binding {
         target: ThemeModule.Theme
         property: "accentOverride"
-        value: Services.SkinService.accent
+        value: Services.ThemeService.accent
+    }
+
+    Binding {
+        target: Services.EffectsService
+        property: "name"
+        value: Services.ThemeService.effects
     }
 
     LazyLoader {

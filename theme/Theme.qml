@@ -5,10 +5,9 @@ import "." as ThemeModule
 QtObject {
     id: root
 
-    // Active palette name — loaded from config
+    // Active theme (see ThemeService): a built-in palette, a partial palette merged
+    // over it, and an accent color.
     property string paletteName: "gruvbox"
-
-    // Skin overrides: a partial palette merged over the configured one, and an accent color.
     property var paletteOverride: null
     property string accentOverride: ""
 

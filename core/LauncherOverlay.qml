@@ -8,7 +8,7 @@ import Quickshell.Wayland
 import Quickshell.Widgets
 import "../components" as Components
 import "../services" as Services
-import "../services/WallpaperProvider.js" as WallpaperProvider
+import "../services/ThemeProvider.js" as ThemeProvider
 import "../theme" as ThemeModule
 
 PanelWindow {
@@ -16,14 +16,14 @@ PanelWindow {
 
     property var config: null
     property bool opened: false
-    // Mapped on screen; outlives `opened` while a skin transition plays the exit.
+    // Mapped on screen; outlives `opened` while an effects transition plays the exit.
     property bool presenting: false
     property bool focusGrabActive: false
     property var targetScreen: null
     property int selectedIndex: 0
     readonly property bool mapped: root.visible && root.backingWindowVisible
-    // Latched per presentation so a skin change, e.g. from picking a wallpaper, lets
-    // the old skin finish its exit.
+    // Latched per presentation so an effects change, e.g. from picking a theme, lets
+    // the old effects finish their exit.
     property Component transition: null
     readonly property bool transitionReady: transitionLoader.status === Loader.Ready
     readonly property var results: Services.LauncherService.results || []
@@ -58,7 +58,7 @@ PanelWindow {
         root.selectedIndex = 0;
         closeSafetyTimer.stop();
         if (!root.presenting)
-            root.transition = Services.SkinService.launcherTransition;
+            root.transition = Services.EffectsService.launcherTransition;
         root.opened = true;
         root.presenting = true;
         resultsList.contentY = 0;
@@ -124,7 +124,7 @@ PanelWindow {
         windows: [root]
     }
 
-    // A skin transition must emit closingFinished(); this bounds a broken one.
+    // An effects transition must emit closingFinished(); this bounds a broken one.
     Timer {
         id: closeSafetyTimer
         interval: 2500
@@ -333,7 +333,7 @@ PanelWindow {
                         Image {
                             id: resultThumbnail
                             anchors.fill: parent
-                            source: WallpaperProvider.fileUrl(resultRow.modelData.thumbnail || "")
+                            source: ThemeProvider.fileUrl(resultRow.modelData.thumbnail || "")
                             sourceSize: Qt.size(64, 64)
                             fillMode: Image.PreserveAspectCrop
                             asynchronous: true
@@ -450,7 +450,7 @@ PanelWindow {
         }
     }
 
-    // Skin transition (see README "Skins"): draws above the panel, and may capture it with
+    // Effects transition (see README "Effects"): draws above the panel, and may capture it with
     // a ShaderEffectSource to animate the panel itself. Alive only while the launcher is mapped.
     Loader {
         id: transitionLoader

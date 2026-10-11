@@ -33,19 +33,9 @@ Components.Card {
         { id: "notifications", label: "Notifications", detail: "Toast behavior" },
         { id: "advanced", label: "Advanced", detail: "Config file & runtime" }
     ]
-    readonly property var themeOptions: [
-        { value: "gruvbox", label: "Gruvbox" },
-        { value: "catppuccin-mocha", label: "Catppuccin Mocha" },
-        { value: "catppuccin-macchiato", label: "Catppuccin Macchiato" },
-        { value: "catppuccin-frappe", label: "Catppuccin Frappé" },
-        { value: "catppuccin-latte", label: "Catppuccin Latte" },
-        { value: "nord", label: "Nord" },
-        { value: "dracula", label: "Dracula" },
-        { value: "tokyo-night", label: "Tokyo Night" },
-        { value: "rose-pine", label: "Rosé Pine" },
-        { value: "solarized-dark", label: "Solarized Dark" },
-        { value: "everforest", label: "Everforest" }
-    ]
+    readonly property var themeOptions: Services.ThemeService.themes.map(function(theme) {
+        return { value: theme.id, label: theme.name };
+    })
     readonly property var panelWidthOptions: [
         { value: 360, label: "Compact · 360 px" },
         { value: 420, label: "Default · 420 px" },
@@ -130,6 +120,9 @@ Components.Card {
 
     function openPage(page) {
         root.activePage = page;
+        // Pick up theme folders added since the last scan.
+        if (page === "appearance")
+            Services.ThemeService.scan();
         if (page === "integrations")
             root.weatherLocationDraft = String(root.settingsConfig.weatherLocation || "");
     }
@@ -185,11 +178,37 @@ Components.Card {
             visible: root.activePage === "appearance"
 
             Components.SelectMenuRow {
-                enabled: !Services.ConfigService.savingConfig
                 label: "Theme"
                 options: root.themeOptions
-                currentValue: ThemeModule.Theme.paletteName
-                onValueSelected: function(value) { Services.ConfigService.setColorScheme(value); }
+                currentValue: Services.ThemeService.themeId
+                onValueSelected: function(value) { Services.ThemeService.setTheme(value); }
+            }
+
+            Item {
+                width: parent.width
+                height: ThemeModule.Theme.controlHeight
+
+                Text {
+                    text: "Draw Wallpaper"
+                    font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                    font.family: ThemeModule.Theme.fontFamily
+                    color: ThemeModule.Theme.subtext
+                    anchors.left: parent.left
+                    anchors.leftMargin: ThemeModule.Theme.spacingSmall
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Components.ToggleSwitch {
+                    anchors.right: parent.right
+                    anchors.rightMargin: ThemeModule.Theme.spacingSmall
+                    anchors.verticalCenter: parent.verticalCenter
+                    checked: root.settingsConfig.drawWallpaper || false
+                    enabled: !Services.ConfigService.savingConfig
+                    tooltipText: checked
+                        ? "Leave the background to other wallpaper tools"
+                        : "Draw theme wallpapers as the desktop background"
+                    onToggled: function(newState) { Services.ConfigService.setDrawWallpaper(newState); }
+                }
             }
 
             Components.SelectMenuRow {

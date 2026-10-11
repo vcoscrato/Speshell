@@ -15,6 +15,7 @@ Singleton {
     property var config: null
     property var errors: []
     property string configPath: ""
+    property string configDir: ""
     property string dataDir: ""
     property bool reloadQueued: false
     property string operationMessage: ""
@@ -74,9 +75,9 @@ Singleton {
         var nl1 = output.indexOf("\n");
         var nl2 = output.indexOf("\n", nl1 + 1);
         if (nl1 >= 0 && nl2 >= 0) {
-            var configDir = output.substring(0, nl1);
+            root.configDir = output.substring(0, nl1);
             root.dataDir = output.substring(nl1 + 1, nl2);
-            root.configPath = configDir + "/config.ini";
+            root.configPath = root.configDir + "/config.ini";
         }
 
         if (exitCode !== 0) {
@@ -174,11 +175,6 @@ Singleton {
         console.info("[Speshell] Applied config.ini changes.");
     }
 
-    function setColorScheme(colorScheme) {
-        if (!Config.isPaletteName(colorScheme)) return false;
-        return setProperty("Appearance", "colorScheme", colorScheme);
-    }
-
     function setTextScale(scale) {
         return setProperty("Appearance", "textScale", scale);
     }
@@ -198,6 +194,10 @@ Singleton {
 
     function setAudioScrollStep(step) {
         return setProperty("Audio", "scrollStep", step);
+    }
+
+    function setDrawWallpaper(enabled) {
+        return setProperty("Appearance", "drawWallpaper", enabled ? "true" : "false");
     }
 
     function setWeatherEnabled(enabled) {

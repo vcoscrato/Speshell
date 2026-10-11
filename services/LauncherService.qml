@@ -5,7 +5,7 @@ import Quickshell.Io
 import "AppProvider.js" as AppProvider
 import "CalculatorProvider.js" as CalculatorProvider
 import "BangProvider.js" as BangProvider
-import "WallpaperProvider.js" as WallpaperProvider
+import "ThemeProvider.js" as ThemeProvider
 import "Shell.js" as Shell
 
 Singleton {
@@ -22,7 +22,8 @@ Singleton {
     property string saveError: ""
     property var pendingLaunches: ({})
     property string activationError: ""
-    property bool browsingWallpapers: false
+    // "theme" or "wall" while browsing with that bang, else "".
+    property string browsingThemes: ""
     readonly property string usagePath: ConfigService.dataDir !== ""
         ? ConfigService.dataDir + "/launcher-usage.json"
         : ""
@@ -85,17 +86,21 @@ Singleton {
 
     function rebuild() {
         var trimmed = root.query.trim();
-        var wasBrowsingWallpapers = root.browsingWallpapers;
-        root.browsingWallpapers = false;
+        var wasBrowsing = root.browsingThemes;
+        root.browsingThemes = "";
         if (trimmed.indexOf("!") === 0) {
-            var wallpaperBang = WallpaperService.enabled ? WallpaperProvider.parseBang(trimmed) : null;
-            if (wallpaperBang && wallpaperBang.complete) {
-                // Rescan on entering !wall so new files and skins show up.
-                if (!wasBrowsingWallpapers)
-                    WallpaperService.scan();
-                root.browsingWallpapers = true;
-                root.results = WallpaperProvider.results(WallpaperService.wallpapers, WallpaperService.skins,
-                    WallpaperService.current, wallpaperBang.terms);
+            var themeBang = ThemeProvider.parseBang(trimmed, ThemeService.wallpaperEnabled);
+            if (themeBang && themeBang.complete) {
+                // Rescan on entering the bang so new themes and wallpapers show up.
+                if (wasBrowsing !== themeBang.alias)
+                    ThemeService.scan();
+                root.browsingThemes = themeBang.alias;
+                root.results = themeBang.alias === "theme"
+                    ? ThemeProvider.themeResults(ThemeService.themes,
+                        ThemeService.wallpaperEnabled ? ThemeService.wallpapers : [],
+                        ThemeService.themeId, themeBang.terms)
+                    : ThemeProvider.wallpaperResults(ThemeService.themes, ThemeService.wallpapers,
+                        ThemeService.wallpaper, themeBang.terms);
                 return;
             }
             var bangs = BangProvider.bangResults(
@@ -103,8 +108,8 @@ Singleton {
                 root.launcherConfig,
                 DashboardService.availablePanelNames
             );
-            root.results = wallpaperBang
-                ? [WallpaperProvider.suggestion()].concat(bangs.filter(function(result) {
+            root.results = themeBang
+                ? themeBang.alias.map(ThemeProvider.suggestion).concat(bangs.filter(function(result) {
                     return result.id.indexOf("bang:passthrough:") !== 0;
                 }))
                 : bangs;
@@ -121,8 +126,7 @@ Singleton {
             return;
         }
         var extras = BangProvider.panelSearchItems(DashboardService.availablePanelNames);
-        if (WallpaperService.enabled)
-            extras = extras.concat(WallpaperProvider.searchItems());
+        extras = extras.concat(ThemeProvider.searchItems(ThemeService.wallpaperEnabled));
         var panels = AppProvider.buildExtraIndex(extras);
         var apps = AppProvider.search(root.appIndex.concat(panels), trimmed, root.usage, 100);
         root.results = apps.length === 0 && trimmed !== ""
@@ -197,12 +201,12 @@ Singleton {
                 root.activationError = DashboardService.errorMessage;
             return opened;
         }
-        if (result.kind === "wallpaper") {
-            if (payload.folder !== undefined)
-                WallpaperService.shuffle(payload.folder);
-            else
-                WallpaperService.set(payload.path || "");
-            return true;
+        if (result.kind === "theme") {
+            if (payload.theme !== undefined)
+                return ThemeService.setTheme(payload.theme);
+            if (payload.shuffle !== undefined)
+                return ThemeService.shuffle(payload.shuffle);
+            return ThemeService.setWallpaper(payload.path || "");
         }
         if (result.kind === "web" && payload.url) {
             Qt.openUrlExternally(payload.url);
@@ -214,8 +218,10 @@ Singleton {
 
     function emptyMessage() {
         var trimmed = root.query.trim();
-        if (root.browsingWallpapers)
-            return "No matching wallpapers in " + WallpaperService.libraryDir;
+        if (root.browsingThemes === "theme")
+            return "No matching themes";
+        if (root.browsingThemes === "wall")
+            return "No matching wallpapers in " + ThemeService.themesDir;
         if (trimmed.indexOf("?") === 0)
             return "Type a web search after ?";
         if (trimmed.indexOf("!") === 0)
@@ -323,9 +329,11 @@ Singleton {
     }
 
     Connections {
-        target: WallpaperService
+        target: ThemeService
         function onWallpapersChanged() { root.rebuild(); }
-        function onCurrentChanged() { root.rebuild(); }
-        function onEnabledChanged() { root.rebuild(); }
+        function onUserThemesChanged() { root.rebuild(); }
+        function onThemeIdChanged() { root.rebuild(); }
+        function onWallpaperChanged() { root.rebuild(); }
+        function onWallpaperEnabledChanged() { root.rebuild(); }
     }
 }

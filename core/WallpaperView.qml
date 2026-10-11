@@ -1,15 +1,15 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import "../services/WallpaperProvider.js" as WallpaperProvider
+import "../services/ThemeProvider.js" as ThemeProvider
 import "../theme" as ThemeModule
 
 // Shows the wallpaper at `path`. On a change, the old image stays on top while the
-// skin's wallpaper transition, or a plain fade, removes it.
+// theme effects' wallpaper transition, or a plain fade, removes it.
 Item {
     id: root
 
     property string path: ""
-    // The current skin's wallpaper transition; read when a change starts.
+    // The current effects' wallpaper transition; read when a change starts.
     property Component transition: null
     property real pixelRatio: 1
 
@@ -19,7 +19,7 @@ Item {
     property Component runningTransition: null
 
     function change() {
-        var url = WallpaperProvider.fileUrl(root.path);
+        var url = ThemeProvider.fileUrl(root.path);
         if (String(root.shown.source) === url)
             return;
         root.finishTransition();
@@ -61,7 +61,7 @@ Item {
         root.transitionRunning = false;
     }
 
-    // Deferred so a wallpaper change sees its new skin's transition.
+    // Deferred so a wallpaper change sees its new effects' transition.
     onPathChanged: Qt.callLater(root.change)
     Component.onCompleted: root.change()
 
@@ -95,14 +95,14 @@ Item {
         onFinished: root.finishTransition()
     }
 
-    // A skin transition must emit finished(); this bounds a broken one.
+    // An effects transition must emit finished(); this bounds a broken one.
     Timer {
         id: safetyTimer
         interval: 5000
         onTriggered: root.finishTransition()
     }
 
-    // Skin wallpaper transition (see README "Wallpapers and skins"): draws above both
+    // Effects wallpaper transition (see README "Effects"): draws above both
     // images and must hide the outgoing one, for example through a ShaderEffectSource
     // with hideSource.
     Loader {
@@ -119,7 +119,7 @@ Item {
         value: root.outgoing
     }
 
-    // Optional for skins; the new image cannot change while a transition runs.
+    // Optional for effects; the new image cannot change while a transition runs.
     function offerIncoming(item) {
         if ("incoming" in item)
             item.incoming = root.shown;
