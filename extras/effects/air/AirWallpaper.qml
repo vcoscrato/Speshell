@@ -1,0 +1,79 @@
+import QtQuick
+import "common"
+
+// Air wallpaper transition: a whirlwind eye opens in the middle of the screen and
+// widens until the old wallpaper is gone, wringing it into the spin as gusts
+// spiral out.
+Item {
+    id: root
+
+    // ── Speshell effects API v1 ────────────────────────────────
+    property Item outgoing: null
+    signal finished()
+
+    readonly property real spreadTime: 1.3
+    readonly property real tailTime: 0.3
+    readonly property real spin: 1
+
+    property real sweep: 0
+    property real tailStart: 0
+    property bool done: false
+    readonly property point center: Qt.point(width * 0.5, height * 0.55)
+    readonly property real reach: Math.sqrt(Math.pow(width * 0.5, 2) + Math.pow(height * 0.55, 2)) * 1.1 + 40
+    // Opens gently, then rushes outward.
+    readonly property real eye: Math.pow(sweep, 1.6) * reach
+
+    EffectClock {
+        id: clock
+        onAdvanced: function(dt) {
+            if (root.sweep < 1) {
+                root.sweep = Math.min(1, root.sweep + dt / root.spreadTime);
+                root.tailStart = clock.clock;
+            } else if (!root.done && clock.clock - root.tailStart >= root.tailTime) {
+                root.done = true;
+                // Speshell may destroy this item inside the signal, so nothing may follow it.
+                root.finished();
+            }
+        }
+    }
+
+    ShaderEffectSource {
+        id: outgoingTex
+        sourceItem: root.outgoing
+        hideSource: true
+        live: false
+    }
+
+    ShaderEffect {
+        anchors.fill: parent
+        visible: root.sweep < 1
+        property var source: outgoingTex
+        property size resolution: Qt.size(width, height)
+        property point center: root.center
+        property real eye: root.eye
+        property real twist: 1.1 * Math.sin(Math.PI * Math.min(1, root.sweep * 1.4))
+        property real spin: root.spin
+        property color cRim: "#cfe3f3"
+        property color cHaze: "#e9f2fa"
+        fragmentShader: Qt.resolvedUrl("shaders/whirl.frag.qsb")
+    }
+
+    // Gusts unwinding outward ahead of the eye.
+    Gust {
+        anchors.fill: parent
+        opacity: 1 - Math.max(0, (root.sweep - 0.75) / 0.25)
+        time: clock.simTime
+        center: root.center
+        count: 5
+        phase: 0.3
+        r0: 60
+        k: -0.3
+        spin: root.spin
+        len: 2.4
+        head: 1.2 + Math.pow(root.sweep, 1.3) * 10
+        strokeWidth: 8
+        strokeAlpha: 1
+        mist: 0.8 * Math.sin(Math.PI * root.sweep)
+        mistRadius: Math.max(80, root.eye)
+    }
+}
