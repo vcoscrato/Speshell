@@ -1,4 +1,4 @@
-# Speshell Elements
+# Speshell Themes
 
 Elemental effects and themes for [Speshell](https://github.com/vcoscrato/Speshell). Each element brings its own launcher entrance, an animation while the launcher is open, an exit, and a wallpaper transition. Each nation's theme pairs its element's effects with a matching palette: Fire Nation, Air Nomads, Water Tribe, and Earth Kingdom.
 

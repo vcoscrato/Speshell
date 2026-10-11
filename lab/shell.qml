@@ -28,7 +28,7 @@ ShellRoot {
         exclusionMode: ExclusionMode.Ignore
         // Overlay keeps frame callbacks flowing even over fullscreen windows.
         WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.namespace: "speshell-elements-lab"
+        WlrLayershell.namespace: "speshell-themes-lab"
         anchors { left: true; top: true }
         mask: Region {}
 
