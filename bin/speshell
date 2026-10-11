@@ -162,7 +162,8 @@ if [[ "${1:-}" == "wallpaper" ]]; then
         exit 2
       fi
       if [[ "$(ipc_call wallpaper set "$(realpath -s -- "$1")")" != "true" ]]; then
-        printf 'speshell: cannot show %s: it must be inside a theme folder in %s/themes,\n' "$1" "$config_dir" >&2
+        printf 'speshell: cannot show %s: it must be inside a theme folder in %s/themes\n' "$1" "$config_dir" >&2
+        printf 'or %s/extras/themes,\n' "$app_dir" >&2
         printf 'and [Appearance] drawWallpaper must be true\n' >&2
         exit 1
       fi

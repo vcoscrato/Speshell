@@ -37,11 +37,14 @@ PanelWindow {
         bottom: true
     }
 
+    // Quickshell's type info hides the fields of PanelWindow.margins.
+    // qmllint disable missing-property
     margins {
         left: root.panelMargin
         top: root.panelMargin
         bottom: root.panelMargin
     }
+    // qmllint enable missing-property
 
     Dashboard {
         anchors.fill: parent

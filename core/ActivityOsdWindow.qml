@@ -43,7 +43,10 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
 
     anchors { top: true }
+    // Quickshell's type info hides the fields of PanelWindow.margins.
+    // qmllint disable missing-property
     margins { top: ThemeModule.Theme.spacingLarge }
+    // qmllint enable missing-property
 
     WlrLayershell.namespace: "speshell-activity-osd"
     WlrLayershell.layer: WlrLayer.Overlay

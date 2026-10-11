@@ -28,6 +28,28 @@ vec2 curl(vec2 p, float t) {
     return vec2(n1 - n2, -(n3 - n4)) / (2.0 * e);
 }
 
+// Value noise with quintic easing, so its slope (and a curl taken from it) has no
+// kinks at the grid lines.
+float vnoise5(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    vec2 w = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+    return mix(mix(hash(i), hash(i + vec2(1, 0)), w.x),
+               mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), w.x), w.y);
+}
+
+// A smooth turbulent flow at q (in units of its largest swirls): the curl of two
+// octaves of noise drifting past each other, mostly the broad one, so it bends
+// lines into gentle sweeps without crinkling them.
+vec2 swirl(vec2 q, float t) {
+    const float e = 0.08;
+    vec2 a = vec2(0.0, t), b = vec2(-0.7 * t, 5.0);
+    #define POT(x) (vnoise5((x) + a) + 0.15 * vnoise5((x) * 1.9 + b))
+    float n1 = POT(q + vec2(0, e)), n2 = POT(q - vec2(0, e));
+    float n3 = POT(q + vec2(e, 0)), n4 = POT(q - vec2(e, 0));
+    #undef POT
+    return vec2(n1 - n2, n4 - n3) / (2.0 * e);
+}
+
 float sdRoundRect(vec2 p, vec2 halfSize, float r) {
     vec2 q = abs(p) - halfSize + r;
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
@@ -68,35 +90,6 @@ vec4 spiralCoord(vec2 p, vec2 c, float r0, float k, float th0, float spin, float
 float cover(float s) {
     float aa = clamp(fwidth(s), 1e-3, 1.5);
     return smoothstep(-aa, aa, s);
-}
-
-// A wind stroke on a log spiral, covering u in [head - len, head]: thin at the
-// tail and full width at the head, where it rolls into a tight curl, like the
-// swirls of the Air Nomad emblem. Returns half-width minus distance: > 0 inside.
-float gustStroke(vec2 p, vec2 c, float r0, float k, float th0, float spin,
-                 float head, float len, float width, float wobble) {
-    vec4 sp = spiralCoord(p, c, r0, k, th0, spin, wobble);
-    float t = (sp.y - (head - len)) / len;
-    float body = -1e3;
-    if (t >= 0.0 && t <= 1.0)
-        body = width * pow(t, 0.7) - sp.x;
-
-    // The curl: a tight spiral starting at the head and winding toward the center.
-    float thH = th0 + spin * head;
-    float RH = r0 * exp(-k * head) * (1.0 + wobble * sin(head * 1.7 + th0 * 3.0));
-    float hookR = clamp(RH * 0.12, 10.0, 34.0);
-    vec2 dirH = vec2(cos(thH), sin(thH));
-    vec2 hc = c + dirH * (RH - hookR);
-    float hook = -1e3;
-    if (length(p - hc) > hookR + width + 2.0)
-        return body;
-    vec4 hk = spiralCoord(p, hc, hookR, 0.42, thH, spin, 0.0);
-    float th = hk.y / 4.4;                                  // 0 at the head .. 1 at the curl's end
-    if (th >= 0.0 && th <= 1.0) {
-        float capLen = width / (4.4 * max(hk.z, 1.0));
-        hook = width * mix(1.0, 0.35, th) * sqrt(clamp((1.0 - th) / capLen, 0.0, 1.0)) - hk.x;
-    }
-    return max(body, hook);
 }
 
 // A round-headed tube along a log spiral, tapering to a point at the tail.

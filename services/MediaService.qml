@@ -79,7 +79,7 @@ Singleton {
     }
 
     Connections {
-        target: Mpris.players
+        target: Mpris.players // qmllint disable incompatible-type
         function onValuesChanged() { root.refreshPlayer(); }
     }
 

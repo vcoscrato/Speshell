@@ -189,7 +189,7 @@ Components.Card {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: function(mouse) {
                         if (root.player && root.player.length > 0) {
-                            var ratio = mouse.x / parent.width;
+                            const ratio = mouse.x / parent.width;
                             Services.MediaService.seek(ratio * root.player.length);
                         }
                     }

@@ -1,9 +1,10 @@
 import QtQuick
 import "common"
 
-// Air launcher transition: gusts spiral in and wrap the launcher, which unwinds out
-// of the vortex into place. A breeze keeps circling it while open. Closing winds the
-// panel back into the vortex as the gusts fly off outward.
+// Air launcher transition: a whirlpool of wind draws in to the launcher, which
+// unwinds out of the vortex into place. While open, a breeze parts around it and
+// circles it. Closing winds the panel back into the vortex as the wind turns
+// outward and blows away.
 Item {
     id: root
 
@@ -32,7 +33,7 @@ Item {
     function ease(x) { return 1 - Math.pow(1 - Math.max(0, Math.min(1, x)), 3); }
     function span(x, a, b) { return Math.max(0, Math.min(1, (x - a) / (b - a))); }
 
-    // The panel is wound up while the gusts arrive, and unwinds as they wrap it.
+    // The panel is wound up while the wind arrives, and unwinds as it settles.
     readonly property real wind: Math.max(1 - ease(span(enter, 0.3, 1)), ease(span(leave, 0, 0.8)))
 
     onActiveChanged: exitDone = false
@@ -58,70 +59,98 @@ Item {
         }
     }
 
-    // ── Arriving gusts: spiral in from far out and wrap the panel ──
-    Gust {
-        readonly property real startR: root.reach * 2.8
-        readonly property real k0: 0.14
+    // ── Arriving wind: a whirlpool of air drawing in from far out to the launcher ──
+    Wind {
         anchors.fill: parent
-        visible: root.enter < 1 && root.leave === 0
+        opacity: root.span(root.enter, 0, 0.15) * (1 - root.span(root.enter, 0.7, 1))
+        visible: opacity > 0 && root.leave === 0
         time: clock.simTime
         center: root.center
-        count: 3
-        phase: -0.6
-        r0: startR
-        k: k0
-        spin: root.spin
-        len: 2.2
-        head: root.ease(root.span(root.enter, 0, 0.8)) * (Math.log(startR / (root.reach * 1.05)) / k0 + 1.2)
-        strokeWidth: 7
-        strokeAlpha: 1 - root.span(root.enter, 0.72, 1)
-        mist: Math.min(root.span(root.enter, 0, 0.35), 1 - root.span(root.enter, 0.6, 1))
-        mistRadius: root.reach * 1.25
+        axes: Qt.size(root.reach, root.reach)
+        source: -24
+        vortex: -3 * root.spin
+        spacing: 0.1
+        dash: 2
+        travel: 3 * root.ease(root.enter) + 0.3 * clock.simTime
+        duty: 0.5
+        density: 0.45
+        lineWidth: 3
+        sheet: 0.2
+        inner: 0.75
+        outer: 3.2
+        mist: 0.6
+        turbulence: 30
     }
 
-    // ── Breeze while open: strokes circling the launcher on staggered cycles ──
-    Gust {
-        readonly property real size: root.reach * 1.5
-        x: root.center.x - size
-        y: root.center.y - size
-        width: 2 * size
-        height: 2 * size
-        opacity: root.span(root.enter, 0.8, 1) * (1 - root.span(root.leave, 0, 0.3))
+    // ── Breeze while open: wind parting around the launcher and circling it,
+    //    slowly veering and gusting ──
+    Wind {
+        readonly property size ext: Qt.size(axes.width * outer + 20, axes.height * outer + 20)
+        x: root.center.x - ext.width
+        y: root.center.y - ext.height
+        width: 2 * ext.width
+        height: 2 * ext.height
+        opacity: root.span(root.enter, 0.7, 1) * (1 - root.span(root.leave, 0, 0.3))
         visible: opacity > 0
         time: clock.simTime
         center: root.center
-        count: 3
-        phase: clock.simTime * 0.12
-        r0: root.reach * 1.16
-        k: 0.045
-        spin: root.spin
-        len: 1.7
-        head: 7
-        cycle: 4.5
-        strokeWidth: 4.5
-        strokeAlpha: 0.9
-        mist: 0.5
-        mistRadius: root.reach * 1.05
+        axes: Qt.size(root.panelRect.width * 0.725, root.panelRect.height * 0.725)
+        wind: 1
+        windAngle: 0.6 + 0.05 * clock.simTime + 0.4 * Math.sin(0.25 * clock.simTime)
+        obstacle: 1
+        vortex: -1 * root.spin
+        spacing: 0.08
+        dash: 2.6
+        travel: clock.simTime * 0.22 + 0.1 * Math.sin(clock.simTime * 0.8)
+        duty: 0.4
+        density: 0.3
+        lineWidth: 2.8
+        sheet: 0.16
+        inner: 1
+        outer: 1.8
+        mist: 0.7
+        turbulence: 35
         mask: root.panelRect
     }
 
-    // ── Departing gusts: burst outward from the panel ──
-    Gust {
-        anchors.fill: parent
-        visible: root.leave > 0
+    // ── Leaves and dust: whirled in with the wind, carried around while open,
+    //    and flung off as the launcher closes ──
+    Debris {
+        opacity: root.span(root.enter, 0, 0.15) * (1 - root.span(root.leave, 0.5, 1))
+        visible: opacity > 0
         time: clock.simTime
         center: root.center
-        count: 4
-        phase: 0.4
-        r0: root.reach * 0.75
-        k: -0.16
+        leaves: 7
+        dust: 10
+        r0: root.reach * 1.1 * (1 + 1.6 * (1 - root.ease(root.span(root.enter, 0, 0.9))) + 2.2 * root.ease(root.leave))
         spin: root.spin
-        len: 2.6
-        head: root.ease(root.leave) * 8.5
-        strokeWidth: 6
-        strokeAlpha: 1 - root.span(root.leave, 0.65, 1)
+        head: clock.simTime * 0.9 + 2.5 * root.ease(root.enter) + 3 * root.ease(root.leave)
+        leafSize: 15
+        turbulence: 14
+        mask: root.panelRect
+    }
+
+    // ── Departing wind: the whirlpool turns outward and blows away ──
+    Wind {
+        anchors.fill: parent
+        opacity: root.span(root.leave, 0, 0.15) * (1 - root.span(root.leave, 0.6, 1))
+        visible: opacity > 0
+        time: clock.simTime
+        center: root.center
+        axes: Qt.size(root.reach, root.reach)
+        source: 24
+        vortex: -3 * root.spin
+        spacing: 0.1
+        dash: 2
+        travel: 3 * root.ease(root.leave) + 0.3 * clock.simTime
+        duty: 0.5
+        density: 0.45
+        lineWidth: 3
+        sheet: 0.2
+        inner: 0.5 + 1.2 * root.leave
+        outer: 3.2
         mist: 0.6 * Math.sin(Math.PI * root.leave)
-        mistRadius: root.reach * (1 + root.leave)
+        turbulence: 30
     }
 
     // ── The panel, wound into the vortex; otherwise the real panel shows ──

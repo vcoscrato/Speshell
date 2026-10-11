@@ -183,10 +183,6 @@ Singleton {
         return setProperty("Appearance", "panelWidth", width);
     }
 
-    function setPanelMargin(margin) {
-        return setProperty("Appearance", "panelMargin", margin);
-    }
-
     function setAudioPanelMode(mode) {
         if (mode !== "combined" && mode !== "separate") return false;
         return setProperty("Audio", "panelMode", mode);
@@ -222,10 +218,6 @@ Singleton {
 
     function setLauncherSearchUrl(url) {
         return setProperty("Launcher", "searchUrl", url);
-    }
-
-    function setBacklightDevice(device) {
-        return setProperty("Backlight", "device", device);
     }
 
     function finishConfigWrite(succeeded) {

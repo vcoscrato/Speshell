@@ -146,6 +146,8 @@ Item {
             var clipCount = Services.ClipboardService.history.length;
             return clipCount > 0 ? "Clipboard (" + clipCount + " item" + (clipCount === 1 ? "" : "s") + ")" : "Clipboard";
         }
+        if (widget === "themes")
+            return "Theme: " + Services.ThemeService.theme.name;
         return WidgetRegistry.label(widget);
     }
 
@@ -171,6 +173,18 @@ Item {
         if (WidgetRegistry.isReservedBottomPanel(panelName)
                 && dashboard.isWidgetAvailable(panelName))
             dashboard.selectedBottomPanel = panelName;
+    }
+
+    function setupLoadedWidget(item, widgetName) {
+        if (!item)
+            return;
+        if ("presented" in item)
+            item.presented = Qt.binding(function() { return dashboard.presented; });
+        if ("collapsible" in item) {
+            item.collapsible = false;
+            item.collapsed = false;
+        }
+        dashboard.configureLoadedWidget(item, widgetName);
     }
 
     function configureLoadedWidget(item, widgetName) {
@@ -392,8 +406,11 @@ Item {
                                     id: sidebarTrayMenu
                                     menu: sidebarTrayDelegate.modelData.menu
                                     anchor.item: trayIconRect
+                                    // Quickshell's type info declares Edges as an enum, not flags.
+                                    // qmllint disable incompatible-type
                                     anchor.edges: Edges.Right
                                     anchor.gravity: Edges.Right
+                                    // qmllint enable incompatible-type
                                 }
 
                                 MouseArea {
@@ -492,17 +509,7 @@ Item {
                         active: dashboard.activeBottomPanel !== ""
                         source: active ? dashboard.widgetSource(dashboard.activeBottomPanel) : ""
 
-                        onLoaded: {
-                            if (!item)
-                                return;
-                            if ("presented" in item)
-                                item.presented = Qt.binding(function() { return dashboard.presented; });
-                            if ("collapsible" in item) {
-                                item.collapsible = false;
-                                item.collapsed = false;
-                            }
-                            dashboard.configureLoadedWidget(item, dashboard.activeBottomPanel);
-                        }
+                        onLoaded: dashboard.setupLoadedWidget(item, dashboard.activeBottomPanel)
                     }
                 }
             }
@@ -548,18 +555,7 @@ Item {
                         active: dashboard.isWidgetAvailable(dashboard.activePanel)
                         source: active ? dashboard.widgetSource(dashboard.activePanel) : ""
 
-                        onLoaded: {
-                            if (!item) return;
-
-                            if ("presented" in item) {
-                                item.presented = Qt.binding(function() { return dashboard.presented; });
-                            }
-                            if ("collapsible" in item) {
-                                item.collapsible = false;
-                                item.collapsed = false;
-                            }
-                            dashboard.configureLoadedWidget(item, dashboard.activePanel);
-                        }
+                        onLoaded: dashboard.setupLoadedWidget(item, dashboard.activePanel)
                     }
                 }
             }

@@ -51,9 +51,12 @@ PanelWindow {
         bottom: true
     }
 
+    // Quickshell's type info hides the fields of PanelWindow.margins.
+    // qmllint disable missing-property
     margins {
         bottom: 64
     }
+    // qmllint enable missing-property
 
     WlrLayershell.namespace: "speshell-volume-osd"
     WlrLayershell.layer: WlrLayer.Overlay

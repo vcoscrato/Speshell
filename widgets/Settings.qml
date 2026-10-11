@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Controls as Controls
 import Quickshell
 import "../components" as Components
 import "../services" as Services
@@ -10,32 +11,25 @@ Components.Card {
     id: root
 
     property bool relaunching: false
-    property bool presented: false
-    property string activePage: ""
+    property string activePage: "general"
     property string weatherLocationDraft: ""
 
     readonly property var settingsConfig: Services.ConfigService.config || ({})
     readonly property var launcherConfig: root.settingsConfig.launcher || ({})
-    readonly property string pageTitle: {
-        if (root.activePage === "appearance") return "Appearance";
-        if (root.activePage === "audio") return "Audio";
-        if (root.activePage === "launcher") return "Launcher";
-        if (root.activePage === "integrations") return "Integrations";
-        if (root.activePage === "notifications") return "Notifications";
-        if (root.activePage === "advanced") return "Advanced";
-        return "Settings";
+    readonly property string savedWeatherLocation: String(root.settingsConfig.weatherLocation || "")
+    readonly property bool weatherEnabled: root.settingsConfig.weatherEnabled || false
+    readonly property string configDisplayDir: {
+        var dir = Services.ConfigService.configDir || "~/.config/speshell";
+        var home = String(Quickshell.env("HOME") || "");
+        return home !== "" && dir.indexOf(home) === 0 ? "~" + dir.substring(home.length) : dir;
     }
-    readonly property var categories: [
-        { id: "appearance", label: "Appearance", detail: "Theme, text & geometry" },
-        { id: "audio", label: "Audio", detail: "Panel & volume behavior" },
-        { id: "launcher", label: "Launcher", detail: "Size & search" },
-        { id: "integrations", label: "Integrations", detail: "Weather & hardware" },
-        { id: "notifications", label: "Notifications", detail: "Toast behavior" },
-        { id: "advanced", label: "Advanced", detail: "Config file & runtime" }
+
+    readonly property var pages: [
+        { id: "general", label: "General", icon: "dashboard" },
+        { id: "launcher", label: "Launcher", icon: "search" },
+        { id: "weather", label: "Weather", icon: "cloud" },
+        { id: "advanced", label: "Advanced", icon: "config-file" }
     ]
-    readonly property var themeOptions: Services.ThemeService.themes.map(function(theme) {
-        return { value: theme.id, label: theme.name };
-    })
     readonly property var panelWidthOptions: [
         { value: 360, label: "Compact · 360 px" },
         { value: 420, label: "Default · 420 px" },
@@ -50,27 +44,20 @@ Components.Card {
         { value: 1.35, label: "Extra Large · 135%" },
         { value: 1.5, label: "Maximum · 150%" }
     ]
-    readonly property var panelMarginOptions: [
-        { value: 0, label: "None" },
-        { value: 8, label: "8 px" },
-        { value: 16, label: "16 px" },
-        { value: 24, label: "24 px" },
-        { value: 32, label: "32 px" }
-    ]
     readonly property var audioModeOptions: [
-        { value: "combined", label: "Speaker + Mic" },
-        { value: "separate", label: "Separate Icons" }
+        { value: "combined", label: "Combined" },
+        { value: "separate", label: "Separate" }
     ]
     readonly property var scrollStepOptions: [
-        { value: 2, label: "Precise · 2%" },
-        { value: 5, label: "Standard · 5%" },
-        { value: 10, label: "Fast · 10%" }
+        { value: 2, label: "2%" },
+        { value: 5, label: "5%" },
+        { value: 10, label: "10%" }
     ]
     readonly property var launcherRowOptions: [
-        { value: 3, label: "3 Rows" },
-        { value: 5, label: "5 Rows" },
-        { value: 7, label: "7 Rows" },
-        { value: 10, label: "10 Rows" }
+        { value: 3, label: "3" },
+        { value: 5, label: "5" },
+        { value: 7, label: "7" },
+        { value: 10, label: "10" }
     ]
     readonly property var launcherWidthOptions: [
         { value: 420, label: "Compact · 420 px" },
@@ -85,46 +72,69 @@ Components.Card {
         { value: "https://www.bing.com/search?q={query}", label: "Bing" }
     ]
     readonly property var notificationOptions: [
-        { value: 1, label: "1 Toast" },
-        { value: 3, label: "3 Toasts" },
-        { value: 5, label: "5 Toasts" },
-        { value: 10, label: "10 Toasts" },
-        { value: -1, label: "Unlimited" }
+        { value: 1, label: "1" },
+        { value: 3, label: "3" },
+        { value: 5, label: "5" },
+        { value: 10, label: "10" },
+        { value: -1, label: "All" }
     ]
-    readonly property var backlightOptions: root.buildBacklightOptions(Services.FeatureSupport.backlightDevices)
+    readonly property var weatherIssues: Services.FeatureSupport.issues.filter(function(issue) {
+        return issue.id.indexOf("weather") === 0;
+    })
+    readonly property var configIssues: Services.FeatureSupport.issues.filter(function(issue) {
+        return issue.id.indexOf("weather") !== 0;
+    })
 
-    title: root.pageTitle
+    title: "Settings"
     iconName: "config"
 
-    onPresentedChanged: if (!root.presented) root.activePage = ""
+    onSavedWeatherLocationChanged: {
+        if (!locationInput.activeFocus)
+            root.weatherLocationDraft = root.savedWeatherLocation;
+    }
+    onActivePageChanged: pageEnter.restart()
+    Component.onCompleted: root.weatherLocationDraft = root.savedWeatherLocation
 
     headerActions: Row {
-        spacing: ThemeModule.Theme.spacingSmall
+        spacing: ThemeModule.Theme.spacingTiny
+        opacity: savedTimer.running ? 1 : 0
 
-        Components.InlineActionChip {
-            visible: root.activePage !== ""
-            text: "Back"
-            iconName: "back"
-            tone: "neutral"
-            onActivated: root.activePage = ""
+        Behavior on opacity {
+            NumberAnimation { duration: ThemeModule.Theme.animDuration }
+        }
+
+        Components.AppIcon {
+            name: "check"
+            size: ThemeModule.Theme.iconSizeTiny
+            iconColor: ThemeModule.Theme.success
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        Text {
+            text: "Saved"
+            font.pixelSize: ThemeModule.Theme.fontSizeCaption
+            font.family: ThemeModule.Theme.fontFamily
+            color: ThemeModule.Theme.success
+            anchors.verticalCenter: parent.verticalCenter
         }
     }
 
-    function buildBacklightOptions(devices) {
-        var options = [{ value: "", label: "Auto" }];
-        var detected = devices || [];
-        for (var i = 0; i < detected.length; i++)
-            options.push({ value: detected[i], label: detected[i] });
-        return options;
+    function configValue(source, key, fallback) {
+        return source[key] !== undefined ? source[key] : fallback;
     }
 
-    function openPage(page) {
-        root.activePage = page;
-        // Pick up theme folders added since the last scan.
-        if (page === "appearance")
-            Services.ThemeService.scan();
-        if (page === "integrations")
-            root.weatherLocationDraft = String(root.settingsConfig.weatherLocation || "");
+    // Appends a note when config.ini holds a value the control does not offer.
+    function explain(info, options, value, customLabel) {
+        for (var i = 0; i < options.length; i++) {
+            if (options[i].value === value)
+                return info;
+        }
+        return info + " Currently " + customLabel + ", set in config.ini.";
+    }
+
+    function applyWeatherLocation() {
+        Services.ConfigService.setWeatherLocation(root.weatherLocationDraft.trim());
+        locationInput.focus = false;
     }
 
     function relaunch() {
@@ -148,369 +158,560 @@ Components.Card {
         Qt.quit();
     }
 
-    Column {
+    component SectionHeader: Text {
+        topPadding: ThemeModule.Theme.spacingTiny
+        font.pixelSize: ThemeModule.Theme.fontSizeMicro
+        font.family: ThemeModule.Theme.fontFamily
+        font.bold: true
+        font.letterSpacing: 0.8
+        font.capitalization: Font.AllUppercase
+        color: ThemeModule.Theme.overlay
+    }
+
+    component Notice: Rectangle {
+        id: notice
+
+        property string heading: ""
+        property string detail: ""
+        property color toneColor: ThemeModule.Theme.warning
+
+        width: parent ? parent.width : 0
+        implicitHeight: noticeText.implicitHeight + ThemeModule.Theme.spacingSmall * 2
+        radius: ThemeModule.Theme.borderRadiusSmall
+        color: ThemeModule.Theme.alpha(notice.toneColor, ThemeModule.Theme.tintSubtle)
+        border.width: ThemeModule.Theme.borderWidth
+        border.color: ThemeModule.Theme.alpha(notice.toneColor, ThemeModule.Theme.tintOutline)
+
+        Components.AppIcon {
+            id: noticeIcon
+            x: ThemeModule.Theme.spacingSmall
+            y: ThemeModule.Theme.spacingSmall + Math.max(0, (noticeMetrics.height - height) / 2)
+            name: "alert"
+            size: ThemeModule.Theme.iconSizeSmall
+            iconColor: notice.toneColor
+        }
+
+        FontMetrics {
+            id: noticeMetrics
+            font.pixelSize: ThemeModule.Theme.fontSizeSmall
+            font.family: ThemeModule.Theme.fontFamily
+        }
+
+        Column {
+            id: noticeText
+            anchors.left: noticeIcon.right
+            anchors.leftMargin: ThemeModule.Theme.spacingSmall
+            anchors.right: parent.right
+            anchors.rightMargin: ThemeModule.Theme.spacingSmall
+            y: ThemeModule.Theme.spacingSmall
+            spacing: ThemeModule.Theme.spacingMicro
+
+            Text {
+                width: parent.width
+                visible: notice.heading !== ""
+                text: notice.heading
+                font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                font.family: ThemeModule.Theme.fontFamily
+                font.bold: true
+                color: notice.toneColor
+                wrapMode: Text.WordWrap
+            }
+
+            Text {
+                width: parent.width
+                text: notice.detail
+                font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                font.family: ThemeModule.Theme.fontFamily
+                color: notice.heading !== "" ? ThemeModule.Theme.text : notice.toneColor
+                wrapMode: Text.Wrap
+            }
+        }
+    }
+
+    Timer {
+        id: savedTimer
+        interval: 1600
+    }
+
+    Connections {
+        target: Services.ConfigService
+
+        function onSavingConfigChanged() {
+            if (!Services.ConfigService.savingConfig && !Services.ConfigService.operationFailed)
+                savedTimer.restart();
+        }
+    }
+
+    FontMetrics {
+        id: tabMetrics
+        font.pixelSize: ThemeModule.Theme.fontSizeSmall
+        font.family: ThemeModule.Theme.fontFamily
+        font.bold: true
+    }
+
+    // Page tabs: the current one shows its name, the others share the remaining width.
+    Item {
+        id: tabStrip
+
+        readonly property int gap: ThemeModule.Theme.spacingTiny
+        readonly property int activeIndex: {
+            for (var i = 0; i < root.pages.length; i++) {
+                if (root.pages[i].id === root.activePage)
+                    return i;
+            }
+            return 0;
+        }
+        // Reading the font keeps this current when the text scale changes.
+        readonly property real activeWidth: Math.min(
+            tabStrip.width - (ThemeModule.Theme.controlHeight + tabStrip.gap) * (root.pages.length - 1),
+            ThemeModule.Theme.iconSizeSmall + ThemeModule.Theme.spacingTiny
+                + Math.ceil(tabMetrics.advanceWidth(root.pages[tabStrip.activeIndex].label) + tabMetrics.font.pixelSize * 0)
+                + ThemeModule.Theme.spacingMedium * 2)
+        readonly property real restWidth: (tabStrip.width - tabStrip.activeWidth - tabStrip.gap * (root.pages.length - 1))
+            / (root.pages.length - 1)
+
         width: parent.width
-        spacing: ThemeModule.Theme.spacingSmall
+        height: Math.max(ThemeModule.Theme.controlHeight, tabMetrics.height + ThemeModule.Theme.spacingSmall * 2)
 
-        Column {
-            width: parent.width
-            spacing: ThemeModule.Theme.spacingSmall
-            visible: root.activePage === ""
+        Repeater {
+            model: root.pages
 
-            Repeater {
-                model: root.categories
+            delegate: Rectangle {
+                id: tab
 
-                delegate: Components.SelectRow {
-                    required property var modelData
+                required property var modelData
+                required property int index
+                readonly property bool current: tab.index === tabStrip.activeIndex
 
-                    label: modelData.label
-                    value: modelData.detail
-                    valueMaxWidth: 220
-                    indicatorIconName: "chevron-right"
-                    onActivated: root.openPage(modelData.id)
+                x: tab.index <= tabStrip.activeIndex
+                    ? tab.index * (tabStrip.restWidth + tabStrip.gap)
+                    : (tab.index - 1) * (tabStrip.restWidth + tabStrip.gap) + tabStrip.activeWidth + tabStrip.gap
+                width: tab.current ? tabStrip.activeWidth : tabStrip.restWidth
+                height: tabStrip.height
+                radius: ThemeModule.Theme.borderRadiusSmall
+                clip: true
+                color: tab.current
+                    ? ThemeModule.Theme.alpha(ThemeModule.Theme.accent, ThemeModule.Theme.tintStrong)
+                    : (tabMouse.containsMouse ? ThemeModule.Theme.cardHover : ThemeModule.Theme.controlFill)
+                border.width: ThemeModule.Theme.borderWidth
+                border.color: tab.current ? ThemeModule.Theme.selectedBorder : "transparent"
+
+                Behavior on x {
+                    NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing }
                 }
-            }
-        }
-
-        Column {
-            width: parent.width
-            spacing: ThemeModule.Theme.spacingSmall
-            visible: root.activePage === "appearance"
-
-            Components.SelectMenuRow {
-                label: "Theme"
-                options: root.themeOptions
-                currentValue: Services.ThemeService.themeId
-                onValueSelected: function(value) { Services.ThemeService.setTheme(value); }
-            }
-
-            Item {
-                width: parent.width
-                height: ThemeModule.Theme.controlHeight
-
-                Text {
-                    text: "Draw Wallpaper"
-                    font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                    font.family: ThemeModule.Theme.fontFamily
-                    color: ThemeModule.Theme.subtext
-                    anchors.left: parent.left
-                    anchors.leftMargin: ThemeModule.Theme.spacingSmall
-                    anchors.verticalCenter: parent.verticalCenter
+                Behavior on width {
+                    NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing }
                 }
 
-                Components.ToggleSwitch {
-                    anchors.right: parent.right
-                    anchors.rightMargin: ThemeModule.Theme.spacingSmall
-                    anchors.verticalCenter: parent.verticalCenter
-                    checked: root.settingsConfig.drawWallpaper || false
-                    enabled: !Services.ConfigService.savingConfig
-                    tooltipText: checked
-                        ? "Leave the background to other wallpaper tools"
-                        : "Draw theme wallpapers as the desktop background"
-                    onToggled: function(newState) { Services.ConfigService.setDrawWallpaper(newState); }
-                }
-            }
+                Accessible.role: Accessible.PageTab
+                Accessible.name: tab.modelData.label
+                Accessible.selected: tab.current
+                Accessible.onPressAction: root.activePage = tab.modelData.id
 
-            Components.SelectMenuRow {
-                enabled: !Services.ConfigService.savingConfig
-                label: "Text Size"
-                options: root.textScaleOptions
-                currentValue: root.settingsConfig.textScale !== undefined ? root.settingsConfig.textScale : 1.0
-                fallbackLabel: Math.round(Number(currentValue) * 100) + "% · Custom"
-                onValueSelected: function(value) { Services.ConfigService.setTextScale(value); }
-            }
+                Row {
+                    id: tabContent
+                    anchors.centerIn: parent
+                    spacing: tab.current ? ThemeModule.Theme.spacingTiny : 0
 
-            Components.SelectMenuRow {
-                enabled: !Services.ConfigService.savingConfig
-                label: "Panel Width"
-                options: root.panelWidthOptions
-                currentValue: root.settingsConfig.panelWidth !== undefined ? root.settingsConfig.panelWidth : 420
-                fallbackLabel: currentValue + " px · Custom"
-                onValueSelected: function(value) { Services.ConfigService.setPanelWidth(value); }
-            }
+                    Components.AppIcon {
+                        name: tab.modelData.icon
+                        size: ThemeModule.Theme.iconSizeSmall
+                        iconColor: tab.current
+                            ? ThemeModule.Theme.accent
+                            : (tabMouse.containsMouse ? ThemeModule.Theme.text : ThemeModule.Theme.subtext)
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
 
-            Components.SelectMenuRow {
-                enabled: !Services.ConfigService.savingConfig
-                label: "Panel Margin"
-                options: root.panelMarginOptions
-                currentValue: root.settingsConfig.panelMargin !== undefined ? root.settingsConfig.panelMargin : 16
-                fallbackLabel: currentValue + " px · Custom"
-                onValueSelected: function(value) { Services.ConfigService.setPanelMargin(value); }
-            }
-        }
-
-        Column {
-            width: parent.width
-            spacing: ThemeModule.Theme.spacingSmall
-            visible: root.activePage === "audio"
-
-            Components.SelectMenuRow {
-                enabled: !Services.ConfigService.savingConfig
-                label: "Audio Panel"
-                options: root.audioModeOptions
-                currentValue: root.settingsConfig.audioPanelMode || "combined"
-                onValueSelected: function(value) { Services.ConfigService.setAudioPanelMode(value); }
-            }
-
-            Components.SelectMenuRow {
-                enabled: !Services.ConfigService.savingConfig
-                label: "Volume Scroll"
-                options: root.scrollStepOptions
-                currentValue: root.settingsConfig.audioScrollStep !== undefined ? root.settingsConfig.audioScrollStep : 5
-                fallbackLabel: currentValue + "% · Custom"
-                onValueSelected: function(value) { Services.ConfigService.setAudioScrollStep(value); }
-            }
-        }
-
-        Column {
-            width: parent.width
-            spacing: ThemeModule.Theme.spacingSmall
-            visible: root.activePage === "launcher"
-
-            Components.SelectMenuRow {
-                enabled: !Services.ConfigService.savingConfig
-                label: "Visible Rows"
-                options: root.launcherRowOptions
-                currentValue: root.launcherConfig.visibleRows !== undefined ? root.launcherConfig.visibleRows : 5
-                fallbackLabel: currentValue + " Rows · Custom"
-                onValueSelected: function(value) { Services.ConfigService.setLauncherRows(value); }
-            }
-
-            Components.SelectMenuRow {
-                enabled: !Services.ConfigService.savingConfig
-                label: "Launcher Width"
-                options: root.launcherWidthOptions
-                currentValue: root.launcherConfig.width !== undefined ? root.launcherConfig.width : 540
-                fallbackLabel: currentValue + " px · Custom"
-                onValueSelected: function(value) { Services.ConfigService.setLauncherWidth(value); }
-            }
-
-            Components.SelectMenuRow {
-                enabled: !Services.ConfigService.savingConfig
-                label: "Search Engine"
-                options: root.searchEngineOptions
-                currentValue: root.launcherConfig.searchUrl || "https://duckduckgo.com/?q={query}"
-                fallbackLabel: "Custom INI value"
-                onValueSelected: function(value) { Services.ConfigService.setLauncherSearchUrl(value); }
-            }
-        }
-
-        Column {
-            width: parent.width
-            spacing: ThemeModule.Theme.spacingSmall
-            visible: root.activePage === "integrations"
-
-            Item {
-                width: parent.width
-                height: ThemeModule.Theme.controlHeight
-
-                Text {
-                    text: "Weather"
-                    font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                    font.family: ThemeModule.Theme.fontFamily
-                    color: ThemeModule.Theme.subtext
-                    anchors.left: parent.left
-                    anchors.leftMargin: ThemeModule.Theme.spacingSmall
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Components.ToggleSwitch {
-                    anchors.right: parent.right
-                    anchors.rightMargin: ThemeModule.Theme.spacingSmall
-                    anchors.verticalCenter: parent.verticalCenter
-                    checked: root.settingsConfig.weatherEnabled || false
-                    enabled: !Services.ConfigService.savingConfig
-                    tooltipText: checked ? "Disable weather" : "Enable weather"
-                    onToggled: function(newState) { Services.ConfigService.setWeatherEnabled(newState); }
-                }
-            }
-
-            Row {
-                width: parent.width
-                spacing: ThemeModule.Theme.spacingSmall
-
-                Rectangle {
-                    width: parent.width - locationApply.width - parent.spacing
-                    height: ThemeModule.Theme.controlHeight
-                    radius: ThemeModule.Theme.borderRadiusSmall
-                    color: ThemeModule.Theme.card
-                    border.width: ThemeModule.Theme.borderWidth
-                    border.color: locationInput.activeFocus ? ThemeModule.Theme.accent : ThemeModule.Theme.cardHover
-
-                    TextInput {
-                        id: locationInput
-                        anchors.fill: parent
-                        anchors.leftMargin: ThemeModule.Theme.spacingSmall
-                        anchors.rightMargin: ThemeModule.Theme.spacingSmall
-                        verticalAlignment: TextInput.AlignVCenter
-                        text: root.weatherLocationDraft
+                    Text {
+                        width: Math.min(implicitWidth, tab.width - ThemeModule.Theme.iconSizeSmall
+                            - ThemeModule.Theme.spacingTiny - ThemeModule.Theme.spacingSmall * 2)
+                        elide: Text.ElideRight
+                        visible: tab.current
+                        opacity: tab.current ? 1 : 0
+                        text: tab.modelData.label
+                        font: tabMetrics.font
                         color: ThemeModule.Theme.text
-                        selectionColor: ThemeModule.Theme.accent
-                        selectedTextColor: ThemeModule.Theme.bg
-                        font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                        font.family: ThemeModule.Theme.fontFamily
-                        clip: true
-                        enabled: !Services.ConfigService.savingConfig
-                        Accessible.name: "Weather location"
-                        onTextEdited: root.weatherLocationDraft = text
-                        onAccepted: Services.ConfigService.setWeatherLocation(root.weatherLocationDraft)
+                        anchors.verticalCenter: parent.verticalCenter
 
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: locationInput.text === "" && !locationInput.activeFocus
-                            text: "Automatic location"
-                            font: locationInput.font
-                            color: ThemeModule.Theme.overlay
+                        Behavior on opacity {
+                            NumberAnimation { duration: ThemeModule.Theme.animDuration }
                         }
                     }
                 }
 
-                Components.ActionButton {
-                    id: locationApply
-                    width: 78
-                    label: "Apply"
-                    iconName: "check"
-                    enabled: !Services.ConfigService.savingConfig
-                        && root.weatherLocationDraft !== String(root.settingsConfig.weatherLocation || "")
-                    onActivated: Services.ConfigService.setWeatherLocation(root.weatherLocationDraft)
+                MouseArea {
+                    id: tabMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.activePage = tab.modelData.id
                 }
+
+                Controls.ToolTip.visible: !tab.current && tabMouse.containsMouse
+                Controls.ToolTip.text: tab.modelData.label
+                Controls.ToolTip.delay: 300
             }
+        }
+    }
 
-            Components.SelectMenuRow {
-                enabled: !Services.ConfigService.savingConfig
-                label: "Backlight"
-                options: root.backlightOptions
-                currentValue: root.settingsConfig.backlightDevice || ""
-                fallbackLabel: currentValue + " · Missing"
-                onValueSelected: function(value) { Services.ConfigService.setBacklightDevice(value); }
+    Notice {
+        visible: Services.ConfigService.operationFailed && Services.ConfigService.operationMessage !== ""
+        detail: Services.ConfigService.operationMessage
+        toneColor: ThemeModule.Theme.error
+    }
+
+    Item {
+        width: parent.width
+        height: ThemeModule.Theme.spacingTiny
+    }
+
+    Item {
+        width: parent.width
+        height: pageStack.height
+
+        ParallelAnimation {
+            id: pageEnter
+
+            NumberAnimation {
+                target: pageStack
+                property: "opacity"
+                from: 0
+                to: 1
+                duration: ThemeModule.Theme.animDuration
             }
+            NumberAnimation {
+                target: pageStack
+                property: "x"
+                from: ThemeModule.Theme.spacingSmall
+                to: 0
+                duration: ThemeModule.Theme.animDuration
+                easing.type: ThemeModule.Theme.animEasing
+            }
+        }
 
-            Repeater {
-                model: Services.FeatureSupport.issues
+        Column {
+            id: pageStack
+            width: parent.width
 
-                delegate: Rectangle {
-                    id: issueRow
+            Column {
+                width: parent.width
+                spacing: ThemeModule.Theme.spacingSmall
+                visible: root.activePage === "general"
 
-                    required property var modelData
+                SectionHeader { text: "Dashboard" }
 
-                    width: parent.width
-                    implicitHeight: issueText.implicitHeight + ThemeModule.Theme.spacingSmall * 2
-                    radius: ThemeModule.Theme.borderRadiusSmall
-                    color: ThemeModule.Theme.alpha(ThemeModule.Theme.warning, ThemeModule.Theme.tintSubtle)
-                    border.width: ThemeModule.Theme.borderWidth
-                    border.color: ThemeModule.Theme.alpha(ThemeModule.Theme.warning, ThemeModule.Theme.tintOutline)
+                Components.SettingRow {
+                    label: "Text size"
+                    info: "Scales text across the dashboard, launcher, and toasts."
 
-                    Text {
-                        id: issueText
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.leftMargin: ThemeModule.Theme.spacingSmall
-                        anchors.rightMargin: ThemeModule.Theme.spacingSmall
-                        text: issueRow.modelData.detail
-                        font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                        font.family: ThemeModule.Theme.fontFamily
-                        color: ThemeModule.Theme.warning
-                        wrapMode: Text.WordWrap
+                    Components.SelectMenu {
+                        options: root.textScaleOptions
+                        currentValue: root.configValue(root.settingsConfig, "textScale", 1.0)
+                        fallbackLabel: Math.round(Number(currentValue) * 100) + "% · Custom"
+                        onValueSelected: function(value) { Services.ConfigService.setTextScale(value); }
+                    }
+                }
+
+                Components.SettingRow {
+                    label: "Panel width"
+
+                    Components.SelectMenu {
+                        options: root.panelWidthOptions
+                        currentValue: root.configValue(root.settingsConfig, "panelWidth", 420)
+                        fallbackLabel: currentValue + " px · Custom"
+                        onValueSelected: function(value) { Services.ConfigService.setPanelWidth(value); }
+                    }
+                }
+
+                SectionHeader { text: "Audio" }
+
+                Components.SettingRow {
+                    label: "Sidebar icons"
+                    info: "Combined puts speaker and microphone in one panel. Separate gives each its own sidebar icon."
+
+                    Components.SegmentedControl {
+                        options: root.audioModeOptions
+                        currentValue: root.settingsConfig.audioPanelMode || "combined"
+                        onValueSelected: function(value) { Services.ConfigService.setAudioPanelMode(value); }
+                    }
+                }
+
+                Components.SettingRow {
+                    id: scrollStepRow
+                    readonly property var step: root.configValue(root.settingsConfig, "audioScrollStep", 5)
+
+                    label: "Scroll step"
+                    info: root.explain("Volume change per wheel notch over a sidebar audio icon.", root.scrollStepOptions,
+                        step, step + "%")
+
+                    Components.SegmentedControl {
+                        options: root.scrollStepOptions
+                        currentValue: scrollStepRow.step
+                        onValueSelected: function(value) { Services.ConfigService.setAudioScrollStep(value); }
+                    }
+                }
+
+                SectionHeader { text: "Notifications" }
+
+                Components.SettingRow {
+                    id: toastsRow
+                    readonly property var count: root.configValue(root.settingsConfig, "maxVisibleNotification", 3)
+
+                    label: "Toasts on screen"
+                    info: root.explain("When more arrive, the oldest toast closes first.", root.notificationOptions,
+                        count, String(count))
+
+                    Components.SegmentedControl {
+                        options: root.notificationOptions
+                        currentValue: toastsRow.count
+                        onValueSelected: function(value) { Services.ConfigService.setMaxVisibleNotification(value); }
                     }
                 }
             }
 
-            Text {
-                visible: Services.FeatureSupport.issuesReady && Services.FeatureSupport.issues.length === 0
-                width: parent.width
-                text: "Configured integrations are ready."
-                font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                font.family: ThemeModule.Theme.fontFamily
-                color: ThemeModule.Theme.success
-                wrapMode: Text.WordWrap
-            }
-        }
-
-        Column {
-            width: parent.width
-            spacing: ThemeModule.Theme.spacingSmall
-            visible: root.activePage === "notifications"
-
-            Components.SelectMenuRow {
-                enabled: !Services.ConfigService.savingConfig
-                label: "Visible Toasts"
-                options: root.notificationOptions
-                currentValue: root.settingsConfig.maxVisibleNotification !== undefined
-                    ? root.settingsConfig.maxVisibleNotification
-                    : 3
-                fallbackLabel: currentValue === -1 ? "Unlimited" : currentValue + " Toasts · Custom"
-                onValueSelected: function(value) { Services.ConfigService.setMaxVisibleNotification(value); }
-            }
-        }
-
-        Column {
-            width: parent.width
-            spacing: ThemeModule.Theme.spacingSmall
-            visible: root.activePage === "advanced"
-
-            Text {
-                width: parent.width
-                text: Services.ConfigService.configPath !== ""
-                    ? Services.ConfigService.configPath
-                    : "~/.config/speshell/config.ini"
-                font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                font.family: ThemeModule.Theme.fontFamily
-                color: ThemeModule.Theme.subtext
-                wrapMode: Text.WrapAnywhere
-            }
-
-            Text {
-                width: parent.width
-                text: "Workspace, audio mappings, custom bangs, search URLs, and power arguments remain in the INI file."
-                font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                font.family: ThemeModule.Theme.fontFamily
-                color: ThemeModule.Theme.overlay
-                wrapMode: Text.WordWrap
-            }
-
-            Row {
-                id: actionsRow
+            Column {
                 width: parent.width
                 spacing: ThemeModule.Theme.spacingSmall
-                readonly property real buttonWidth: (width - spacing * 2) / 3
+                visible: root.activePage === "launcher"
 
-                Components.ActionButton {
-                    width: actionsRow.buttonWidth
-                    label: "Open"
-                    iconName: "folder-open"
-                    enabled: !Services.ConfigService.savingConfig
-                    onActivated: Services.ConfigService.openConfig()
+                Components.SettingRow {
+                    id: resultsRow
+                    readonly property var rows: root.configValue(root.launcherConfig, "visibleRows", 5)
+
+                    label: "Visible results"
+                    info: root.explain("Rows shown before the result list scrolls.", root.launcherRowOptions,
+                        rows, rows + " rows")
+
+                    Components.SegmentedControl {
+                        options: root.launcherRowOptions
+                        currentValue: resultsRow.rows
+                        onValueSelected: function(value) { Services.ConfigService.setLauncherRows(value); }
+                    }
                 }
 
-                Components.ActionButton {
-                    width: actionsRow.buttonWidth
-                    label: Services.ConfigService.loading ? "Loading" : "Reload"
-                    iconName: "refresh"
-                    enabled: !Services.ConfigService.loading && !Services.ConfigService.savingConfig
-                    onActivated: Services.ConfigService.load()
+                Components.SettingRow {
+                    label: "Width"
+
+                    Components.SelectMenu {
+                        options: root.launcherWidthOptions
+                        currentValue: root.configValue(root.launcherConfig, "width", 540)
+                        fallbackLabel: currentValue + " px · Custom"
+                        onValueSelected: function(value) { Services.ConfigService.setLauncherWidth(value); }
+                    }
                 }
 
-                Components.ActionButton {
-                    width: actionsRow.buttonWidth
-                    label: root.relaunching ? "Starting" : "Relaunch"
-                    iconName: "restart"
-                    toneColor: ThemeModule.Theme.warning
-                    enabled: !root.relaunching && !Services.ConfigService.savingConfig
-                    onActivated: root.relaunch()
+                Components.SettingRow {
+                    label: "Web search"
+                    info: "Handles ? queries and bangs Speshell doesn't know. Set a custom search URL in config.ini."
+
+                    Components.SelectMenu {
+                        options: root.searchEngineOptions
+                        currentValue: root.launcherConfig.searchUrl || "https://duckduckgo.com/?q={query}"
+                        fallbackLabel: "Custom URL"
+                        onValueSelected: function(value) { Services.ConfigService.setLauncherSearchUrl(value); }
+                    }
                 }
             }
-        }
 
-        Text {
-            visible: Services.ConfigService.operationFailed
-                && Services.ConfigService.operationMessage !== ""
-            width: parent.width
-            text: Services.ConfigService.operationMessage
-            color: ThemeModule.Theme.error
-            font.pixelSize: ThemeModule.Theme.fontSizeSmall
-            font.family: ThemeModule.Theme.fontFamily
-            wrapMode: Text.WrapAnywhere
+            Column {
+                width: parent.width
+                spacing: ThemeModule.Theme.spacingSmall
+                visible: root.activePage === "weather"
+
+                Components.SettingRow {
+                    label: "Show weather"
+                    info: "Shown beside the clock. Fetched from wttr.in with curl."
+
+                    Components.ToggleSwitch {
+                        checked: root.weatherEnabled
+                        tooltipText: "Show weather"
+                        onToggled: function(newState) { Services.ConfigService.setWeatherEnabled(newState); }
+                    }
+                }
+
+                Components.SettingRow {
+                    enabled: root.weatherEnabled
+                    label: "Location"
+                    info: "A city or place name. Leave empty to estimate it from your IP address."
+
+                    Rectangle {
+                        implicitWidth: 180
+                        implicitHeight: Math.max(ThemeModule.Theme.controlHeightSmall, locationInput.implicitHeight + ThemeModule.Theme.spacingTiny * 2)
+                            + ThemeModule.Theme.spacingMicro * 2
+                        radius: ThemeModule.Theme.borderRadius
+                        color: ThemeModule.Theme.controlFill
+                        border.width: ThemeModule.Theme.borderWidth
+                        border.color: locationInput.activeFocus ? ThemeModule.Theme.selectedBorder : ThemeModule.Theme.controlBorder
+
+                        TextInput {
+                            id: locationInput
+
+                            readonly property bool dirty: root.weatherLocationDraft.trim() !== root.savedWeatherLocation
+
+                            anchors.left: parent.left
+                            anchors.leftMargin: ThemeModule.Theme.spacingSmall
+                            anchors.right: applyLocation.visible ? applyLocation.left : parent.right
+                            anchors.rightMargin: ThemeModule.Theme.spacingSmall
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: root.weatherLocationDraft
+                            color: ThemeModule.Theme.text
+                            selectionColor: ThemeModule.Theme.accent
+                            selectedTextColor: ThemeModule.Theme.bg
+                            font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                            font.family: ThemeModule.Theme.fontFamily
+                            clip: true
+                            Accessible.name: "Weather location"
+                            onTextEdited: root.weatherLocationDraft = text
+                            onAccepted: root.applyWeatherLocation()
+                            Keys.onEscapePressed: {
+                                root.weatherLocationDraft = root.savedWeatherLocation;
+                                locationInput.focus = false;
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: locationInput.text === ""
+                                text: "Automatic"
+                                font: locationInput.font
+                                color: ThemeModule.Theme.overlay
+                            }
+                        }
+
+                        Components.IconButton {
+                            id: applyLocation
+                            anchors.right: parent.right
+                            anchors.rightMargin: ThemeModule.Theme.spacingMicro
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: locationInput.dirty
+                            size: ThemeModule.Theme.controlHeightSmall - ThemeModule.Theme.spacingTiny
+                            iconName: "check"
+                            iconSize: ThemeModule.Theme.iconSizeSmall
+                            iconColor: ThemeModule.Theme.accent
+                            tooltipText: "Save location (Enter)"
+                            onClicked: root.applyWeatherLocation()
+                        }
+                    }
+                }
+
+                Repeater {
+                    model: root.weatherIssues
+
+                    delegate: Notice {
+                        required property var modelData
+
+                        heading: modelData.title
+                        detail: modelData.detail
+                    }
+                }
+            }
+
+            Column {
+                width: parent.width
+                spacing: ThemeModule.Theme.spacingSmall
+                visible: root.activePage === "advanced"
+
+                SectionHeader { text: "Config file" }
+
+                Item {
+                    width: parent.width
+                    height: Math.max(ThemeModule.Theme.controlHeight, fileText.implicitHeight)
+
+                    Components.AppIcon {
+                        id: fileIcon
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        name: "config-file"
+                        size: ThemeModule.Theme.iconSizeLarge
+                        iconColor: ThemeModule.Theme.accent
+                    }
+
+                    Column {
+                        id: fileText
+                        anchors.left: fileIcon.right
+                        anchors.leftMargin: ThemeModule.Theme.spacingSmall
+                        anchors.right: fileActions.left
+                        anchors.rightMargin: ThemeModule.Theme.spacingSmall
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 0
+
+                        Row {
+                            spacing: ThemeModule.Theme.spacingMicro
+
+                            Text {
+                                text: "config.ini"
+                                font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                                font.family: ThemeModule.Theme.fontFamily
+                                font.bold: true
+                                color: ThemeModule.Theme.text
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            Components.InfoTip {
+                                text: "Saved edits apply right away. Panel margin, the backlight device, audio device "
+                                    + "mappings, custom bangs and search URLs, the workspace, and power commands "
+                                    + "are only set here."
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        Text {
+                            width: parent.width
+                            text: root.configDisplayDir
+                            font.pixelSize: ThemeModule.Theme.fontSizeCaption
+                            font.family: ThemeModule.Theme.fontFamily
+                            color: ThemeModule.Theme.subtext
+                            elide: Text.ElideMiddle
+                        }
+                    }
+
+                    Row {
+                        id: fileActions
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: ThemeModule.Theme.spacingTiny
+
+                        Components.ActionButton {
+                            label: "Edit"
+                            iconName: "notes"
+                            enabled: !Services.ConfigService.savingConfig
+                            onActivated: Services.ConfigService.openConfig()
+                        }
+
+                        Components.ActionButton {
+                            label: Services.ConfigService.loading ? "Loading" : "Reload"
+                            iconName: "refresh"
+                            enabled: !Services.ConfigService.loading && !Services.ConfigService.savingConfig
+                            onActivated: Services.ConfigService.load()
+                        }
+                    }
+                }
+
+                Repeater {
+                    model: root.configIssues
+
+                    delegate: Notice {
+                        required property var modelData
+
+                        heading: modelData.title
+                        detail: modelData.detail
+                    }
+                }
+
+                SectionHeader { text: "Runtime" }
+
+                Components.SettingRow {
+                    label: "Relaunch Speshell"
+                    info: "Restarts the shell process. Notes are saved first."
+
+                    Components.ActionButton {
+                        label: root.relaunching ? "Starting" : "Relaunch"
+                        iconName: "restart"
+                        toneColor: ThemeModule.Theme.warning
+                        enabled: !root.relaunching && !Services.ConfigService.savingConfig
+                        onActivated: root.relaunch()
+                    }
+                }
+            }
         }
     }
 }

@@ -5,22 +5,30 @@ import Quickshell.Io
 import "." as AppServices
 import "ThemeProvider.js" as ThemeProvider
 
-// The active theme and its wallpaper. Themes are the built-in color schemes plus
-// folders under <configDir>/themes holding a theme.ini and wallpapers; picking a
-// wallpaper applies its folder's theme. See README "Themes".
+// The active theme and its wallpaper. Themes are folders holding a theme.ini and
+// wallpapers, shipped under extras/themes and added under <configDir>/themes;
+// picking a wallpaper applies its folder's theme. See README "Themes".
 Singleton {
     id: root
 
+    readonly property string shippedThemesDir: Quickshell.shellDir + "/extras/themes"
+    readonly property string shippedEffectsDir: Quickshell.shellDir + "/extras/effects"
     readonly property string themesDir: AppServices.ConfigService.configDir !== ""
         ? AppServices.ConfigService.configDir + "/themes"
         : ""
+    readonly property string userEffectsDir: AppServices.ConfigService.dataDir !== ""
+        ? AppServices.ConfigService.dataDir + "/effects"
+        : ""
+    // User folders come last, so they override shipped ones of the same name.
+    readonly property var themesDirs: [root.shippedThemesDir, root.themesDir]
     readonly property string statePath: AppServices.ConfigService.dataDir !== ""
         ? AppServices.ConfigService.dataDir + "/theme.json"
         : ""
 
-    property var userThemes: []
+    property var folderThemes: []
     property var wallpapers: []
     property bool scanned: false
+    readonly property bool scanning: scanProc.running
     property bool stateLoaded: false
     property bool saving: false
     property bool saveQueued: false
@@ -32,17 +40,16 @@ Singleton {
     // before the scan finishes.
     property var snapshot: null
 
-    readonly property var themes: ThemeProvider.allThemes(root.userThemes)
+    readonly property var themes: ThemeProvider.allThemes(root.folderThemes)
     readonly property var theme: {
         if (!root.scanned && root.snapshot && root.snapshot.id === root.themeId)
             return root.snapshot;
         return ThemeProvider.findTheme(root.themes, root.themeId)
             || ThemeProvider.findTheme(root.themes, ThemeProvider.defaultTheme);
     }
-    readonly property string scheme: root.theme.scheme
     readonly property var colors: root.theme.colors
-    readonly property string accent: root.theme.colors.accent || ""
-    readonly property string effects: root.theme.effects
+    // The active theme's effects directory, "" for none.
+    readonly property string activeEffectsDir: root.theme.effectsDir || ""
     // [Appearance] drawWallpaper: Speshell draws the desktop background, showing
     // the default wallpaper for themes without their own. Off by default so other
     // wallpaper tools keep working; themes still set colors and effects.
@@ -62,7 +69,7 @@ Singleton {
     // A wallpaper brings its theme along.
     function setWallpaper(path) {
         var next = String(path || "");
-        var id = ThemeProvider.themeFor(next, root.themesDir);
+        var id = ThemeProvider.themeFor(next, root.themesDirs);
         if (!root.wallpaperEnabled || id === "")
             return false;
         if (next !== root.wallpaper || id !== root.themeId) {
@@ -70,7 +77,7 @@ Singleton {
             root.wallpaper = next;
             root.save();
         }
-        if (!ThemeProvider.findTheme(root.userThemes, id))
+        if (!ThemeProvider.findTheme(root.folderThemes, id))
             root.scan();
         return true;
     }
@@ -90,8 +97,8 @@ Singleton {
             return;
         }
         var theme = root.theme;
-        root.snapshot = { id: theme.id, name: theme.name, builtin: theme.builtin, scheme: theme.scheme,
-                          effects: theme.effects, colors: theme.colors, errors: [] };
+        root.snapshot = { id: theme.id, name: theme.name, effects: theme.effects, effectsDir: theme.effectsDir,
+                          colors: theme.colors, errors: [] };
         root.saving = true;
         stateFile.setText(JSON.stringify({ theme: root.themeId, wallpaper: root.wallpaper, snapshot: root.snapshot }));
     }
@@ -121,27 +128,31 @@ Singleton {
     }
 
     function scan() {
-        if (root.themesDir === "")
-            return;
         if (scanProc.running) {
             scanProc.queued = true;
             return;
         }
         scanProc.command = [
             "sh", "-c",
-            "for f in \"$1\"/*/theme.ini; do [ -f \"$f\" ] || continue; d=${f%/theme.ini}; "
-                + "printf 'theme\\t%s\\n' \"${d##*/}\"; awk '{ print \"ini\\t\" $0 }' \"$f\"; done; "
-                + "[ -d \"$1\" ] && find -L \"$1\" -mindepth 2 -type f \\( -iname '*.jpg' -o -iname '*.jpeg' "
-                + "-o -iname '*.png' -o -iname '*.webp' \\) -printf 'wall\\t%p\\n'",
+            "for dir in \"$1\" \"$2\"; do [ -d \"$dir\" ] || continue; "
+                + "for f in \"$dir\"/*/theme.ini; do [ -f \"$f\" ] || continue; "
+                + "printf 'theme\\t%s\\n' \"${f%/theme.ini}\"; awk '{ print \"ini\\t\" $0 }' \"$f\"; done; "
+                + "find -L \"$dir\" -mindepth 2 -type f \\( -iname '*.jpg' -o -iname '*.jpeg' "
+                + "-o -iname '*.png' -o -iname '*.webp' \\) -printf 'wall\\t%p\\n'; done; "
+                + "for dir in \"$3\" \"$4\"; do [ -d \"$dir\" ] || continue; for f in \"$dir\"/*/Effects.qml; do "
+                + "[ -f \"$f\" ] && printf 'effects\\t%s\\n' \"${f%/Effects.qml}\"; done; done; true",
             "speshell-theme-scan",
-            root.themesDir
+            root.shippedThemesDir,
+            root.themesDir,
+            root.shippedEffectsDir,
+            root.userEffectsDir
         ];
         scanProc.running = true;
     }
 
     function finishScan(text) {
-        var library = ThemeProvider.parseScan(text, root.themesDir);
-        root.userThemes = library.themes;
+        var library = ThemeProvider.parseScan(text, root.themesDirs);
+        root.folderThemes = library.themes;
         root.wallpapers = library.wallpapers;
         root.scanned = true;
         root.reconcile();
@@ -163,7 +174,7 @@ Singleton {
             root.wallpaper = ThemeProvider.pickRandom(root.wallpapers, root.themeId, "");
         // Keep the saved snapshot in step with edits to theme.ini.
         if (before !== root.themeId + "\n" + root.wallpaper || !root.snapshot || JSON.stringify(root.snapshot.colors) !== JSON.stringify(root.theme.colors)
-                || root.snapshot.scheme !== root.theme.scheme || root.snapshot.effects !== root.theme.effects
+                || root.snapshot.effectsDir !== root.theme.effectsDir || root.snapshot.effects !== root.theme.effects
                 || root.snapshot.id !== root.themeId)
             root.save();
         root.report();
@@ -209,6 +220,7 @@ Singleton {
 
     onThemeIdChanged: root.report()
     onThemesDirChanged: root.scan()
+    onUserEffectsDirChanged: root.scan()
     // The folder may already be known when the service is first used.
     Component.onCompleted: root.scan()
 }

@@ -331,7 +331,7 @@ Singleton {
     Connections {
         target: ThemeService
         function onWallpapersChanged() { root.rebuild(); }
-        function onUserThemesChanged() { root.rebuild(); }
+        function onFolderThemesChanged() { root.rebuild(); }
         function onThemeIdChanged() { root.rebuild(); }
         function onWallpaperChanged() { root.rebuild(); }
         function onWallpaperEnabledChanged() { root.rebuild(); }

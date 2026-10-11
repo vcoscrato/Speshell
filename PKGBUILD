@@ -21,7 +21,7 @@ depends=(
   'which'
   'wireplumber'
 )
-makedepends=('git')
+makedepends=('git' 'just' 'qt6-shadertools')
 optdepends=(
   'curl: weather lookup'
   'brightnessctl: brightness controls'
@@ -46,12 +46,20 @@ pkgver() {
     "$(git rev-parse --short=7 HEAD)"
 }
 
+build() {
+  cd speshell
+  just shaders
+}
+
 package() {
   cd speshell
 
   install -d "$pkgdir/usr/share/speshell"
   install -m644 shell.qml config.example.ini "$pkgdir/usr/share/speshell/"
   cp -r assets components core services theme widgets "$pkgdir/usr/share/speshell/"
+  # Shipped themes and effects; each effect reaches lib/ through a relative symlink.
+  install -d "$pkgdir/usr/share/speshell/extras"
+  cp -r extras/effects extras/lib extras/themes "$pkgdir/usr/share/speshell/extras/"
 
   install -Dm644 README.md "$pkgdir/usr/share/doc/speshell/README.md"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"

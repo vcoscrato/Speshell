@@ -21,10 +21,9 @@ Rectangle {
     implicitHeight: container.implicitHeight
     implicitWidth: parent ? parent.width : 300
 
-    Behavior on implicitHeight {
-        NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing }
-    }
-
+    // Don't animate implicitHeight: under Qt 6.12, animating this clipped card's
+    // height over large content (a long Notes preview) segfaults the scene graph
+    // renderer in QSGBatchRenderer::prepareAlphaBatches.
     clip: true
 
     Column {

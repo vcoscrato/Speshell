@@ -71,8 +71,8 @@ Singleton {
         if (!root.enabled)
             return;
         if (!weatherProc.running) {
-            var loc = String(root.location || "").trim();
-            var url = "https://wttr.in/" + (loc !== "" ? encodeURIComponent(loc) : "") + "?format=%c+%t+%l";
+            const loc = String(root.location || "").trim();
+            const url = "https://wttr.in/" + (loc !== "" ? encodeURIComponent(loc) : "") + "?format=%c+%t+%l";
             weatherProc.command = ["curl", "-fsS", "--proto", "=https", "--max-time", "8", url];
             weatherProc.running = true;
         } else {

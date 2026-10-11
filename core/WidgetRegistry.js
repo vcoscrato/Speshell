@@ -16,7 +16,8 @@ var entries = ({
     notificationCenter: { source: "../widgets/NotificationCenter.qml", icon: "bell", capability: "",                  bang: "notifications", label: "Notifications" },
     nowPlaying:         { source: "../widgets/NowPlaying.qml",         icon: "media", capability: "",                 bang: "media",         label: "Now playing" },
     powerMenu:          { source: "../widgets/PowerMenu.qml",          icon: "power", capability: "",                 bang: "power",         label: "Power menu" },
-    settings:           { source: "../widgets/Settings.qml",           icon: "config", capability: "",                bang: "settings",      label: "Settings" }
+    settings:           { source: "../widgets/Settings.qml",           icon: "config", capability: "",                bang: "settings",      label: "Settings" },
+    themes:             { source: "../widgets/Themes.qml",             icon: "palette", capability: "",               bang: "themes",        label: "Themes" }
 });
 
 var aliases = ({ configPanel: "settings" });
@@ -27,7 +28,7 @@ var primaryPanelWidgets = ["nowPlaying", "notificationCenter"];
 var headerPanel = "clock";
 var sidebarPanels = [
     "audioControl", "audioInputControl", "displayControl", "batteryStatus",
-    "notes", "clipboardManager", "networkPanel", "bluetoothPanel"
+    "notes", "clipboardManager", "networkPanel", "bluetoothPanel", "themes"
 ];
 var reservedBottomPanels = ["calendar", "settings", "about", "powerMenu"];
 var defaultReservedBottomPanel = "calendar";

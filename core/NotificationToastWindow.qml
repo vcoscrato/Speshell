@@ -34,10 +34,13 @@ PanelWindow {
         right: true
     }
     
+    // Quickshell's type info hides the fields of PanelWindow.margins.
+    // qmllint disable missing-property
     margins {
         top: ThemeModule.Theme.spacingLarge
         right: ThemeModule.Theme.spacingLarge
     }
+    // qmllint enable missing-property
 
     // Transparent background, resizing to fit contents
     color: "transparent"

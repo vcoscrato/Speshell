@@ -72,7 +72,7 @@ Components.Card {
                 text: {
                     if (!root.batteryReady) return "";
                     if (root.isCharging) {
-                        var timeToFull = root.formatTimeRemaining(root.battery.timeToFull);
+                        const timeToFull = root.formatTimeRemaining(root.battery.timeToFull);
                         return timeToFull ? (timeToFull + " until full") : "Charging";
                     }
                     return root.formatTimeRemaining(root.battery.timeToEmpty);

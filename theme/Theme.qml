@@ -1,24 +1,48 @@
 pragma Singleton
 import QtQuick
-import "." as ThemeModule
 
 QtObject {
     id: root
 
-    // Active theme (see ThemeService): a built-in palette, a partial palette merged
-    // over it, and an accent color.
-    property string paletteName: "gruvbox"
-    property var paletteOverride: null
-    property string accentOverride: ""
+    // The Cosmos theme's colors (Gruvbox). Every theme starts from these, and
+    // they stand in when no theme loads, such as in the config error window.
+    readonly property var defaultPalette: ({
+        base:     "#282828",
+        mantle:   "#1d2021",
+        crust:    "#1b1b1b",
+        surface0: "#3c3836",
+        surface1: "#504945",
+        surface2: "#665c54",
+        overlay0: "#7c6f64",
+        text:     "#ebdbb2",
+        subtext0: "#bdae93",
+        subtext1: "#d5c4a1",
+        lavender: "#d3869b",
+        mauve:    "#d3869b",
+        pink:     "#d3869b",
+        red:      "#fb4934",
+        peach:    "#fe8019",
+        yellow:   "#fabd2f",
+        green:    "#b8bb26",
+        teal:     "#8ec07c",
+        sky:      "#83a598",
+        blue:     "#83a598",
+        rosewater:"#ebdbb2",
+        accent:   "#fe8019"
+    })
 
-    // Resolve palette
-    readonly property var _p: {
-        var base = ThemeModule.Palettes.getPalette(paletteName);
-        if (!paletteOverride)
-            return base;
+    // Active theme (see ThemeService): its colors merged over the default palette.
+    property var paletteOverride: null
+
+    readonly property var _p: root.mergePalette(root.paletteOverride)
+
+    function mergePalette(colors) {
+        if (!colors)
+            return root.defaultPalette;
         var merged = {};
-        for (var key in base)
-            merged[key] = paletteOverride[key] !== undefined ? paletteOverride[key] : base[key];
+        for (var key in root.defaultPalette)
+            merged[key] = colors[key] !== undefined ? colors[key] : root.defaultPalette[key];
+        merged.accent = colors.accent || merged.peach;
         return merged;
     }
 
@@ -35,21 +59,8 @@ QtObject {
     readonly property color subtext:   _p.subtext0
     readonly property color subtextBright: _p.subtext1
 
-    readonly property color accent: {
-        if (accentOverride !== "")
-            return accentOverride;
-        switch(paletteName) {
-            case "nord": return _p.blue;
-            case "dracula": return _p.pink;
-            case "gruvbox": return _p.peach;
-            case "tokyo-night": return _p.blue;
-            case "rose-pine": return _p.rosewater;
-            case "solarized-dark": return _p.yellow;
-            case "everforest": return _p.green;
-            default: return _p.lavender;
-        }
-    }
-    
+    readonly property color accent:    _p.accent
+
     readonly property color pink:      _p.pink
 
     readonly property color success:   _p.green

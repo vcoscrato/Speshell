@@ -450,7 +450,7 @@ PanelWindow {
         }
     }
 
-    // Effects transition (see README "Effects"): draws above the panel, and may capture it with
+    // Effects transition (see extras/README.md "Effects API"): draws above the panel, and may capture it with
     // a ShaderEffectSource to animate the panel itself. Alive only while the launcher is mapped.
     Loader {
         id: transitionLoader

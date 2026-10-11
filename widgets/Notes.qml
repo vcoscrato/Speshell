@@ -89,7 +89,7 @@ Components.Card {
         Qt.callLater(function() {
             notesInput.forceActiveFocus();
             if (typeof clickX === "number" && typeof clickY === "number") {
-                var position = notesInput.positionAt(clickX, clickY);
+                const position = notesInput.positionAt(clickX, clickY);
                 notesInput.cursorPosition = position >= 0
                     ? position
                     : notesInput.text.length;
@@ -500,7 +500,7 @@ Components.Card {
                         event.accepted = true;
                     } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                         if (event.modifiers & Qt.ShiftModifier) {
-                            var position = notesInput.cursorPosition;
+                            const position = notesInput.cursorPosition;
                             notesInput.insert(position, "\n");
                             notesInput.cursorPosition = position + 1;
                         } else {

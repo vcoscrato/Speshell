@@ -17,11 +17,13 @@ relevant scenarios from this list on a real Hyprland session.
   entrance, close with **Escape** and by launching an app, reopen during the
   exit, and confirm clicks pass through while the exit plays.
 - With `drawWallpaper` off, confirm Speshell leaves the background alone and
-  `!wall` is not offered; toggle it in **Settings → Appearance** and confirm the
+  `!wall` is not offered; toggle **Draw wallpaper** in the Themes panel and confirm the
   background appears and disappears.
-- With theme folders in `~/.config/speshell/themes`, switch themes with
-  `!theme`, **Settings → Appearance**, and by picking wallpapers with `!wall`,
-  including a built-in scheme and a theme without effects. Confirm the colors,
+- Switch between the shipped themes and a theme folder of your own in
+  `~/.config/speshell/themes` with `!theme`, the dashboard **Themes** panel
+  (themes, wallpaper grid, shuffle), and by picking wallpapers with `!wall`,
+  including a theme without effects. Add a wallpaper to a shipped theme from
+  the user folder and confirm it joins the shipped one. Confirm the colors,
   wallpaper, launcher transition, and wallpaper transition follow, the old
   effects' launcher exit finishes, and the choice survives a relaunch with the
   right colors from the first frame. Put a bad color in the active theme's
@@ -53,7 +55,11 @@ relevant scenarios from this list on a real Hyprland session.
   without Reload. Save an invalid edit; verify the old settings stay active and
   Settings shows the error. Then change a setting in Settings and verify the
   external edits are still in the file.
-- Select **Open** in Settings → Advanced with and without `$EDITOR` set.
+- In Settings, switch tabs and change a toggle, a segmented choice, and a
+  dropdown; confirm each applies at once and **Saved** flashes in the header.
+  Set text size to 150% and confirm wide controls move under their labels.
+  Hover each info icon and confirm the tooltip wraps inside the dashboard.
+- Select **Edit** in Settings → Advanced with and without `$EDITOR` set.
 - Launch several applications and confirm launcher usage ordering survives a
   relaunch.
 
@@ -82,7 +88,7 @@ relevant scenarios from this list on a real Hyprland session.
 
 - Enable weather without `curl`, select a missing backlight, or configure a
   missing locker. Confirm one aggregated warning appears after launch and the
-  same issues appear under Settings → Integrations.
+  same issues appear under Settings → Weather and Settings → Advanced.
 - Verify absent laptop battery or unconfigured optional tools do not create a
   startup warning.
 - Repeat the dashboard and launcher checks after moving the special workspace to

@@ -15,8 +15,9 @@ timeout 5s quickshell --no-color -p .
 - `widgets/` contains user-facing cards and panels.
 - `services/` contains singleton system integrations, config/launcher providers, and shared media, notification, and dashboard state.
 - `components/` contains reusable QML UI primitives.
-- `theme/` contains palettes and geometry/typography tokens.
+- `theme/` contains the default palette and geometry/typography tokens.
 - `assets/icons/tabler/` contains the pinned Tabler SVG subset and its upstream license.
+- `extras/` contains the shipped themes and effects, the background paintings that render their wallpapers, and the offscreen effects lab (`extras/README.md`). Effects shaders compile with `just shaders`.
 
 Prefer deleting unused QML modules over keeping broad helper surfaces. This repo should stay small and direct.
 

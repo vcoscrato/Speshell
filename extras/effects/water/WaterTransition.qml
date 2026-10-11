@@ -125,7 +125,7 @@ Item {
     }
 
     ShaderEffect {
-        readonly property real margin: 56
+        readonly property real margin: 120
         visible: root.flow > 0
         x: root.panelRect.x - margin
         y: root.panelRect.y - margin

@@ -102,7 +102,7 @@ Item {
         onTriggered: root.finishTransition()
     }
 
-    // Effects wallpaper transition (see README "Effects"): draws above both
+    // Effects wallpaper transition (see extras/README.md "Effects API"): draws above both
     // images and must hide the outgoing one, for example through a ShaderEffectSource
     // with hideSource.
     Loader {

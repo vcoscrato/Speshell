@@ -34,26 +34,14 @@ ShellRoot {
 
     Binding {
         target: ThemeModule.Theme
-        property: "paletteName"
-        value: Services.ThemeService.scheme
-    }
-
-    Binding {
-        target: ThemeModule.Theme
         property: "paletteOverride"
         value: Services.ThemeService.colors
     }
 
     Binding {
-        target: ThemeModule.Theme
-        property: "accentOverride"
-        value: Services.ThemeService.accent
-    }
-
-    Binding {
         target: Services.EffectsService
-        property: "name"
-        value: Services.ThemeService.effects
+        property: "dir"
+        value: Services.ThemeService.activeEffectsDir
     }
 
     LazyLoader {

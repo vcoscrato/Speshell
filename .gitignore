@@ -8,3 +8,5 @@ config.ini
 pkg/
 src/
 /speshell/
+*.qsb
+/extras/lab/out/

@@ -2,8 +2,8 @@ import QtQuick
 import "common"
 
 // Air wallpaper transition: a whirlwind eye opens in the middle of the screen and
-// widens until the old wallpaper is gone, wringing it into the spin as gusts
-// spiral out.
+// widens until the old wallpaper is gone, wringing it into the spin as the wind
+// whirl out.
 Item {
     id: root
 
@@ -58,22 +58,41 @@ Item {
         fragmentShader: Qt.resolvedUrl("shaders/whirl.frag.qsb")
     }
 
-    // Gusts unwinding outward ahead of the eye.
-    Gust {
+    // Wind whirling outward ahead of the eye.
+    Wind {
         anchors.fill: parent
-        opacity: 1 - Math.max(0, (root.sweep - 0.75) / 0.25)
+        opacity: Math.min(root.sweep / 0.08, 1 - Math.max(0, (root.sweep - 0.75) / 0.25))
+        visible: opacity > 0
         time: clock.simTime
         center: root.center
-        count: 5
-        phase: 0.3
-        r0: 60
-        k: -0.3
-        spin: root.spin
-        len: 2.4
-        head: 1.2 + Math.pow(root.sweep, 1.3) * 10
-        strokeWidth: 8
-        strokeAlpha: 1
+        axes: Qt.size(300, 300)
+        source: 24
+        vortex: -3 * root.spin
+        spacing: 0.1
+        dash: 2
+        travel: 4 * root.sweep + 0.3 * clock.simTime
+        duty: 0.5
+        density: 0.45
+        lineWidth: 4
+        sheet: 0.2
+        inner: Math.max(0.2, root.eye / 300 * 0.95)
+        outer: Math.max(0.2, root.eye / 300 * 0.95) + 2.6
         mist: 0.8 * Math.sin(Math.PI * root.sweep)
-        mistRadius: Math.max(80, root.eye)
+        turbulence: 40
+    }
+
+    // Leaves and dust flung outward with the wind.
+    Debris {
+        opacity: Math.min(root.sweep / 0.1, 1 - Math.max(0, (root.sweep - 0.7) / 0.3))
+        visible: opacity > 0
+        time: clock.simTime
+        center: root.center
+        leaves: 12
+        dust: 22
+        r0: 80 + root.eye * 1.05
+        spin: root.spin
+        head: root.sweep * 7 + clock.simTime * 0.5
+        leafSize: 18
+        turbulence: 20
     }
 }

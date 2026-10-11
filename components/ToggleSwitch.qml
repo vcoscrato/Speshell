@@ -12,8 +12,8 @@ Rectangle {
 
     signal toggled(bool newState)
 
-    width: 36
-    height: 20
+    implicitWidth: 36
+    implicitHeight: 20
     radius: height / 2
     opacity: enabled ? 1.0 : ThemeModule.Theme.disabledOpacity
 

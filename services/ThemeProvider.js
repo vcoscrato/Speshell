@@ -1,24 +1,14 @@
 .pragma library
 .import "../core/Config.js" as Config
 
-// Themes: built-in color schemes, plus theme folders under ~/.config/speshell/themes,
-// each holding a theme.ini and its wallpapers. See README "Themes".
+// Themes: folders holding a theme.ini and wallpapers. Speshell ships some under
+// extras/themes, and users add or override them under ~/.config/speshell/themes.
+// See README "Themes".
 
-var defaultTheme = "gruvbox";
+var defaultTheme = "cosmos";
 
-var schemes = [
-    { id: "gruvbox", name: "Gruvbox" },
-    { id: "catppuccin-mocha", name: "Catppuccin Mocha" },
-    { id: "catppuccin-macchiato", name: "Catppuccin Macchiato" },
-    { id: "catppuccin-frappe", name: "Catppuccin Frappé" },
-    { id: "catppuccin-latte", name: "Catppuccin Latte" },
-    { id: "nord", name: "Nord" },
-    { id: "dracula", name: "Dracula" },
-    { id: "tokyo-night", name: "Tokyo Night" },
-    { id: "rose-pine", name: "Rosé Pine" },
-    { id: "solarized-dark", name: "Solarized Dark" },
-    { id: "everforest", name: "Everforest" }
-];
+// Stands in for the Cosmos theme when its folder is missing, as in a broken install.
+var fallbackTheme = { id: defaultTheme, name: "Cosmos", effects: "", effectsDir: "", colors: ({}), errors: [] };
 
 var colorKeys = [
     "base", "mantle", "crust", "surface0", "surface1", "surface2", "overlay0",
@@ -26,36 +16,45 @@ var colorKeys = [
     "blue", "lavender", "mauve", "pink", "rosewater", "accent"
 ];
 
-function isScheme(id) {
-    return schemes.some(function(scheme) { return scheme.id === id; });
-}
-
 function fileUrl(path) {
     return path ? "file://" + String(path).split("/").map(encodeURIComponent).join("/") : "";
 }
 
+function baseName(path) {
+    return String(path).substring(String(path).lastIndexOf("/") + 1);
+}
+
 function titleFor(path) {
-    var name = String(path).substring(String(path).lastIndexOf("/") + 1).replace(/\.[^.]+$/, "");
+    var name = baseName(path).replace(/\.[^.]+$/, "");
     return name.replace(/[-_]+/g, " ").trim() || name;
 }
 
-// The theme folder holding path, or "" for paths outside a theme folder.
-function themeFor(path, themesDir) {
-    var prefix = String(themesDir || "") + "/";
-    if (themesDir === "" || String(path).indexOf(prefix) !== 0)
-        return "";
-    var relative = String(path).substring(prefix.length);
-    var slash = relative.indexOf("/");
-    return slash < 0 ? "" : relative.substring(0, slash);
+// The path relative to the themes directory holding it, "theme/file", or "" for
+// paths outside every themes directory or not inside a theme folder.
+function themeRelative(path, themesDirs) {
+    var dirs = [].concat(themesDirs || []);
+    for (var i = 0; i < dirs.length; i++) {
+        var prefix = String(dirs[i] || "") + "/";
+        if (dirs[i] === "" || String(path).indexOf(prefix) !== 0)
+            continue;
+        var relative = String(path).substring(prefix.length);
+        if (relative.indexOf("/") > 0)
+            return relative;
+    }
+    return "";
 }
 
-function builtinTheme(scheme) {
-    return { id: scheme.id, name: scheme.name, builtin: true, scheme: scheme.id, effects: "", colors: ({}), errors: [] };
+// The theme folder holding path, or "".
+function themeFor(path, themesDirs) {
+    var relative = themeRelative(path, themesDirs);
+    return relative.substring(0, relative.indexOf("/"));
 }
 
-// A theme folder's theme.ini text (possibly empty) as a theme. Problems are kept in
-// `errors`; the theme still applies with the offending keys left out.
-function parseTheme(id, text) {
+// A theme folder's theme.ini text (possibly empty) as a theme. Colors it leaves out
+// come from the Cosmos palette. `effects`, when given, maps installed effects
+// names to their directories. Problems are kept in `errors`; the theme still
+// applies with the offending keys left out.
+function parseTheme(id, text, effects) {
     var document = Config.parseIni(text);
     var errors = document.errors.map(function(error) { return "line " + error.line + ": " + error.message; });
     function value(sectionName, key) {
@@ -65,19 +64,18 @@ function parseTheme(id, text) {
     var theme = {
         id: id,
         name: value("Theme", "name") || titleFor(id),
-        builtin: false,
-        scheme: value("Theme", "scheme") || defaultTheme,
         effects: value("Theme", "effects"),
+        effectsDir: "",
         colors: ({}),
         errors: errors
     };
-    if (!isScheme(theme.scheme)) {
-        errors.push("unknown scheme '" + theme.scheme + "'");
-        theme.scheme = defaultTheme;
-    }
     if (theme.effects !== "" && !/^[A-Za-z0-9_-]+$/.test(theme.effects)) {
         errors.push("effects must be a folder name");
         theme.effects = "";
+    } else if (theme.effects !== "" && effects) {
+        theme.effectsDir = effects[theme.effects] || "";
+        if (theme.effectsDir === "")
+            errors.push("effects '" + theme.effects + "' are not installed");
     }
     var colors = Config.section(document, "Colors");
     var keys = colors ? colors.keys : [];
@@ -93,13 +91,18 @@ function parseTheme(id, text) {
     return theme;
 }
 
-// Scanner output lines: "theme<TAB>id" starts a theme folder, "ini<TAB>line" adds a
-// line of its theme.ini, and "wall<TAB>path" lists a wallpaper.
-function parseScan(text, themesDir) {
+// Scanner output lines: "theme<TAB>folder" starts a theme folder, "ini<TAB>line"
+// adds a line of its theme.ini, "wall<TAB>path" lists a wallpaper, and
+// "effects<TAB>dir" lists installed effects. Directories come in `themesDirs`
+// order. A later theme.ini or effects directory replaces an earlier one of the
+// same name. Wallpapers from every folder of a theme add up, a later one replacing
+// an earlier one at the same place in the theme.
+function parseScan(text, themesDirs) {
     var ini = ({});
     var order = [];
     var current = "";
     var paths = [];
+    var effects = ({});
     var lines = String(text || "").split("\n");
     for (var i = 0; i < lines.length; i++) {
         var tab = lines[i].indexOf("\t");
@@ -108,44 +111,44 @@ function parseScan(text, themesDir) {
         var kind = lines[i].substring(0, tab);
         var value = lines[i].substring(tab + 1);
         if (kind === "theme") {
-            current = value;
-            if (!ini.hasOwnProperty(current)) {
-                ini[current] = [];
+            current = baseName(value);
+            if (!ini.hasOwnProperty(current))
                 order.push(current);
-            }
+            ini[current] = [];
         } else if (kind === "ini" && current !== "") {
             ini[current].push(value);
         } else if (kind === "wall") {
             paths.push(value);
+        } else if (kind === "effects") {
+            effects[baseName(value)] = value;
         }
     }
 
-    var wallpapers = [];
+    var byPlace = ({});
     for (var j = 0; j < paths.length; j++) {
-        var id = themeFor(paths[j], themesDir);
-        if (id === "")
+        var relative = themeRelative(paths[j], themesDirs);
+        if (relative === "")
             continue;
+        var id = relative.substring(0, relative.indexOf("/"));
         // A folder of wallpapers is a theme even without a theme.ini.
         if (!ini.hasOwnProperty(id)) {
             ini[id] = [];
             order.push(id);
         }
-        wallpapers.push({ path: paths[j], title: titleFor(paths[j]), theme: id });
+        byPlace[relative] = { path: paths[j], title: titleFor(paths[j]), theme: id };
     }
+    var wallpapers = Object.keys(byPlace).map(function(key) { return byPlace[key]; });
     wallpapers.sort(function(a, b) {
         return a.theme === b.theme ? a.title.localeCompare(b.title) : a.theme.localeCompare(b.theme);
     });
-    var themes = order.map(function(id) { return parseTheme(id, ini[id].join("\n")); });
+    var themes = order.map(function(id) { return parseTheme(id, ini[id].join("\n"), effects); });
     themes.sort(function(a, b) { return a.name.localeCompare(b.name); });
     return { themes: themes, wallpapers: wallpapers };
 }
 
-// Theme folders first, then the built-in schemes they do not replace.
-function allThemes(userThemes) {
-    var ids = (userThemes || []).map(function(theme) { return theme.id; });
-    return (userThemes || []).concat(schemes.filter(function(scheme) {
-        return ids.indexOf(scheme.id) < 0;
-    }).map(builtinTheme));
+// The scanned themes, with Cosmos standing in if it was not found.
+function allThemes(themes) {
+    return findTheme(themes, defaultTheme) ? (themes || []) : (themes || []).concat([fallbackTheme]);
 }
 
 function findTheme(themes, id) {
@@ -232,7 +235,7 @@ function themeResults(themes, wallpapers, currentId, terms) {
         return query === "" || theme.name.toLowerCase().indexOf(query) >= 0 || theme.id.indexOf(query) === 0;
     }).map(function(theme) {
         var own = wallpapers.filter(function(wallpaper) { return wallpaper.theme === theme.id; });
-        var details = [theme.builtin ? "Built-in colors" : "Theme"];
+        var details = ["Theme"];
         if (theme.effects !== "")
             details.push(theme.effects + " effects");
         if (own.length > 0)

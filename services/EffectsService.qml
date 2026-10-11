@@ -3,18 +3,17 @@ import QtQuick
 import Quickshell
 import "." as AppServices
 
-// Loads the active theme's effects: a directory under <dataDir>/effects whose
-// Effects.qml may provide launcher and wallpaper transitions. See README "Effects".
+// Loads the active theme's effects: a directory, shipped under extras/effects or
+// added under <dataDir>/effects, whose Effects.qml may provide launcher and
+// wallpaper transitions. See extras/README.md "Effects API".
 Singleton {
     id: root
 
     readonly property int apiVersion: 1
 
-    // Effects name, from the active theme. "" disables effects.
-    property string name: ""
-    readonly property string dir: root.name !== "" && AppServices.ConfigService.dataDir !== ""
-        ? AppServices.ConfigService.dataDir + "/effects/" + root.name
-        : ""
+    // Effects directory, from the active theme. "" disables effects.
+    property string dir: ""
+    readonly property string name: root.dir.substring(root.dir.lastIndexOf("/") + 1)
 
     property var current: null
     property string error: ""
