@@ -17,7 +17,7 @@ timeout 5s quickshell --no-color -p .
 - `components/` contains reusable QML UI primitives.
 - `theme/` contains the default palette and geometry/typography tokens.
 - `assets/icons/tabler/` contains the pinned Tabler SVG subset and its upstream license.
-- `extras/` contains the shipped themes and effects, the background paintings that render their wallpapers, and the offscreen effects lab (`extras/README.md`). Effects shaders compile with `just shaders`.
+- `extras/` contains the shipped `themes/`, `effects/`, and shared `lib/`, plus the unshipped `paintings/` (shaders that render the theme wallpapers) and `lab/` (offscreen harness). `extras/README.md` maps who edits what; `extras/effects/README.md` is the effects API. Shaders compile with `just shaders`.
 
 Prefer deleting unused QML modules over keeping broad helper surfaces. This repo should stay small and direct.
 
@@ -26,7 +26,7 @@ Prefer deleting unused QML modules over keeping broad helper surfaces. This repo
 
 ## Packaging Notes
 
-The Arch `PKGBUILD` uses the Git repository source, so plain `makepkg -si` is for normal package installs. Use `just local-package-install` when pacman must install a package built from the dirty checkout.
+The Arch `PKGBUILD` uses the Git repository source, so plain `makepkg -si` is for normal package installs. Use `just local-package-install` when pacman must install a package built from the dirty checkout; it then restarts Speshell, because a running one keeps the shaders it already loaded.
 
 The package owns `/usr/share/speshell` and `/usr/bin/speshell`, which is installed from `bin/speshell`. User config and data live under:
 

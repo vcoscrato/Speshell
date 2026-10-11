@@ -183,13 +183,17 @@ Singleton {
         return setProperty("Appearance", "panelWidth", width);
     }
 
-    function setAudioPanelMode(mode) {
-        if (mode !== "combined" && mode !== "separate") return false;
-        return setProperty("Audio", "panelMode", mode);
-    }
-
     function setAudioScrollStep(step) {
         return setProperty("Audio", "scrollStep", step);
+    }
+
+    // 0 turns transitions off; otherwise a multiple of their normal speed.
+    function setShuffleAtLaunch(mode) {
+        return setProperty("Appearance", "shuffleAtLaunch", mode);
+    }
+
+    function setTransitionSpeed(speed) {
+        return setProperty("Appearance", "transitionSpeed", speed);
     }
 
     function setDrawWallpaper(enabled) {

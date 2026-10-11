@@ -1,7 +1,8 @@
 #!/bin/sh
 # usage: lab/preview.sh EFFECT SCENE  (SCENE: launcher | wallpaper)
 # Renders offscreen into lab/out/EFFECT-SCENE.mp4 and EFFECT-SCENE-strip.png, and prints
-# the transition's lifecycle log. Env: CLOSE_AT, SWITCH_AT, WALL_A, WALL_B, SPESHELL_DIR.
+# the transition's lifecycle log. Env: CLOSE_AT, REOPEN_AT, SWITCH_AT, SPEED, WALL_A, WALL_B, SPESHELL_DIR,
+# and KEEP_FRAMES=1 to keep the frames in lab/out/EFFECT-SCENE/ (about 700 MB per run).
 set -e
 LAB=$(cd "$(dirname "$0")" && pwd)
 EFFECT=$1
@@ -21,18 +22,19 @@ if [ ! -f "$SAMPLES/a.jpg" ]; then
 fi
 WALL_A=${WALL_A:-$SAMPLES/a.jpg}
 WALL_B=${WALL_B:-$SAMPLES/b.jpg}
-SPESHELL_DIR=${SPESHELL_DIR:-/usr/share/speshell}
+# Speshell itself, from this checkout by default.
+SPESHELL_DIR=${SPESHELL_DIR:-$(cd "$LAB/../.." && pwd)}
 
 case "$SCENE" in
-    launcher) END=$(awk -v c="${CLOSE_AT:-2.2}" 'BEGIN { print c + 1.2 }'); CROP="crop=1100:760:410:20," ;;
-    wallpaper) END=$(awk -v s="${SWITCH_AT:-0.3}" 'BEGIN { print s + 2.8 }'); CROP="scale=1280:720," ;;
+    launcher) END=$(awk -v c="${CLOSE_AT:-2.2}" -v r="${REOPEN_AT:-0}" -v k="${SPEED:-1}" 'BEGIN { k = k > 0 ? k : 1; print (r > c ? r + 1.6 / k : c + 1.2 / k) }'); CROP="crop=1100:760:410:20," ;;
+    wallpaper) END=$(awk -v s="${SWITCH_AT:-0.3}" -v k="${SPEED:-1}" 'BEGIN { k = k > 0 ? k : 1; print s + 2.8 / k }'); CROP="scale=1280:720," ;;
     *) echo "unknown scene: $SCENE" >&2; exit 2 ;;
 esac
 
 rm -rf "$OUT" && mkdir -p "$OUT"
 LOG="$LAB/out/$NAME.log"
 EFFECTS_DIR="$LAB/../effects/$EFFECT" SCENE="$LAB/$(echo "$SCENE" | sed 's/./\U&/')Scene.qml" \
-    DURATION="$END" OUT="$OUT" WALL_A="$WALL_A" WALL_B="$WALL_B" SPESHELL_DIR="$SPESHELL_DIR" \
+    DURATION="$END" OUT="$OUT" SPEED="${SPEED:-1}" WALL_A="$WALL_A" WALL_B="$WALL_B" SPESHELL_DIR="$SPESHELL_DIR" \
     QT_FORCE_STDERR_LOGGING=1 timeout 90 quickshell --no-color -p "$LAB/shell.qml" >"$LOG" 2>&1 || true
 grep -E "closingFinished|transition|ERROR|rror:|WARN" "$LOG" | grep -v "window masks" || true
 
@@ -42,9 +44,10 @@ ffmpeg -loglevel error -y -framerate 30 -i "$OUT/%04d.bmp" -vf "${CROP}format=yu
 case "$SCENE" in
     launcher) TIMES="0.25 0.5 1.2 $(awk -v c="${CLOSE_AT:-2.2}" 'BEGIN { print c + 0.15, c + 0.35 }')"
         TILE="-crop 1100x760+410+20 +repage -resize 30%" ;;
-    wallpaper) TIMES=$(awk -v s="${SWITCH_AT:-0.3}" 'BEGIN { print s + 0.3, s + 0.6, s + 1, s + 1.4, s + 1.9 }')
+    wallpaper) TIMES=$(awk -v s="${SWITCH_AT:-0.3}" -v k="${SPEED:-1}" 'BEGIN { k = k > 0 ? k : 1; print s + 0.3 / k, s + 0.6 / k, s + 1 / k, s + 1.4 / k, s + 1.9 / k }')
         TILE="-resize 18%" ;;
 esac
 magick $(for t in $TIMES; do printf '%s/%04d.bmp ' "$OUT" "$(awk -v t="$t" 'BEGIN { print int(t * 30 + 0.5) }')"; done) \
     $TILE +append "$LAB/out/$NAME-strip.png"
+[ -n "${KEEP_FRAMES:-}" ] || rm -rf "$OUT"
 echo "$LAB/out/$NAME.mp4"

@@ -127,7 +127,7 @@ PanelWindow {
     // An effects transition must emit closingFinished(); this bounds a broken one.
     Timer {
         id: closeSafetyTimer
-        interval: 2500
+        interval: Math.round(2500 / Math.max(0.25, transitionLoader.timeScale))
         onTriggered: root.finishPresentation()
     }
 
@@ -450,10 +450,13 @@ PanelWindow {
         }
     }
 
-    // Effects transition (see extras/README.md "Effects API"): draws above the panel, and may capture it with
+    // Effects transition (see extras/effects/README.md): draws above the panel, and may capture it with
     // a ShaderEffectSource to animate the panel itself. Alive only while the launcher is mapped.
     Loader {
         id: transitionLoader
+        // EffectClock runs at this speed; a transition left running after they are
+        // turned off finishes at normal speed.
+        property real timeScale: Services.EffectsService.speed > 0 ? Services.EffectsService.speed : 1
         z: 2
         anchors.fill: parent
         active: root.transition !== null && root.presenting

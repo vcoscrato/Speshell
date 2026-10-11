@@ -25,7 +25,8 @@ Item {
             console.error(component.errorString());
             return null;
         }
-        return component.createObject(root, { width: root.width, height: root.height, path: Quickshell.env("WALL_A") });
+        return component.createObject(root, { width: root.width, height: root.height, path: Quickshell.env("WALL_A"),
+                                              timeScale: Number(Quickshell.env("SPEED") || 1) });
     }
 
     onLabTimeChanged: {

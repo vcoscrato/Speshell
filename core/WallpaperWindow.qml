@@ -39,8 +39,9 @@ PanelWindow {
 
     WallpaperView {
         anchors.fill: parent
-        path: Services.ThemeService.wallpaper
+        path: Services.ThemeService.shownWallpaper
         transition: Services.EffectsService.wallpaperTransition
+        timeScale: Services.EffectsService.speed
         pixelRatio: root.devicePixelRatio
     }
 }

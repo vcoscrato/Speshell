@@ -2,7 +2,9 @@
 #extension GL_GOOGLE_include_directive : enable
 // Draws a captured item between two burn fronts. Inside the reveal front it appears
 // behind a white-hot line, glow, and char band; ahead of the consume front it
-// scorches, chars, and glows, and behind that front it is gone.
+// scorches, chars, and glows, and behind that front it is gone. Refilling (reopened
+// mid-exit), the item shows wherever either front leaves it, the reveal front burns
+// only across the hole, and the consume front's scorch and glow die down.
 layout(location = 0) in vec2 qt_TexCoord0;
 layout(location = 0) out vec4 fragColor;
 layout(std140, binding = 0) uniform buf {
@@ -13,6 +15,8 @@ layout(std140, binding = 0) uniform buf {
     float revealR;
     vec2 burnOrigin;
     float burnR;
+    float refill;       // 1 while the reveal front fills a consumed hole
+    float fade;         // 0..1 how far the consume front's marks have died down
     float fieldScale;   // burn front wobble scale
     vec4 cGlow;
     vec4 cHot;
@@ -35,16 +39,23 @@ void main() {
     float ar = fwidth(r);
     float c = burnField(p, u.burnOrigin, u.fieldScale) - u.burnR;      // > 0 not yet consumed
     float ac = fwidth(c);
+    float revealed = smoothstep(-ar, ar, r);
+    float kept = smoothstep(-ac, ac, c);
+    // Refilling, the reveal front has only the hole to burn across.
+    float front = mix(1.0, 1.0 - kept, u.refill);
+    // The consume front marks the panel it has yet to take, not the hole a refill
+    // brings back.
+    float marks = (1.0 - u.fade) * mix(1.0, kept, u.refill);
 
     vec3 col = content.rgb;
     // Scorch toward brown ahead of the consume front, keeping some light and dark.
     float luma = dot(col, vec3(0.299, 0.587, 0.114)) / max(content.a, 0.001);
-    col = mix(col, vec3(0.36, 0.2, 0.1) * (0.55 + 0.9 * luma) * content.a, under(c, 70.0 * w, ac) * 0.8);
-    float charred = max(under(r, 22.0, ar) * 0.85, under(c, 22.0 * w, ac) * 0.9);
+    col = mix(col, vec3(0.36, 0.2, 0.1) * (0.55 + 0.9 * luma) * content.a, under(c, 70.0 * w, ac) * 0.8 * marks);
+    float charred = max(under(r, 22.0, ar) * 0.85 * front, under(c, 22.0 * w, ac) * 0.9 * marks);
     col = mix(col, u.cChar.rgb * content.a, charred);
-    col = mix(col, u.cGlow.rgb * content.a, max(under(r, 13.0, ar), under(c, 9.0 * w, ac)));
-    col = mix(col, u.cHot.rgb * content.a, max(under(r, 4.0, ar), under(c, 3.0 * w, ac)));
+    col = mix(col, u.cGlow.rgb * content.a, max(under(r, 13.0, ar) * front, under(c, 9.0 * w, ac) * marks));
+    col = mix(col, u.cHot.rgb * content.a, max(under(r, 4.0, ar) * front, under(c, 3.0 * w, ac) * marks));
 
-    float visible = smoothstep(-ar, ar, r) * smoothstep(-ac, ac, c);
+    float visible = mix(revealed * kept, max(revealed, kept), u.refill);
     fragColor = vec4(col, content.a) * visible * u.qt_Opacity;
 }

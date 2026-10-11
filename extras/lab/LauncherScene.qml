@@ -2,14 +2,18 @@ import QtQuick
 import Quickshell
 
 // Mimics Speshell's launcher host: a mock panel, plus the effects' transition bound the
-// same way LauncherOverlay binds it. Opens at t=0 and closes at CLOSE_AT seconds.
+// same way LauncherOverlay binds it. Opens at t=0, closes at CLOSE_AT seconds, and
+// reopens at REOPEN_AT seconds when set.
 Item {
     id: root
     width: 1920
     height: 1080
     property real labTime: 0
+    // Transition speed, as Speshell's transition host passes it to EffectClock.
+    readonly property real timeScale: Number(Quickshell.env("SPEED") || 1)
     readonly property real closeAt: Number(Quickshell.env("CLOSE_AT") || 2.2)
-    readonly property bool opened: labTime < closeAt
+    readonly property real reopenAt: Number(Quickshell.env("REOPEN_AT") || 1e9)
+    readonly property bool opened: labTime < closeAt || labTime >= reopenAt
 
     property var effects: {
         const component = Qt.createComponent("file://" + Quickshell.env("EFFECTS_DIR") + "/Effects.qml");

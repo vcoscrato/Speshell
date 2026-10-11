@@ -2,7 +2,7 @@
 #extension GL_GOOGLE_include_directive : enable
 // The captured panel seen through a sheet of water. The sheet grows from an orb at
 // the center into the panel's shape, sloshing past its edges; as it settles the
-// tint, ripples, and glints clear until only the panel is left.
+// tint, ripples, and caustics clear until only the panel is left.
 layout(location = 0) in vec2 qt_TexCoord0;
 layout(location = 0) out vec4 fragColor;
 layout(std140, binding = 0) uniform buf {
@@ -51,10 +51,15 @@ void main() {
     vec3 water = mix(u.cMid.rgb, u.cDeep.rgb, smoothstep(30.0 - aa, 30.0 + aa, depth));
     water = mix(water, u.cLight.rgb, smoothstep(9.0 + aa, 9.0 - aa, depth));
     water = mix(water, u.cFoam.rgb, smoothstep(3.0 + aa, 3.0 - aa, depth));
-    // Light: broad flat patches where the ripples crest, with foam on the highest.
+    // Caustics: a net of light focused by the ripples, morphing as they move. Lines
+    // are wider where the ripples crest, with foam-white cores on the brightest.
+    vec2 cq = p + (vec2(n1, n2) - 0.5) * 34.0 + vec2(u.time * 16.0, -u.time * 11.0);
+    float edge = voronoiEdge(cq, 48.0, 0.9);
     float crest = n1 + n2;
-    water = mix(water, u.cLight.rgb, band(crest, 1.22) * step(10.0, depth));
-    water = mix(water, u.cFoam.rgb, band(crest, 1.42) * step(10.0, depth));
+    float lineW = 1.6 + 2.4 * smoothstep(0.7, 1.4, crest);
+    float body = step(10.0, depth);
+    water = mix(water, u.cLight.rgb, cover(lineW - edge) * body);
+    water = mix(water, u.cFoam.rgb, cover(lineW * 0.38 - edge) * smoothstep(0.9, 1.3, crest) * body);
 
     float tint = wet * 0.78;
     vec3 col = mix(content.rgb, water * max(content.a, 0.85), tint);

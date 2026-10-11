@@ -1,98 +1,71 @@
 # Themes and effects
 
-The themes and effects Speshell ships, plus the lab used to build them. Everything here is original work, including the wallpapers, which `backgrounds/` renders.
+The themes and effects Speshell ships, the paintings behind their wallpapers, and the lab used to build and check them. Everything here is original work.
 
-| Theme | Effects | Launcher | Wallpaper change |
+| Theme | Effects | Wallpaper (painting) | Launcher | Wallpaper change |
+|---|---|---|---|---|
+| Cosmos (default) | `cosmos` | `spiral-galaxy` | Opens out of a flaring star; planets orbit it while open | Supernova |
+| Fire | `fire` | `ember-dusk` | Burns in behind an ember's edge; flames simmer around it | Burns away from the middle |
+| Air | `air` | `cloud-sea` | Unwinds out of a whirlwind; a breeze with leaves circles it | Whirlwind eye |
+| Water | `water` | `polar-night` | A water whip coils into it and clears through rippling caustics; two streams chase its border among orbs, currents, and mist held in the air | Ripple |
+| Earth | `earth` | `jade-valley` | Punches up out of cracked ground as a stone slab; tumbling boulders with circling pebbles hover in a ring of dust and stones | Cracks and crumbles |
+
+## Layout
+
+| Path | Holds | Ships | Who edits it |
 |---|---|---|---|
-| Cosmos (default) | `cosmos` | Opens out of a flaring star; planets orbit it while open | Supernova |
-| Fire Nation | `fire` | Burns in behind an ember's edge; flames simmer around it | Burns away from the middle |
-| Air Nomads | `air` | Unwinds out of a whirlwind; a breeze with leaves circles it | Whirlwind eye |
-| Water Tribe | `water` | A water whip coils into it; two streams chase its border | Ripple |
-| Earth Kingdom | `earth` | Punches up out of cracked ground as a stone slab; boulders hover around it | Cracks and crumbles |
+| `themes/<theme>/` | `theme.ini` (name, palette, `effects = <name>`) and the rendered wallpaper `<painting>.jpg` | yes | designers: palettes; artists: commit the wallpaper they render |
+| `paintings/` | `<painting>.frag`, one shader per wallpaper, and `landscape.glsl`, the helpers they share | no | artists |
+| `effects/<name>/` | Launcher and wallpaper transitions. See [effects/README.md](effects/README.md) | yes | effects developers |
+| `lib/` | `common.glsl` (noise, signed distances, banding, Voronoi) and `EffectClock.qml`, shared by every effect | yes | effects developers; a change here touches every effect |
+| `lab/` | The offscreen harness, scenes, and scripts behind the `just` recipes; output goes to the git-ignored `lab/out/` | no | anyone improving the tooling |
 
-Any theme can use these with `effects = <name>` in its `theme.ini`.
+The package installs `themes/`, `effects/`, and `lib/` to `/usr/share/speshell/extras`. Nothing else in this directory ships. Keep sources and tools out of those three directories.
 
-## Effects API
+Names are lowercase-kebab for directories, paintings, and shaders; QML components are PascalCase. A theme and an effect are named for their element (`fire`), and a painting for its scene (`ember-dusk`). Any theme can use any effects.
 
-An effects directory holds an `Effects.qml` that declares API version 1. Both transitions are optional:
+## Rules
 
-```qml
-import QtQuick
+- **Original work only.** No fan art, photos, fonts, or code under another license. Wallpapers come from shaders in `paintings/`, so their whole source is in the repository.
+- **A wallpaper is committed with its painting.** After editing `paintings/<painting>.frag`, run `just paint <painting>` and commit the `.jpg` in the same change.
+- **`just check` passes** before effects changes are merged. It fails on any QML error or warning, or a transition that never finishes.
+- **Stay within the GPU budget:** under 0.5 ms per frame at 1080p in every phase (`just perf`). The current costs are in [effects/README.md](effects/README.md#cost).
+- **Compiled shaders (`*.qsb`) are build output.** They're git-ignored; `just shaders` makes them, and the package build runs it.
 
-QtObject {
-    readonly property int apiVersion: 1
-    readonly property Component launcherTransition: Component { MyLauncherTransition {} }
-    readonly property Component wallpaperTransition: Component { MyWallpaperTransition {} }
-}
-```
+## Workflows
 
-Speshell looks in `extras/effects` and `~/.local/share/speshell/effects`; a user directory replaces a shipped one of the same name. If effects fail to load, Speshell notifies and runs without them.
+Run every recipe from the repository root. The lab renders through an invisible 1×1 overlay, so it needs a Wayland session, plus `qt6-shadertools`, ffmpeg, and ImageMagick.
 
-**Launcher transition.** Created when the launcher opens and destroyed after it hides. It fills the launcher's full-screen surface above the panel and receives:
+**Retune a theme's palette.** Edit `themes/<theme>/theme.ini`. Its keys are listed in `themes/cosmos/theme.ini`; missing ones fall back to Cosmos. Pick the theme in Speshell's Themes panel to see it.
 
-| Property | Meaning |
-|---|---|
-| `panel` | The launcher panel. Capture it with a `ShaderEffectSource` (`hideSource: true`) to draw it yourself. |
-| `panelRect` | The panel's geometry. It changes as the result list grows or shrinks. |
-| `active` | `false` once the launcher closes; `true` again if it reopens during the exit. |
-
-Emit `closingFinished()` when the exit is done; Speshell hides the launcher anyway after 2.5 s. Input is ignored during the exit.
-
-**Wallpaper transition.** Created once the new wallpaper has loaded, filling the screen above both images:
-
-| Property | Meaning |
-|---|---|
-| `outgoing` | The old image, on top. Hide it (`hideSource: true`) and draw it going away. |
-| `incoming` | The new image, already showing beneath. |
-
-Emit `finished()` when done; Speshell removes it after 5 s otherwise. Without a wallpaper transition the old image fades out.
-
-Speshell destroys a transition inside its finishing signal, so nothing may run after the emit. Take time from `EffectClock` (in `lib/`), which ticks at about 60 Hz, never from your own timers or `Date`.
-
-## How it works
-
-Effects draw in flat, anti-aliased color bands for a cel-shaded look, and shape the captured panel or outgoing wallpaper with a second shader.
-
-- **Cosmos** draws its solar system analytically in one shader: tilted orbits, cel-shaded planets, a ringed giant, a moon that passes behind its planet. A lens-edged portal reveals the panel and the old wallpaper.
-- **Fire** runs a quarter-resolution fluid simulation at a fixed 60 Hz step through a recursive `ShaderEffectSource`.
-- **Air** draws streaks along the stream function of an ideal 2D flow (breeze around an ellipse, vortex, source or sink) bent by curl noise, so they never cross. Leaves and dust ride analytic orbits.
-- **Water** draws tubes along a spiral and along the panel's rounded border, modulated by waves from each head, with drag-and-gravity droplets. The sheet and ripple refract the captured images.
-- **Earth** builds stone, cracks, and shards from Voronoi cells, and boulders from faceted polygons.
-
-GPU time per frame at 1080p on an RTX 3070 (`just perf`):
-
-| Effects | Launcher open | Launcher entrance and exit | Wallpaper |
-|---|---|---|---|
-| Cosmos | 0.09 ms | 0.09 ms | 0.01 ms |
-| Fire | 0.33 ms | 0.29 ms | 0.20 ms |
-| Air | 0.19 ms | 0.26 ms | 0.26 ms |
-| Water | 0.19 ms | 0.15 ms | under 0.07 ms |
-| Earth | 0.10 ms | 0.18 ms | 0.23 ms |
-
-Nothing runs while the launcher is hidden and the wallpaper is still.
-
-## Lab
-
-The lab renders effects offscreen through an invisible 1×1 overlay, so it needs a Wayland session, plus `qt6-shadertools`, ffmpeg, and ImageMagick. Run from the repository root:
+**Paint a wallpaper.**
 
 ```bash
-just preview fire launcher   # extras/lab/out/fire-launcher.mp4 and a contact strip
-just preview water wallpaper
-just check                   # every effect and scene; fails on warnings
-just perf fire launcher      # GPU time per frame at 1080p
-just backgrounds             # re-render the default wallpapers
+just paint ember-dusk                    # renders paintings/ember-dusk.frag over themes/fire/ember-dusk.jpg
+WIDTH=1920 HEIGHT=1080 just paint ember-dusk   # quicker draft while iterating
+just paint                               # re-render every wallpaper that has a painting
 ```
 
-Scenes drive `EffectClock` with virtual time, 1/60 s per frame, so captures match real playback. The wallpaper scene hosts this checkout's `core/WallpaperView.qml`. Env knobs: `WALL_A`/`WALL_B` (your own wallpapers), `CLOSE_AT`, `SWITCH_AT`, and for perf `PERF_FROM`/`DURATION`, e.g. `CLOSE_AT=30 PERF_FROM=1.5 DURATION=4.5 just perf air` to measure only the open launcher.
+A painting renders over each `themes/*/<painting>.jpg` of the same name. A new painting with no wallpaper yet lands in `lab/out/<painting>.jpg`; copy it into its theme folder once. Start a new painting from an existing one: it shows the uniform block, the `common.glsl` and `landscape.glsl` includes, and the header comment that describes the scene.
 
-Qt caches compiled QML, so a running Speshell needs a restart to pick up effect edits; shader edits also need `just shaders`.
+**Add a theme.** Create `themes/<theme>/` with a `theme.ini` and a wallpaper, usually from a new painting. Add it to the table above.
 
-Layout:
+**Build or change effects.** Copy the closest effect directory (with its `common` symlink, made with `ln -s ../../lib common`) and follow [effects/README.md](effects/README.md). Then iterate:
 
-- `lib/`: `common.glsl` (noise, curl, signed distances, banding, Voronoi, rounded-rect arcs) and `EffectClock.qml`.
-- `effects/<name>/`: `Effects.qml`, its components, a `common -> ../../lib` symlink, and `shaders/*.frag`.
-- `themes/<id>/`: `theme.ini` and the default wallpaper.
-- `backgrounds/`: the shaders that paint the default wallpapers.
-- `lab/`: the harness, scenes, and scripts.
+```bash
+just preview fire launcher               # lab/out/fire-launcher.mp4 and a contact strip
+just preview water wallpaper
+just check                               # every effect and scene
+just perf fire launcher                  # GPU time per frame at 1080p
+```
 
-To add effects, create `effects/<name>/` with the `common` symlink and an `Effects.qml`, iterate with `just preview <name>`, and finish with `just check`.
+Scenes drive `EffectClock` with virtual time, 1/60 s per frame, so captures match real playback. The wallpaper scene hosts this checkout's `core/WallpaperView.qml`. Env knobs:
+
+- `WALL_A` and `WALL_B`: your own wallpapers.
+- `CLOSE_AT`, `REOPEN_AT`, `SWITCH_AT`, and `SPEED` for the scenes.
+- `KEEP_FRAMES=1` keeps the frames, about 700 MB per run.
+- For perf, `PERF_FROM` and `DURATION`. For example, `CLOSE_AT=30 PERF_FROM=1.5 DURATION=4.5 just perf air` measures only the open launcher.
+
+`just clean` removes compiled shaders and all lab output.
+
+**Try it in the real shell.** Quickshell reloads QML when its files change, but Qt keeps every shader it has loaded until the process exits. Restart Speshell after a shader change, or run `just local-package-install`, which restarts it.

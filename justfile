@@ -24,28 +24,36 @@ lint:
 test:
     QT_QPA_PLATFORM=offscreen {{ qmltestrunner }} -input tests
 
-# Compile the effect and background shaders that changed.
+# Compile the effect and painting shaders that changed.
 [working-directory: 'extras']
 shaders:
     #!/bin/sh
     set -e
-    for frag in effects/*/shaders/*.frag backgrounds/*.frag; do
+    for frag in effects/*/shaders/*.frag paintings/*.frag; do
         out="$frag.qsb"
         if [ ! -f "$out" ] || [ "$frag" -nt "$out" ] || [ lib/common.glsl -nt "$out" ] \
-                || [ backgrounds/landscape.glsl -nt "$out" ]; then
+                || [ paintings/landscape.glsl -nt "$out" ]; then
             echo "qsb $frag"
             {{ qsb }} --glsl "100 es,120,150" --hlsl 50 --msl 12 -o "$out" "$frag"
         fi
     done
 
-# Re-render each theme's default wallpaper from its painting in extras/backgrounds (needs a Wayland session).
+# Render paintings/<name>.frag over each themes/*/<name>.jpg (else extras/lab/out/); no name: all (needs Wayland).
 [working-directory: 'extras']
-backgrounds: shaders
-    lab/background.sh spiral-galaxy themes/cosmos/spiral-galaxy.jpg
-    lab/background.sh ember-dusk themes/fire-nation/ember-dusk.jpg
-    lab/background.sh cloud-sea themes/air-nomads/cloud-sea.jpg
-    lab/background.sh polar-night themes/water-tribe/polar-night.jpg
-    lab/background.sh golden-mesas themes/earth-kingdom/golden-mesas.jpg
+paint name="": shaders
+    #!/bin/sh
+    set -e
+    name="{{ name }}"
+    for frag in paintings/${name:-*}.frag; do
+        [ -f "$frag" ] || { echo "no painting $frag" >&2; exit 1; }
+        painting=$(basename "$frag" .frag)
+        targets=$(ls themes/*/"$painting.jpg" 2>/dev/null || true)
+        [ -n "$targets" ] || [ -z "$name" ] || targets="lab/out/$painting.jpg"
+        for out in $targets; do
+            echo "paint $painting -> $out"
+            lab/paint.sh "$painting" "$out"
+        done
+    done
 
 # Render an effect's scene offscreen into extras/lab/out/<effect>-<scene>.mp4 (needs a Wayland session).
 [working-directory: 'extras']
@@ -55,7 +63,7 @@ preview effect="cosmos" scene="launcher": shaders
 # Render every effect and scene; fail on QML errors, warnings, or a transition that never finishes.
 [working-directory: 'extras']
 check: shaders
-    lab/check.sh $(ls effects)
+    lab/check.sh $(cd effects && ls -d */ | tr -d /)
 
 # Estimate an effect scene's GPU time per frame at 1080p (needs a Wayland session).
 [working-directory: 'extras']
@@ -65,10 +73,10 @@ perf effect="cosmos" scene="launcher": shaders
 # Remove compiled shaders and lab output.
 [working-directory: 'extras']
 clean:
-    rm -f effects/*/shaders/*.qsb backgrounds/*.qsb
+    rm -f effects/*/shaders/*.qsb paintings/*.qsb
     rm -rf lab/out
 
-# Build and install a package from this checkout, uncommitted changes included.
+# Build and install a package from this checkout, uncommitted changes included, and restart Speshell.
 local-package-install:
     #!/bin/sh
     set -e
@@ -79,4 +87,17 @@ local-package-install:
     tar --exclude='./src' --exclude='./pkg' --exclude='./speshell' --exclude='./*.pkg.tar.*' \
         --exclude='./extras/lab/out' \
         -cf - . | tar -C "$builddir/src/speshell" -xf -
-    cd "$builddir" && makepkg -efsi
+    (cd "$builddir" && makepkg -efsi)
+    if [ -z "${WAYLAND_DISPLAY:-}" ]; then
+        echo "Not in a Wayland session; restart Speshell to load the new package."
+        exit 0
+    fi
+    # A running Speshell keeps the shaders it loaded until it exits, so start a fresh
+    # one. kill fails when none is running; wait until none is.
+    /usr/bin/quickshell kill -p /usr/share/speshell >/dev/null 2>&1 || true
+    for _ in $(seq 50); do
+        /usr/bin/quickshell list -p /usr/share/speshell 2>/dev/null | grep -q '^Instance' || break
+        sleep 0.1
+    done
+    /usr/bin/speshell --no-duplicate --daemonize
+    echo "Started a fresh Speshell."

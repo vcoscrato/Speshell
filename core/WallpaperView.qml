@@ -4,13 +4,15 @@ import "../services/ThemeProvider.js" as ThemeProvider
 import "../theme" as ThemeModule
 
 // Shows the wallpaper at `path`. On a change, the old image stays on top while the
-// theme effects' wallpaper transition, or a plain fade, removes it.
+// theme effects' wallpaper transition, or a plain fade, removes it. Both run at
+// `timeScale` times normal speed; at 0 the new image replaces the old at once.
 Item {
     id: root
 
     property string path: ""
     // The current effects' wallpaper transition; read when a change starts.
     property Component transition: null
+    property real timeScale: 1
     property real pixelRatio: 1
 
     property Image shown: imageA
@@ -40,23 +42,28 @@ Item {
         if (root.outgoing === null || root.transitionRunning || fade.running
                 || root.shown.status === Image.Loading)
             return;
-        root.runningTransition = root.transition;
+        root.runningTransition = root.timeScale > 0 ? root.transition : null;
         if (root.runningTransition !== null) {
             root.transitionRunning = true;
             safetyTimer.restart();
-        } else {
+        } else if (root.timeScale > 0) {
             fade.start();
+        } else {
+            root.finishTransition();
         }
     }
 
     function finishTransition() {
         safetyTimer.stop();
         fade.stop();
-        if (root.outgoing !== null) {
-            root.outgoing.source = "";
-            root.outgoing.opacity = 1;
-            root.outgoing.z = 0;
-            root.outgoing = null;
+        // Detached first: clearing the source reports a status change, which
+        // re-enters startWhenLoaded().
+        var old = root.outgoing;
+        root.outgoing = null;
+        if (old !== null) {
+            old.source = "";
+            old.opacity = 1;
+            old.z = 0;
         }
         root.transitionRunning = false;
     }
@@ -90,7 +97,7 @@ Item {
         target: root.outgoing
         property: "opacity"
         to: 0
-        duration: ThemeModule.Theme.animDurationSlow
+        duration: Math.round(ThemeModule.Theme.animDurationSlow / Math.max(0.25, root.timeScale))
         easing.type: ThemeModule.Theme.animEasing
         onFinished: root.finishTransition()
     }
@@ -98,15 +105,18 @@ Item {
     // An effects transition must emit finished(); this bounds a broken one.
     Timer {
         id: safetyTimer
-        interval: 5000
+        interval: Math.round(5000 / Math.max(0.25, root.timeScale))
         onTriggered: root.finishTransition()
     }
 
-    // Effects wallpaper transition (see extras/README.md "Effects API"): draws above both
+    // Effects wallpaper transition (see extras/effects/README.md): draws above both
     // images and must hide the outgoing one, for example through a ShaderEffectSource
     // with hideSource.
     Loader {
         id: transitionLoader
+        // EffectClock runs at this speed; a transition left running after they are
+        // turned off finishes at normal speed.
+        property real timeScale: root.timeScale > 0 ? root.timeScale : 1
         z: 2
         anchors.fill: parent
         active: root.transitionRunning && root.runningTransition !== null

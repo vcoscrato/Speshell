@@ -7,7 +7,8 @@ import "ThemeProvider.js" as ThemeProvider
 
 // The active theme and its wallpaper. Themes are folders holding a theme.ini and
 // wallpapers, shipped under extras/themes and added under <configDir>/themes;
-// picking a wallpaper applies its folder's theme. See README "Themes".
+// picking a wallpaper applies its folder's theme, and a theme comes back with the
+// wallpaper last set for it. See README "Themes".
 Singleton {
     id: root
 
@@ -28,6 +29,10 @@ Singleton {
     property var folderThemes: []
     property var wallpapers: []
     property bool scanned: false
+    // The user folders the last finished scan covered; until they are the current
+    // ones, a scan from before the config loaded may be missing the user's themes.
+    property string scannedDirs: ""
+    readonly property string scanDirs: root.themesDir + "\n" + root.userEffectsDir
     readonly property bool scanning: scanProc.running
     property bool stateLoaded: false
     property bool saving: false
@@ -36,6 +41,8 @@ Singleton {
 
     property string themeId: ThemeProvider.defaultTheme
     property string wallpaper: ""
+    // Theme id -> the wallpaper last set for it.
+    property var chosen: ({})
     // The last applied theme, saved with the selection so startup can apply it
     // before the scan finishes.
     property var snapshot: null
@@ -54,13 +61,25 @@ Singleton {
     // the default wallpaper for themes without their own. Off by default so other
     // wallpaper tools keep working; themes still set colors and effects.
     property bool wallpaperEnabled: false
+    // [Appearance] shuffleAtLaunch: off, wallpaper, theme, or both, picked at
+    // random once the themes are known; "" until the config is applied.
+    property string launchShuffle: ""
+    property bool launched: false
+    // The wallpaper to draw: held back until the launch pick, so startup does not
+    // show the saved one only to replace it.
+    readonly property string shownWallpaper: root.launched ? root.wallpaper : ""
+
+    // The wallpaper theme `id` comes with: its last one, otherwise its first.
+    function wallpaperFor(id) {
+        return ThemeProvider.themeWallpaper(root.wallpapers, id, root.chosen);
+    }
 
     function setTheme(id) {
         if (!ThemeProvider.findTheme(root.themes, id))
             return false;
         if (id !== root.themeId) {
             root.themeId = id;
-            root.wallpaper = ThemeProvider.pickRandom(root.wallpapers, id, "");
+            root.wallpaper = root.wallpaperFor(id);
             root.save();
         }
         return true;
@@ -75,6 +94,7 @@ Singleton {
         if (next !== root.wallpaper || id !== root.themeId) {
             root.themeId = id;
             root.wallpaper = next;
+            root.remember();
             root.save();
         }
         if (!ThemeProvider.findTheme(root.folderThemes, id))
@@ -86,6 +106,15 @@ Singleton {
     function shuffle(id) {
         var next = ThemeProvider.pickRandom(root.wallpapers, id || root.themeId, root.wallpaper);
         return next !== "" && root.setWallpaper(next);
+    }
+
+    // Records the current wallpaper as its theme's.
+    function remember() {
+        if (root.wallpaper === "" || root.chosen[root.themeId] === root.wallpaper)
+            return;
+        var next = Object.assign({}, root.chosen);
+        next[root.themeId] = root.wallpaper;
+        root.chosen = next;
     }
 
     function save() {
@@ -100,7 +129,8 @@ Singleton {
         root.snapshot = { id: theme.id, name: theme.name, effects: theme.effects, effectsDir: theme.effectsDir,
                           colors: theme.colors, errors: [] };
         root.saving = true;
-        stateFile.setText(JSON.stringify({ theme: root.themeId, wallpaper: root.wallpaper, snapshot: root.snapshot }));
+        stateFile.setText(JSON.stringify({ theme: root.themeId, wallpaper: root.wallpaper, wallpapers: root.chosen,
+                                           snapshot: root.snapshot }));
     }
 
     function finishSave() {
@@ -123,8 +153,12 @@ Singleton {
             root.themeId = parsed.theme;
             root.wallpaper = typeof parsed.wallpaper === "string" ? parsed.wallpaper : "";
         }
+        if (parsed && parsed.wallpapers && typeof parsed.wallpapers === "object")
+            root.chosen = parsed.wallpapers;
         root.stateLoaded = true;
-        root.reconcile();
+        // Later: FileView drops a write started inside its own loaded signal, and
+        // reconciling may save.
+        Qt.callLater(root.reconcile);
     }
 
     function scan() {
@@ -132,6 +166,7 @@ Singleton {
             scanProc.queued = true;
             return;
         }
+        scanProc.dirs = root.scanDirs;
         scanProc.command = [
             "sh", "-c",
             "for dir in \"$1\" \"$2\"; do [ -d \"$dir\" ] || continue; "
@@ -154,26 +189,44 @@ Singleton {
         var library = ThemeProvider.parseScan(text, root.themesDirs);
         root.folderThemes = library.themes;
         root.wallpapers = library.wallpapers;
+        root.scannedDirs = scanProc.dirs;
         root.scanned = true;
         root.reconcile();
     }
 
     function reconcile() {
-        if (!root.scanned || !root.stateLoaded)
+        if (!root.scanned || root.scannedDirs !== root.scanDirs || !root.stateLoaded || root.launchShuffle === "")
             return;
         var before = root.themeId + "\n" + root.wallpaper;
+        var chosenBefore = root.chosen;
         // The selection may have gone stale: a removed theme or wallpaper.
         if (!ThemeProvider.findTheme(root.themes, root.themeId)) {
             root.themeId = ThemeProvider.defaultTheme;
             root.wallpaper = "";
         }
+        if (!root.launched) {
+            if (root.launchShuffle === "theme" || root.launchShuffle === "both") {
+                const id = ThemeProvider.pickRandomTheme(root.themes, root.themeId);
+                if (id !== "") {
+                    root.themeId = id;
+                    root.wallpaper = root.wallpaperFor(id);
+                }
+            }
+            if (root.launchShuffle === "wallpaper" || root.launchShuffle === "both") {
+                const next = ThemeProvider.pickRandom(root.wallpapers, root.themeId, root.wallpaper);
+                if (next !== "")
+                    root.wallpaper = next;
+            }
+        }
         var own = root.wallpapers.filter(function(wallpaper) {
             return wallpaper.theme === root.themeId && wallpaper.path === root.wallpaper;
         });
         if (own.length === 0)
-            root.wallpaper = ThemeProvider.pickRandom(root.wallpapers, root.themeId, "");
+            root.wallpaper = root.wallpaperFor(root.themeId);
+        root.remember();
+        root.launched = true;
         // Keep the saved snapshot in step with edits to theme.ini.
-        if (before !== root.themeId + "\n" + root.wallpaper || !root.snapshot || JSON.stringify(root.snapshot.colors) !== JSON.stringify(root.theme.colors)
+        if (before !== root.themeId + "\n" + root.wallpaper || root.chosen !== chosenBefore || !root.snapshot || JSON.stringify(root.snapshot.colors) !== JSON.stringify(root.theme.colors)
                 || root.snapshot.effectsDir !== root.theme.effectsDir || root.snapshot.effects !== root.theme.effects
                 || root.snapshot.id !== root.themeId)
             root.save();
@@ -194,6 +247,7 @@ Singleton {
     Process {
         id: scanProc
         property bool queued: false
+        property string dirs: ""
         stdout: StdioCollector {
             id: scanOutput
         }
@@ -219,6 +273,7 @@ Singleton {
     }
 
     onThemeIdChanged: root.report()
+    onLaunchShuffleChanged: root.reconcile()
     onThemesDirChanged: root.scan()
     onUserEffectsDirChanged: root.scan()
     // The folder may already be known when the service is first used.

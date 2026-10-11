@@ -13,17 +13,24 @@ Components.Card {
 
     property bool presented: false
 
+    readonly property var transitionSpeedOptions: [
+        { value: 0, label: "Off" },
+        { value: 0.5, label: "0.5×" },
+        { value: 1, label: "1×" },
+        { value: 1.5, label: "1.5×" },
+        { value: 2, label: "2×" }
+    ]
+    readonly property var launchShuffleOptions: [
+        { value: "off", label: "Off" },
+        { value: "wallpaper", label: "Wallpaper" },
+        { value: "theme", label: "Theme" },
+        { value: "both", label: "Theme and wallpaper" }
+    ]
     readonly property bool wallpapersShown: Services.ThemeService.wallpaperEnabled
     readonly property var ownWallpapers: Services.ThemeService.wallpapers.filter(function(wallpaper) {
         return wallpaper.theme === Services.ThemeService.themeId;
     })
 
-
-    function previewColors(theme) {
-        var palette = ThemeModule.Theme.mergePalette(theme.colors);
-        return { base: palette.base, border: palette.surface1,
-                 dots: [palette.red, palette.yellow, palette.green, palette.blue] };
-    }
 
     // Pick up theme folders added since the last scan.
     onPresentedChanged: if (root.presented) Services.ThemeService.scan()
@@ -58,6 +65,28 @@ Components.Card {
                 checked: root.wallpapersShown
                 tooltipText: "Draw wallpaper"
                 onToggled: function(newState) { Services.ConfigService.setDrawWallpaper(newState); }
+            }
+        }
+
+        Components.SettingRow {
+            label: "Transitions"
+            info: "Speed of the theme's launcher and wallpaper transitions. Off opens the launcher and swaps wallpapers at once."
+
+            Components.SegmentedControl {
+                options: root.transitionSpeedOptions
+                currentValue: Services.EffectsService.speed
+                onValueSelected: function(value) { Services.ConfigService.setTransitionSpeed(value); }
+            }
+        }
+
+        Components.SettingRow {
+            label: "Shuffle at launch"
+            info: "Each time Speshell starts, pick another wallpaper of the theme, another theme, or both at random."
+
+            Components.SelectMenu {
+                options: root.launchShuffleOptions
+                currentValue: Services.ThemeService.launchShuffle
+                onValueSelected: function(value) { Services.ConfigService.setShuffleAtLaunch(value); }
             }
         }
 
@@ -125,94 +154,222 @@ Components.Card {
         }
     }
 
-    Column {
-        id: themeRows
+    Grid {
+        id: themeTiles
         width: parent.width
-        spacing: ThemeModule.Theme.spacingTiny
+        columns: 2
+        spacing: ThemeModule.Theme.spacingSmall
+        readonly property real cellWidth: (themeTiles.width - themeTiles.spacing * (themeTiles.columns - 1))
+            / themeTiles.columns
 
         Repeater {
             model: Services.ThemeService.themes
 
+            // A tile previews the theme itself: the wallpaper it comes with under a
+            // miniature dashboard panel drawn in the theme's own colors.
             delegate: Rectangle {
-                id: themeRow
+                id: tile
                 required property var modelData
-                readonly property bool current: themeRow.modelData.id === Services.ThemeService.themeId
-                readonly property var preview: root.previewColors(themeRow.modelData)
+                readonly property bool current: tile.modelData.id === Services.ThemeService.themeId
+                readonly property var colors: ThemeModule.Theme.mergePalette(tile.modelData.colors)
+                readonly property string wallpaperPath: tile.current
+                    ? Services.ThemeService.wallpaper
+                    : Services.ThemeService.wallpaperFor(tile.modelData.id)
+                readonly property color pCrust: tile.colors.crust
+                readonly property color pBase: tile.colors.base
+                readonly property color pSurface0: tile.colors.surface0
+                readonly property color pSurface1: tile.colors.surface1
+                readonly property color pSurface2: tile.colors.surface2
+                readonly property color pText: tile.colors.text
+                readonly property color pAccent: tile.colors.accent
 
-                width: themeRows.width
-                height: ThemeModule.Theme.controlHeight + ThemeModule.Theme.spacingSmall * 2
-                radius: ThemeModule.Theme.borderRadiusSmall
-                color: themeMouse.containsMouse
+                width: themeTiles.cellWidth
+                height: preview.height + nameRow.height + ThemeModule.Theme.spacingSmall * 2
+                radius: ThemeModule.Theme.borderRadius
+                color: tileMouse.containsMouse
                     ? ThemeModule.Theme.cardHover
-                    : (themeRow.current ? ThemeModule.Theme.selectedFill : ThemeModule.Theme.controlFill)
-                border.width: ThemeModule.Theme.borderWidth
-                border.color: themeRow.current ? ThemeModule.Theme.selectedBorder : ThemeModule.Theme.controlBorder
+                    : (tile.current ? ThemeModule.Theme.selectedFill : ThemeModule.Theme.controlFill)
+                border.width: tile.current ? 2 : ThemeModule.Theme.borderWidth
+                border.color: tile.current ? ThemeModule.Theme.accent : ThemeModule.Theme.controlBorder
 
                 Accessible.role: Accessible.Button
-                Accessible.name: "Use theme " + themeRow.modelData.name
-                Accessible.description: themeRow.current ? "Current theme" : "Switch theme"
-                Accessible.onPressAction: Services.ThemeService.setTheme(themeRow.modelData.id)
+                Accessible.name: "Use theme " + tile.modelData.name
+                Accessible.description: tile.current ? "Current theme" : "Switch theme"
+                Accessible.onPressAction: Services.ThemeService.setTheme(tile.modelData.id)
 
                 Rectangle {
-                    id: swatch
-                    anchors.left: parent.left
-                    anchors.leftMargin: ThemeModule.Theme.spacingSmall
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 48
-                    height: ThemeModule.Theme.controlHeight
+                    id: preview
+                    x: ThemeModule.Theme.spacingTiny + 1
+                    y: ThemeModule.Theme.spacingTiny + 1
+                    width: tile.width - x * 2
+                    height: Math.round(preview.width * 10 / 16)
                     radius: ThemeModule.Theme.borderRadiusSmall
-                    color: themeRow.preview.base
-                    border.width: ThemeModule.Theme.borderWidth
-                    border.color: themeRow.preview.border
+                    clip: true
+                    gradient: Gradient {
+                        GradientStop { position: 0; color: tile.pBase }
+                        GradientStop { position: 1; color: tile.pCrust }
+                    }
 
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: 3
+                    Image {
+                        anchors.fill: parent
+                        visible: tile.wallpaperPath !== ""
+                        source: tile.wallpaperPath !== "" ? ThemeProvider.fileUrl(tile.wallpaperPath) : ""
+                        sourceSize: Qt.size(320, 200)
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                    }
 
-                        Repeater {
-                            model: themeRow.preview.dots
+                    // Miniature dashboard panel: header, a selected row, plain rows,
+                    // a slider, and a switch.
+                    Rectangle {
+                        id: miniPanel
+                        readonly property real pad: Math.max(4, Math.round(preview.width * 0.035))
+                        readonly property real rowHeight: Math.max(7, Math.round(preview.height * 0.12))
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        anchors.margins: miniPanel.pad
+                        width: Math.round(preview.width * 0.42)
+                        radius: 2
+                        color: tile.pBase
+                        border.width: 1
+                        border.color: tile.pSurface1
 
-                            delegate: Rectangle {
-                                required property var modelData
-                                width: 7
-                                height: 7
-                                radius: 3.5
-                                color: modelData
+                        Column {
+                            id: miniColumn
+                            anchors.fill: parent
+                            anchors.margins: miniPanel.pad
+                            spacing: Math.max(2, Math.round(miniPanel.pad * 0.6))
+
+                            Rectangle {
+                                width: parent.width * 0.45
+                                height: 3
+                                radius: 1.5
+                                color: ThemeModule.Theme.alpha(tile.pText, 0.75)
+                            }
+
+                            Repeater {
+                                model: 3
+
+                                delegate: Rectangle {
+                                    id: miniRow
+                                    required property int index
+                                    readonly property bool selected: miniRow.index === 0
+                                    width: miniColumn.width
+                                    height: miniPanel.rowHeight
+                                    radius: 2
+                                    color: miniRow.selected ? ThemeModule.Theme.alpha(tile.pAccent, 0.18) : tile.pSurface0
+                                    border.width: miniRow.selected ? 1 : 0
+                                    border.color: ThemeModule.Theme.alpha(tile.pAccent, 0.7)
+
+                                    Rectangle {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 3
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: miniRow.width * (miniRow.selected ? 0.5 : 0.35 + 0.1 * miniRow.index)
+                                        height: 2
+                                        radius: 1
+                                        color: miniRow.selected ? tile.pAccent : ThemeModule.Theme.alpha(tile.pText, 0.45)
+                                    }
+                                }
+                            }
+
+                            Item {
+                                width: parent.width
+                                height: 8
+
+                                Rectangle {
+                                    anchors.left: parent.left
+                                    anchors.right: miniSwitch.left
+                                    anchors.rightMargin: 4
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    height: 3
+                                    radius: 1.5
+                                    color: tile.pSurface2
+
+                                    Rectangle {
+                                        width: parent.width * 0.6
+                                        height: parent.height
+                                        radius: parent.radius
+                                        color: tile.pAccent
+                                    }
+                                }
+
+                                Rectangle {
+                                    id: miniSwitch
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: 14
+                                    height: 8
+                                    radius: 4
+                                    color: tile.pAccent
+
+                                    Rectangle {
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 1
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 6
+                                        height: 6
+                                        radius: 3
+                                        color: tile.pBase
+                                    }
+                                }
                             }
                         }
                     }
                 }
 
-                Text {
-                    anchors.left: swatch.right
-                    anchors.leftMargin: ThemeModule.Theme.spacingSmall
-                    anchors.right: checkIcon.left
-                    anchors.rightMargin: ThemeModule.Theme.spacingSmall
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: themeRow.modelData.name
-                    font.pixelSize: ThemeModule.Theme.fontSizeNormal
-                    font.family: ThemeModule.Theme.fontFamily
-                    color: ThemeModule.Theme.text
-                    elide: Text.ElideRight
-                }
+                Item {
+                    id: nameRow
+                    anchors.left: preview.left
+                    anchors.right: preview.right
+                    anchors.top: preview.bottom
+                    anchors.topMargin: ThemeModule.Theme.spacingTiny
+                    height: Math.max(nameText.implicitHeight, checkIcon.height) + ThemeModule.Theme.spacingMicro
 
-                Components.AppIcon {
-                    id: checkIcon
-                    anchors.right: parent.right
-                    anchors.rightMargin: ThemeModule.Theme.spacingSmall
-                    anchors.verticalCenter: parent.verticalCenter
-                    name: "check"
-                    size: ThemeModule.Theme.iconSizeSmall
-                    iconColor: ThemeModule.Theme.accent
-                    visible: themeRow.current
+                    Rectangle {
+                        id: accentDot
+                        anchors.left: parent.left
+                        anchors.leftMargin: ThemeModule.Theme.spacingMicro
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 8
+                        height: 8
+                        radius: 4
+                        color: tile.pAccent
+                    }
+
+                    Text {
+                        id: nameText
+                        anchors.left: accentDot.right
+                        anchors.leftMargin: ThemeModule.Theme.spacingSmall - 2
+                        anchors.right: checkIcon.visible ? checkIcon.left : parent.right
+                        anchors.rightMargin: ThemeModule.Theme.spacingTiny
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: tile.modelData.name
+                        font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                        font.family: ThemeModule.Theme.fontFamily
+                        font.weight: tile.current ? Font.DemiBold : Font.Normal
+                        color: ThemeModule.Theme.text
+                        elide: Text.ElideRight
+                    }
+
+                    Components.AppIcon {
+                        id: checkIcon
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        name: "check"
+                        size: ThemeModule.Theme.iconSizeTiny
+                        iconColor: ThemeModule.Theme.accent
+                        visible: tile.current
+                    }
                 }
 
                 MouseArea {
-                    id: themeMouse
+                    id: tileMouse
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: Services.ThemeService.setTheme(themeRow.modelData.id)
+                    onClicked: Services.ThemeService.setTheme(tile.modelData.id)
                 }
             }
         }

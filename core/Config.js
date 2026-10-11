@@ -231,6 +231,8 @@ function parseAndValidate(iniText) {
     var config = {
         drawWallpaper: booleanValue(document, "Appearance", "drawWallpaper", false, errors),
         textScale: realValue(document, "Appearance", "textScale", 1.0, 0.8, 1.5, errors),
+        transitionSpeed: realValue(document, "Appearance", "transitionSpeed", 1.0, 0, 3, errors),
+        shuffleAtLaunch: enumValue(document, "Appearance", "shuffleAtLaunch", "off", ["off", "wallpaper", "theme", "both"], errors),
         panelWorkspace: stringValue(document, "Appearance", "panelWorkspace", "special:term", errors, false),
         panelWidth: integerValue(document, "Appearance", "panelWidth", 420, 240, 1200, errors),
         panelMargin: integerValue(document, "Appearance", "panelMargin", 16, 0, 128, errors),

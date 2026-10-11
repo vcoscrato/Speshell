@@ -125,7 +125,7 @@ Item {
     }
 
     ShaderEffect {
-        readonly property real margin: 90
+        readonly property real margin: 240
         visible: root.lift > 0 && root.fall < 1
         x: root.panelRect.x - margin
         y: root.panelRect.y - margin

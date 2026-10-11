@@ -13,7 +13,7 @@ INNER="$LAB/$(echo "$SCENE" | sed 's/./\U&/')Scene.qml"
 measure() {
     EFFECTS_DIR="$LAB/../effects/$EFFECT" SCENE="$LAB/PerfScene.qml" INNER="$INNER" COPIES="$1" PERF=1 \
         DURATION="${DURATION:-2.5}" OUT=/dev/null WALL_A="$SAMPLES/a.jpg" WALL_B="$SAMPLES/b.jpg" \
-        SPESHELL_DIR="${SPESHELL_DIR:-/usr/share/speshell}" QT_FORCE_STDERR_LOGGING=1 \
+        SPESHELL_DIR="${SPESHELL_DIR:-$(cd "$LAB/../.." && pwd)}" QT_FORCE_STDERR_LOGGING=1 \
         timeout 120 quickshell --no-color -p "$LAB/shell.qml" 2>&1 | grep -oE "perf: [0-9.]+" | grep -oE "[0-9.]+$"
 }
 ONE=$(measure 1)

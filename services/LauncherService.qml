@@ -98,7 +98,7 @@ Singleton {
                 root.results = themeBang.alias === "theme"
                     ? ThemeProvider.themeResults(ThemeService.themes,
                         ThemeService.wallpaperEnabled ? ThemeService.wallpapers : [],
-                        ThemeService.themeId, themeBang.terms)
+                        ThemeService.themeId, themeBang.terms, ThemeService.chosen)
                     : ThemeProvider.wallpaperResults(ThemeService.themes, ThemeService.wallpapers,
                         ThemeService.wallpaper, themeBang.terms);
                 return;

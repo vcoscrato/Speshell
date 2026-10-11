@@ -6,6 +6,7 @@ Item {
     id: root
 
     property real time: 0
+    property real timeScale: 1     // the effect clock's speed; the simulation steps once per frame
     property real emit: 0          // 0..1 rim flames around panelRect
     property real frontFuel: 0     // 0..1 flames along the burn front
     property rect panelRect
@@ -36,7 +37,7 @@ Item {
         height: Math.max(1, Math.round(root.height / 4))
         property var state: simState
         property real time: root.time
-        property real dt: 1 / 60
+        property real dt: root.timeScale / 60
         property real emit: root.emit
         property real frontFuel: root.frontFuel
         property size resolution: Qt.size(root.width, root.height)

@@ -5,7 +5,7 @@ import "." as AppServices
 
 // Loads the active theme's effects: a directory, shipped under extras/effects or
 // added under <dataDir>/effects, whose Effects.qml may provide launcher and
-// wallpaper transitions. See extras/README.md "Effects API".
+// wallpaper transitions. See extras/effects/README.md.
 Singleton {
     id: root
 
@@ -18,12 +18,15 @@ Singleton {
     property var current: null
     property string error: ""
 
-    readonly property Component launcherTransition: root.current && root.current.launcherTransition
-        ? root.current.launcherTransition
-        : null
-    readonly property Component wallpaperTransition: root.current && root.current.wallpaperTransition
-        ? root.current.wallpaperTransition
-        : null
+    // Transition speed from config: a multiple of normal speed; 0 turns transitions off.
+    // Transition hosts pass it on as `timeScale`, which EffectClock follows.
+    property real speed: 1
+    readonly property bool transitionsEnabled: root.speed > 0
+
+    readonly property Component launcherTransition: root.transitionsEnabled && root.current
+        && root.current.launcherTransition ? root.current.launcherTransition : null
+    readonly property Component wallpaperTransition: root.transitionsEnabled && root.current
+        && root.current.wallpaperTransition ? root.current.wallpaperTransition : null
 
     // A transition from the old effects may still be playing, for example the launcher
     // exit after picking a theme, so the old effects outlive their replacement briefly.

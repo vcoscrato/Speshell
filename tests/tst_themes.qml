@@ -9,9 +9,9 @@ TestCase {
     readonly property string themesDir: "/home/me/.config/speshell/themes"
     readonly property var themesDirs: [shippedDir, themesDir]
     readonly property string scan: [
-        "theme\t" + shippedDir + "/fire-nation",
+        "theme\t" + shippedDir + "/fire",
         "ini\t[Theme]",
-        "ini\tname = Fire Nation",
+        "ini\tname = Fire",
         "ini\teffects = fire",
         "ini\t[Colors]",
         "ini\taccent = #e5482e",
@@ -29,9 +29,9 @@ TestCase {
         "theme\t" + themesDir + "/cosmos",
         "ini\t[Theme]",
         "ini\tname = My Cosmos",
-        "wall\t" + shippedDir + "/fire-nation/agni-kai.jpg",
+        "wall\t" + shippedDir + "/fire/agni-kai.jpg",
         "wall\t" + shippedDir + "/cosmos/galaxy.jpg",
-        "wall\t" + themesDir + "/fire-nation/zuko/ember_island.png",
+        "wall\t" + themesDir + "/fire/zuko/ember_island.png",
         "wall\t" + themesDir + "/cosmos/galaxy.jpg",
         "wall\t" + themesDir + "/nord/fjord.webp",
         "wall\t" + themesDir + "/loose.jpg",
@@ -43,16 +43,16 @@ TestCase {
 
     function test_parseScan() {
         var parsed = ThemeProvider.parseScan(scan, themesDirs);
-        compare(parsed.themes.map(function(t) { return t.id; }), ["broken", "fire-nation", "cosmos", "nord"]);
-        var fire = ThemeProvider.findTheme(parsed.themes, "fire-nation");
-        compare(fire.name, "Fire Nation");
+        compare(parsed.themes.map(function(t) { return t.id; }), ["broken", "fire", "cosmos", "nord"]);
+        var fire = ThemeProvider.findTheme(parsed.themes, "fire");
+        compare(fire.name, "Fire");
         compare(fire.effects, "fire");
         // The user's effects directory replaces the shipped one of the same name.
         compare(fire.effectsDir, "/home/me/.local/share/speshell/effects/fire");
         compare(fire.colors.accent, "#e5482e");
         compare(fire.colors.base, "#1d1416");
         compare(fire.errors.length, 0);
-        compare(parsed.wallpapers.map(function(w) { return w.theme; }), ["cosmos", "fire-nation", "fire-nation", "nord"]);
+        compare(parsed.wallpapers.map(function(w) { return w.theme; }), ["cosmos", "fire", "fire", "nord"]);
         compare(parsed.wallpapers[2].title, "ember island");
     }
 
@@ -63,7 +63,7 @@ TestCase {
         compare(cosmos.name, "My Cosmos");
         compare(cosmos.effects, "");
         // Wallpapers from both folders add up; the user's copy replaces the shipped one.
-        compare(parsed.wallpapers.filter(function(w) { return w.theme === "fire-nation"; }).length, 2);
+        compare(parsed.wallpapers.filter(function(w) { return w.theme === "fire"; }).length, 2);
         compare(parsed.wallpapers[0].path, themesDir + "/cosmos/galaxy.jpg");
     }
 
@@ -95,11 +95,11 @@ TestCase {
     }
 
     function test_themeFor() {
-        compare(ThemeProvider.themeFor(themesDir + "/fire-nation/zuko/a.png", themesDirs), "fire-nation");
+        compare(ThemeProvider.themeFor(themesDir + "/fire/zuko/a.png", themesDirs), "fire");
         compare(ThemeProvider.themeFor(shippedDir + "/cosmos/galaxy.jpg", themesDirs), "cosmos");
         compare(ThemeProvider.themeFor(themesDir + "/loose.jpg", themesDirs), "");
-        compare(ThemeProvider.themeFor("/elsewhere/fire-nation/a.jpg", themesDirs), "");
-        compare(ThemeProvider.themeFor(themesDir + "-old/fire-nation/a.jpg", themesDirs), "");
+        compare(ThemeProvider.themeFor("/elsewhere/fire/a.jpg", themesDirs), "");
+        compare(ThemeProvider.themeFor(themesDir + "-old/fire/a.jpg", themesDirs), "");
     }
 
     function test_parseBang() {
@@ -119,26 +119,47 @@ TestCase {
     function test_results() {
         var parsed = ThemeProvider.parseScan(scan, themesDirs);
         var all = ThemeProvider.allThemes(parsed.themes);
-        var themes = ThemeProvider.themeResults(all, parsed.wallpapers, "fire-nation", "fire");
+        var themes = ThemeProvider.themeResults(all, parsed.wallpapers, "fire", "fire");
         compare(themes.length, 1);
         compare(themes[0].subtitle, "Theme · fire effects · 2 wallpapers · current");
-        compare(themes[0].thumbnail, shippedDir + "/fire-nation/agni-kai.jpg");
-        compare(themes[0].payload.theme, "fire-nation");
+        compare(themes[0].thumbnail, shippedDir + "/fire/agni-kai.jpg");
+        compare(themes[0].payload.theme, "fire");
+        var chosen = { "fire": themesDir + "/fire/zuko/ember_island.png" };
+        compare(ThemeProvider.themeResults(all, parsed.wallpapers, "", "fire", chosen)[0].thumbnail, chosen["fire"]);
 
         var walls = ThemeProvider.wallpaperResults(all, parsed.wallpapers, themesDir + "/nord/fjord.webp", "");
-        compare(walls[0].payload.shuffle, "fire-nation");
+        compare(walls[0].payload.shuffle, "fire");
         compare(walls.length, 5);
         compare(walls[4].subtitle, "nord · current");
         compare(ThemeProvider.wallpaperResults(all, parsed.wallpapers, "", "fire").map(function(r) { return r.title; }),
-            ["Shuffle Fire Nation", "agni kai", "ember island"]);
+            ["Shuffle Fire", "agni kai", "ember island"]);
     }
 
     function test_pickRandom() {
         var parsed = ThemeProvider.parseScan(scan, themesDirs);
-        compare(ThemeProvider.pickRandom(parsed.wallpapers, "fire-nation", shippedDir + "/fire-nation/agni-kai.jpg", 0.99),
-            themesDir + "/fire-nation/zuko/ember_island.png");
+        compare(ThemeProvider.pickRandom(parsed.wallpapers, "fire", shippedDir + "/fire/agni-kai.jpg", 0.99),
+            themesDir + "/fire/zuko/ember_island.png");
         compare(ThemeProvider.pickRandom(parsed.wallpapers, "nord", themesDir + "/nord/fjord.webp", 0), "");
         compare(ThemeProvider.pickRandom(parsed.wallpapers, "broken", "", 0), "");
+    }
+
+    function test_themeWallpaper() {
+        var parsed = ThemeProvider.parseScan(scan, themesDirs);
+        var island = themesDir + "/fire/zuko/ember_island.png";
+        compare(ThemeProvider.themeWallpaper(parsed.wallpapers, "fire", ({})), shippedDir + "/fire/agni-kai.jpg");
+        compare(ThemeProvider.themeWallpaper(parsed.wallpapers, "fire", { "fire": island }), island);
+        // A remembered wallpaper that is gone, or belongs to another theme, falls back.
+        compare(ThemeProvider.themeWallpaper(parsed.wallpapers, "fire", { "fire": "/gone.jpg" }),
+            shippedDir + "/fire/agni-kai.jpg");
+        compare(ThemeProvider.themeWallpaper(parsed.wallpapers, "nord", { "nord": island }), themesDir + "/nord/fjord.webp");
+        compare(ThemeProvider.themeWallpaper(parsed.wallpapers, "broken", undefined), "");
+    }
+
+    function test_pickRandomTheme() {
+        var themes = [{ id: "a" }, { id: "b" }, { id: "c" }];
+        compare(ThemeProvider.pickRandomTheme(themes, "a", 0), "b");
+        compare(ThemeProvider.pickRandomTheme(themes, "a", 0.99), "c");
+        compare(ThemeProvider.pickRandomTheme([{ id: "a" }], "a", 0.5), "");
     }
 
     function test_fileUrl() {

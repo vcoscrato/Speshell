@@ -3,7 +3,7 @@
 // Water held while the launcher is open: two streams chase each other around the
 // panel just outside its border. Each one surges and slackens, stretching thin when
 // fast and bunching up when slow; waves run down it from the head and flail its tail,
-// which pinches into beads; it hugs the panel where it swings inward and merges with
+// which swells into beads but stays one stream; it hugs the panel where it swings inward and merges with
 // the other stream when they meet. Droplets fly off straight where a stream rounds a
 // corner and drop from its tail. Shaded in flat bands, with highlights and bubbles
 // carried along with the water.
@@ -85,10 +85,11 @@ void main() {
         float tt = behind / max(len, 1.0);               // 0 at the head .. 1 at the tail
 
         // Width: a round, wobbling bulb at the head tapering to the tail, where the
-        // thinning stream pinches into beads (Rayleigh–Plateau).
+        // thinning stream beads up (Rayleigh–Plateau). The necks never close: cut
+        // apart against the panel's straight border, the beads read as a broken line.
         float bulb = 1.0 + 0.4 * exp(-behind / (2.2 * thick)) * (1.0 + 0.3 * sin(t * 13.0 + fi * 2.0));
         float pinch = mix(0.12, 1.0, smoothstep(0.4, 0.95, tt));
-        float beads = 1.0 - pinch * (0.5 + 0.5 * sin(behind / 7.5 - t * 4.0 + fi * 3.0));
+        float beads = 1.0 - 0.5 * pinch * (0.5 + 0.5 * sin(behind / 7.5 - t * 4.0 + fi * 3.0));
         float swell = 1.0 + 0.22 * sin(behind / 41.0 + t * 2.3 + fi * 5.0);
         float w = thick * sqrt(clamp(behind / (1.2 * thick), 0.0, 1.0))
                 * pow(clamp(1.0 - tt, 0.0, 1.0), 0.3) * bulb * beads * swell;

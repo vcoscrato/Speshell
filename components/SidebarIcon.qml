@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import "../theme" as ThemeModule
 import "../core/WidgetRegistry.js" as WidgetRegistry
@@ -11,21 +12,27 @@ Rectangle {
     property bool active: false
     property string statusText: ""
     property string tooltipText: ""
+    // A secondary icon splits the button: both halves open the panel, and the
+    // wheel reports which half it turned over.
+    property string secondaryIconName: ""
+    property string secondaryStatusText: ""
     property bool pointerInside: false
+    readonly property bool split: root.secondaryIconName !== ""
+    readonly property bool pointerSecondary: root.split && mouseArea.mouseY >= root.height / 2
+    readonly property int boxSize: 38
     readonly property bool containingWindowVisible: !!(root.Window
         && root.Window.window
         && root.Window.window.visible)
-    readonly property string effectiveTooltipText: root.tooltipText !== ""
-        ? root.tooltipText
-        : (root.statusText !== ""
-            ? root.statusText
-            : (WidgetRegistry.label(root.widgetName) || root.widgetName))
-    readonly property color currentIconColor: root.active
-        ? ThemeModule.Theme.accent
-        : (root.pointerInside ? ThemeModule.Theme.text : ThemeModule.Theme.subtextBright)
+    readonly property string effectiveTooltipText: root.pointerSecondary
+        ? root.secondaryStatusText
+        : (root.tooltipText !== ""
+            ? root.tooltipText
+            : (root.statusText !== ""
+                ? root.statusText
+                : (WidgetRegistry.label(root.widgetName) || root.widgetName)))
 
     signal activated(string name)
-    signal wheelDelta(int angleDelta)
+    signal wheelDelta(int angleDelta, bool secondary)
 
     Connections {
         target: root.Window ? root.Window.window : null
@@ -37,32 +44,62 @@ Rectangle {
     }
 
     width: parent ? parent.width : ThemeModule.Theme.sidebarIconSize
-    height: ThemeModule.Theme.sidebarIconSize
+    height: box.height + ThemeModule.Theme.sidebarIconSize - root.boxSize
     color: "transparent"
 
     Accessible.role: Accessible.Button
     Accessible.name: WidgetRegistry.label(root.widgetName) || root.widgetName
-    Accessible.description: root.statusText
+    Accessible.description: root.split ? root.statusText + ", " + root.secondaryStatusText : root.statusText
     Accessible.onPressAction: if (root.enabled) root.activated(root.widgetName)
 
     Rectangle {
+        id: box
         anchors.centerIn: parent
-        width: 38
-        height: 38
+        width: root.boxSize
+        height: root.split ? root.boxSize * 2 - ThemeModule.Theme.spacingMedium : root.boxSize
         radius: ThemeModule.Theme.borderRadiusSmall
-        color: root.active
-            ? ThemeModule.Theme.selectedFill
-            : (root.pointerInside ? ThemeModule.Theme.cardHover : "transparent")
+        color: root.active ? ThemeModule.Theme.selectedFill : "transparent"
         border.width: root.active ? ThemeModule.Theme.borderWidth : 0
         border.color: ThemeModule.Theme.selectedBorder
 
-        Components.AppIcon {
-            name: root.iconName
-            size: ThemeModule.Theme.iconSizeLarge
-            iconColor: root.currentIconColor
+        Column {
+            anchors.fill: parent
+
+            Repeater {
+                model: root.split ? [root.iconName, root.secondaryIconName] : [root.iconName]
+
+                delegate: Rectangle {
+                    id: half
+
+                    required property string modelData
+                    required property int index
+                    readonly property bool hovered: root.pointerInside && root.pointerSecondary === (half.index === 1)
+
+                    width: box.width
+                    height: box.height / (root.split ? 2 : 1)
+                    radius: ThemeModule.Theme.borderRadiusSmall
+                    color: half.hovered && (root.split || !root.active) ? ThemeModule.Theme.cardHover : "transparent"
+
+                    Components.AppIcon {
+                        name: half.modelData
+                        size: root.split ? ThemeModule.Theme.iconSizeMedium : ThemeModule.Theme.iconSizeLarge
+                        iconColor: root.active
+                            ? ThemeModule.Theme.accent
+                            : (half.hovered ? ThemeModule.Theme.text : ThemeModule.Theme.subtextBright)
+                        anchors.centerIn: parent
+                        visible: half.modelData !== ""
+                        opacity: root.enabled ? 1 : ThemeModule.Theme.disabledOpacity
+                    }
+                }
+            }
+        }
+
+        Rectangle {
             anchors.centerIn: parent
-            visible: root.iconName !== ""
-            opacity: root.enabled ? 1 : ThemeModule.Theme.disabledOpacity
+            width: parent.width - ThemeModule.Theme.spacingMedium
+            height: ThemeModule.Theme.separatorThickness
+            color: ThemeModule.Theme.separator
+            visible: root.split
         }
 
         Rectangle {
@@ -85,6 +122,7 @@ Rectangle {
     }
 
     MouseArea {
+        id: mouseArea
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
@@ -93,7 +131,7 @@ Rectangle {
         onCanceled: root.pointerInside = false
         onClicked: root.activated(root.widgetName)
         onWheel: function(wheel) {
-            root.wheelDelta(wheel.angleDelta.y)
+            root.wheelDelta(wheel.angleDelta.y, root.pointerSecondary)
         }
     }
 

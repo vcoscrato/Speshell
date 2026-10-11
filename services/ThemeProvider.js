@@ -159,6 +159,27 @@ function findTheme(themes, id) {
     return null;
 }
 
+// The wallpaper a theme comes with: the one last set for it while it is still
+// there, otherwise its first. `chosen` maps theme ids to their last wallpaper.
+// "" for a theme without wallpapers.
+function themeWallpaper(wallpapers, theme, chosen) {
+    var own = (wallpapers || []).filter(function(wallpaper) { return wallpaper.theme === theme; });
+    var last = chosen && typeof chosen[theme] === "string" ? chosen[theme] : "";
+    for (var i = 0; i < own.length; i++) {
+        if (own[i].path === last)
+            return last;
+    }
+    return own.length > 0 ? own[0].path : "";
+}
+
+// A random theme id other than `current`, or "" when there is no other.
+function pickRandomTheme(themes, current, random) {
+    var pool = (themes || []).filter(function(theme) { return theme.id !== current; });
+    if (pool.length === 0)
+        return "";
+    return pool[Math.min(pool.length - 1, Math.floor((random === undefined ? Math.random() : random) * pool.length))].id;
+}
+
 function pickRandom(wallpapers, theme, current, random) {
     var pool = (wallpapers || []).filter(function(wallpaper) {
         return wallpaper.theme === theme && wallpaper.path !== current;
@@ -229,12 +250,13 @@ function searchItems(wallpapers) {
     return items;
 }
 
-function themeResults(themes, wallpapers, currentId, terms) {
+function themeResults(themes, wallpapers, currentId, terms, chosen) {
     var query = String(terms || "").toLowerCase();
     return themes.filter(function(theme) {
         return query === "" || theme.name.toLowerCase().indexOf(query) >= 0 || theme.id.indexOf(query) === 0;
     }).map(function(theme) {
         var own = wallpapers.filter(function(wallpaper) { return wallpaper.theme === theme.id; });
+        var thumbnail = themeWallpaper(wallpapers, theme.id, chosen);
         var details = ["Theme"];
         if (theme.effects !== "")
             details.push(theme.effects + " effects");
@@ -249,7 +271,7 @@ function themeResults(themes, wallpapers, currentId, terms) {
             subtitle: details.join(" · "),
             iconName: "palette",
             iconSource: "",
-            thumbnail: own.length > 0 ? own[0].path : "",
+            thumbnail: thumbnail,
             badge: "THEME",
             activatable: true,
             payload: { theme: theme.id }

@@ -44,10 +44,6 @@ Components.Card {
         { value: 1.35, label: "Extra Large · 135%" },
         { value: 1.5, label: "Maximum · 150%" }
     ]
-    readonly property var audioModeOptions: [
-        { value: "combined", label: "Combined" },
-        { value: "separate", label: "Separate" }
-    ]
     readonly property var scrollStepOptions: [
         { value: 2, label: "2%" },
         { value: 5, label: "5%" },
@@ -398,8 +394,6 @@ Components.Card {
                 spacing: ThemeModule.Theme.spacingSmall
                 visible: root.activePage === "general"
 
-                SectionHeader { text: "Dashboard" }
-
                 Components.SettingRow {
                     label: "Text size"
                     info: "Scales text across the dashboard, launcher, and toasts."
@@ -423,26 +417,13 @@ Components.Card {
                     }
                 }
 
-                SectionHeader { text: "Audio" }
-
-                Components.SettingRow {
-                    label: "Sidebar icons"
-                    info: "Combined puts speaker and microphone in one panel. Separate gives each its own sidebar icon."
-
-                    Components.SegmentedControl {
-                        options: root.audioModeOptions
-                        currentValue: root.settingsConfig.audioPanelMode || "combined"
-                        onValueSelected: function(value) { Services.ConfigService.setAudioPanelMode(value); }
-                    }
-                }
-
                 Components.SettingRow {
                     id: scrollStepRow
                     readonly property var step: root.configValue(root.settingsConfig, "audioScrollStep", 5)
 
-                    label: "Scroll step"
-                    info: root.explain("Volume change per wheel notch over a sidebar audio icon.", root.scrollStepOptions,
-                        step, step + "%")
+                    label: "Volume scroll step"
+                    info: root.explain("Volume change per wheel notch over the sidebar speaker or microphone.",
+                        root.scrollStepOptions, step, step + "%")
 
                     Components.SegmentedControl {
                         options: root.scrollStepOptions
@@ -450,8 +431,6 @@ Components.Card {
                         onValueSelected: function(value) { Services.ConfigService.setAudioScrollStep(value); }
                     }
                 }
-
-                SectionHeader { text: "Notifications" }
 
                 Components.SettingRow {
                     id: toastsRow
@@ -647,9 +626,9 @@ Components.Card {
                             }
 
                             Components.InfoTip {
-                                text: "Saved edits apply right away. Panel margin, the backlight device, audio device "
-                                    + "mappings, custom bangs and search URLs, the workspace, and power commands "
-                                    + "are only set here."
+                                text: "Saved edits apply right away. Panel margin, the backlight device, the audio "
+                                    + "panel mode and device mappings, custom bangs and search URLs, the workspace, "
+                                    + "and power commands are only set here."
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                         }

@@ -74,7 +74,7 @@ Components.Card {
                             ? ThemeModule.Theme.accent
                             : ThemeModule.Theme.text
                         tooltipText: "View Speshell on GitHub"
-                        onClicked: Qt.openUrlExternally("https://github.com/vcoscrato/Speshell")
+                        onClicked: Qt.openUrlExternally("https://github.com/vcoscrato/speshell")
                     }
                 }
             }

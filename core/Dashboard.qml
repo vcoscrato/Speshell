@@ -22,11 +22,10 @@ Item {
     property string selectedPanel: ""
     property string selectedBottomPanel: WidgetRegistry.defaultReservedBottomPanel
     readonly property string defaultPanel: WidgetRegistry.primaryPanel
+    readonly property bool audioCombined: !dashboard.config || dashboard.config.audioPanelMode !== "separate"
     readonly property string activePanel: {
         var requested = WidgetRegistry.canonicalName(dashboard.selectedPanel);
-        if (requested === "audioInputControl"
-                && dashboard.config
-                && dashboard.config.audioPanelMode === "combined")
+        if (requested === "audioInputControl" && dashboard.audioCombined)
             requested = "audioControl";
         if (WidgetRegistry.isSidebarPanel(requested)
                 && dashboard.isWidgetAvailable(requested))
@@ -255,31 +254,32 @@ Item {
 
                 Repeater {
                     model: WidgetRegistry.sidebarPanels.filter(function(widgetName) {
-                        if (widgetName === "audioInputControl") {
-                            var mode = Services.ConfigService.config ? Services.ConfigService.config.audioPanelMode : "combined";
-                            if (mode === "combined")
-                                return false;
-                        }
+                        if (widgetName === "audioInputControl" && dashboard.audioCombined)
+                            return false;
                         return dashboard.isWidgetAvailable(widgetName);
                     })
                     delegate: Components.SidebarIcon {
                         required property var modelData
                         property string wName: modelData
+                        // The combined audio panel's icon splits into speaker and microphone halves.
+                        readonly property bool audioSplit: wName === "audioControl" && dashboard.audioCombined
 
                         widgetName: wName
                         iconName: dashboard.sidebarIcon(wName)
                         active: dashboard.isSidebarItemCurrent(wName)
                         statusText: dashboard.getStatusText(wName)
+                        secondaryIconName: audioSplit ? dashboard.sidebarIcon("audioInputControl") : ""
+                        secondaryStatusText: audioSplit ? dashboard.getStatusText("audioInputControl") : ""
 
                         onActivated: function(name) {
                             dashboard.activateSidebarItem(name);
                         }
 
-                        onWheelDelta: function(delta) {
-                            if (wName === "audioControl")
-                                Services.AudioService.stepOutputVolume(delta);
-                            else if (wName === "audioInputControl")
+                        onWheelDelta: function(delta, secondary) {
+                            if (wName === "audioInputControl" || (wName === "audioControl" && secondary))
                                 Services.AudioService.stepInputVolume(delta);
+                            else if (wName === "audioControl")
+                                Services.AudioService.stepOutputVolume(delta);
                         }
                     }
                 }

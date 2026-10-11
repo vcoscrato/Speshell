@@ -57,6 +57,8 @@ Item {
         property real revealR: 1e5
         property point burnOrigin: root.origin
         property real burnR: root.burnR
+        property real refill: 0
+        property real fade: 0
         property real fieldScale: root.fieldScale
         property color cGlow: "#ff8a1f"
         property color cHot: root.core
@@ -67,6 +69,7 @@ Item {
     Flames {
         anchors.fill: parent
         time: clock.simTime
+        timeScale: clock.timeScale
         frontFuel: root.sweep < 1 ? 1 : 0
         panelRect: Qt.rect(0, 0, root.width, root.height)
         origin: root.origin

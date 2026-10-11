@@ -35,8 +35,8 @@ Optional: `brightnessctl`, `curl` (weather), `hyprlock`, `cliphist`, `wl-clipboa
 On Arch:
 
 ```bash
-git clone https://github.com/vcoscrato/Speshell.git
-cd Speshell
+git clone https://github.com/vcoscrato/speshell.git
+cd speshell
 makepkg -si
 ```
 
@@ -84,9 +84,11 @@ Unknown bangs go to the search engine, so its own bangs work too.
 
 ## Themes
 
-Speshell ships Cosmos (the default) and the four nations: Fire Nation, Air Nomads, Water Tribe, and Earth Kingdom. Each has a palette, a wallpaper, and launcher and wallpaper effects (see [extras/](extras/README.md)). Pick one in the **Themes** panel or with `!theme`.
+Speshell ships Cosmos (the default) and four elements: Fire, Air, Water, and Earth. Each has a palette, a wallpaper, and launcher and wallpaper effects (see [extras/](extras/README.md)). Pick one in the **Themes** panel or with `!theme`.
 
-Set `drawWallpaper = true` under `[Appearance]` to let Speshell draw the desktop background. It is off by default so another wallpaper tool can stay in charge.
+Set `drawWallpaper = true` under `[Appearance]` to let Speshell draw the desktop background. It is off by default so another wallpaper tool can stay in charge. `transitionSpeed` (0–3, default 1) speeds up or slows down the launcher and wallpaper transitions, and 0 turns them off. `shuffleAtLaunch` picks at random each time Speshell starts: `wallpaper` (another wallpaper of the theme), `theme` (another theme), or `both`; the default is `off`. The Themes panel sets both.
+
+Each theme remembers the wallpaper last set for it, so switching back to a theme brings that wallpaper back; a theme you have not picked a wallpaper for starts with its first.
 
 A theme is a folder with an optional `theme.ini` and any images. Add your own under `~/.config/speshell/themes`; a folder named after a shipped theme adds wallpapers to it, and its `theme.ini` replaces the shipped one.
 
@@ -102,7 +104,7 @@ text = #f3e3d3
 accent = #f0702f
 ```
 
-Colors use the keys of [`extras/themes/cosmos/theme.ini`](extras/themes/cosmos/theme.ini); missing ones come from Cosmos. Custom effects go in `~/.local/share/speshell/effects`.
+Colors use the keys of [`extras/themes/cosmos/theme.ini`](extras/themes/cosmos/theme.ini); missing ones come from Cosmos. Custom effects go in `~/.local/share/speshell/effects` (see [extras/effects](extras/effects/README.md)).
 
 ## CLI
 

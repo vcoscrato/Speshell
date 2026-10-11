@@ -3,7 +3,8 @@ import "common"
 
 // Water launcher transition: a whip of water spirals in to the middle of the
 // launcher and spreads into a sheet in its shape; the water clears to leave the
-// launcher, and two streams keep circling it while it is open. Closing turns it
+// launcher, and two streams keep circling it while it is open, among orbs, currents,
+// and mist held in the air. Closing turns it
 // back to water, draws it into an orb, and whips away.
 Item {
     id: root
@@ -122,6 +123,26 @@ Item {
         property color cLight: "#7cc9ea"
         property color cFoam: "#f2fbff"
         fragmentShader: Qt.resolvedUrl("shaders/sheet.frag.qsb")
+    }
+
+    // Water held in the air around the open launcher, behind the streams.
+    ShaderEffect {
+        readonly property real margin: 240
+        visible: root.flow > 0
+        x: root.panelRect.x - margin
+        y: root.panelRect.y - margin
+        width: root.panelRect.width + 2 * margin
+        height: root.panelRect.height + 2 * margin
+        property real time: clock.simTime
+        property rect rect: Qt.rect(x, y, width, height)
+        property rect panel: root.panelRect
+        property real radius: 10
+        property real flow: root.flow
+        property color cDeep: "#1d5f8c"
+        property color cMid: "#2f8fc4"
+        property color cLight: "#7cc9ea"
+        property color cFoam: "#f2fbff"
+        fragmentShader: Qt.resolvedUrl("shaders/held.frag.qsb")
     }
 
     ShaderEffect {

@@ -7,10 +7,10 @@ QtObject {
     readonly property int apiVersion: 1
 
     readonly property Component launcherTransition: Component {
-        EarthTransition {}
+        LauncherTransition {}
     }
 
     readonly property Component wallpaperTransition: Component {
-        EarthWallpaper {}
+        WallpaperTransition {}
     }
 }

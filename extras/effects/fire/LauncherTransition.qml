@@ -3,7 +3,10 @@ import "common"
 
 // Fire launcher transition: an ember flares, a burning edge sweeps the panel into
 // view, and flames simmer around it while open. Closing burns a hole through the
-// middle of the panel that spreads outward until it is gone.
+// middle of the panel that spreads outward until it is gone. Reopening mid-exit
+// opens it the usual way: the hole's burning edge dies down while a new front sweeps
+// in from the ember's corner and fills the hole, the unburnt panel staying put.
+// Closing again before it is done sweeps that front back, then the hole burns on.
 Item {
     id: root
 
@@ -26,9 +29,11 @@ Item {
     property bool sparkPending: true
     property bool exitDone: false
 
-    // sweep: 0..1 progress of the entrance front; burn: 0..1 progress of the exit hole.
+    // sweep: 0..1 progress of the entrance front; burn: 0..1 progress of the exit hole;
+    // refill: reopened mid-exit, the entrance front is filling the hole.
     property real sweep: 0
     property real burn: 0
+    property bool refill: false
     readonly property point revealOrigin: Qt.point(panelRect.x + panelRect.width * 0.22,
                                                    panelRect.y + panelRect.height * 0.82)
     readonly property point burnOrigin: Qt.point(panelRect.x + panelRect.width * 0.5,
@@ -47,21 +52,35 @@ Item {
     onActiveChanged: {
         phaseStart = clock.clock;
         exitDone = false;
+        // Reopened mid-exit: the entrance front starts over at once, filling the hole.
+        if (active && burn > 0 && !refill) {
+            refill = true;
+            sweep = 0;
+            sparkPending = false;
+        }
     }
 
     EffectClock {
         id: clock
         onAdvanced: function(dt) {
             if (root.active) {
-                // Reopened mid-exit: the hole closes up again.
-                if (root.burn > 0) {
-                    root.burn = Math.max(0, root.burn - dt / root.burnTime);
-                    return;
-                }
                 if (root.sparkPending && root.phaseAge < root.igniteTime)
                     return;
                 root.sparkPending = false;
                 root.sweep = Math.min(1, root.sweep + dt / root.sweepTime);
+                // Past the panel's corners the hole is filled and the panel whole.
+                if (root.refill && root.sweep >= 1) {
+                    root.refill = false;
+                    root.burn = 0;
+                }
+            } else if (root.refill) {
+                // Closed again while filling: the front sweeps back, then the hole burns on.
+                root.sweep = Math.max(0, root.sweep - 1.6 * dt / root.sweepTime);
+                root.phaseStart = clock.clock;
+                if (root.sweep <= 0) {
+                    root.refill = false;
+                    root.sweep = 1;
+                }
             } else if (root.burn < 1) {
                 root.burn = Math.min(1, root.burn + dt / root.burnTime);
                 root.phaseStart = clock.clock;
@@ -75,10 +94,12 @@ Item {
 
     Flames {
         anchors.fill: parent
-        readonly property bool exiting: root.burn > 0
+        readonly property bool exiting: root.burn > 0 && !root.refill
+        readonly property real kindled: exiting ? 0 : root.sweep
         time: clock.simTime
-        emit: root.active && !exiting ? root.simmer * Math.max(0, Math.min(1, (root.sweep - 0.5) / 0.5)) : 0
-        frontFuel: (root.sweep > 0 && root.sweep < 1) || (root.burn > 0 && root.burn < 1) ? 1 : 0
+        timeScale: clock.timeScale
+        emit: root.active ? root.simmer * Math.max(0, Math.min(1, (kindled - 0.5) / 0.5)) : 0
+        frontFuel: (root.sweep > 0 && root.sweep < 1) || (exiting && root.burn < 1) ? 1 : 0
         panelRect: root.panelRect
         origin: exiting ? root.burnOrigin : root.revealOrigin
         burnR: exiting ? root.burnR : root.revealR
@@ -105,6 +126,9 @@ Item {
         property real revealR: root.revealR
         property point burnOrigin: root.burnOrigin
         property real burnR: root.burn > 0 ? root.burnR : -1e5
+        property real refill: root.refill ? 1 : 0
+        // The hole's burning edge dies down as the front sets out.
+        property real fade: root.refill ? Math.min(1, root.sweep * 3) : 0
         property real fieldScale: 1
         property color cGlow: "#ff8a1f"
         property color cHot: root.core

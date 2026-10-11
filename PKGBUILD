@@ -5,7 +5,7 @@ pkgver=0
 pkgrel=1
 pkgdesc="Hyprland dashboard and launcher built with Quickshell"
 arch=('any')
-url="https://github.com/vcoscrato/Speshell"
+url="https://github.com/vcoscrato/speshell"
 license=('MIT')
 depends=(
   'bash'
