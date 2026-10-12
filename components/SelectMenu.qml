@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as Controls
 import "." as Components
+import "../services" as Services
 import "../theme" as ThemeModule
 
 // Dropdown button that shows the current option's label ({ value, label }) and opens
@@ -110,7 +111,11 @@ Rectangle {
                 checkable: true
                 checked: modelData.value === root.currentValue
                 enabled: root.enabled
-                onTriggered: root.valueSelected(modelData.value)
+                onTriggered: {
+                    if (modelData.value !== root.currentValue)
+                        Services.EffectsService.picked(root);
+                    root.valueSelected(modelData.value);
+                }
             }
 
             onObjectAdded: function(index, object) {

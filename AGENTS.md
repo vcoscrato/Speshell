@@ -26,7 +26,7 @@ Prefer deleting unused QML modules over keeping broad helper surfaces. This repo
 
 ## Packaging Notes
 
-The Arch `PKGBUILD` uses the Git repository source, so plain `makepkg -si` is for normal package installs. Use `just local-package-install` when pacman must install a package built from the dirty checkout; it then restarts Speshell, because a running one keeps the shaders it already loaded.
+The Arch `PKGBUILD` uses the Git repository source, so plain `makepkg -si` is for normal package installs. Use `just local-package-install` when pacman must install a package built from the dirty checkout. It does not restart Speshell; a running one keeps the shaders it already loaded until restarted.
 
 The package owns `/usr/share/speshell` and `/usr/bin/speshell`, which is installed from `bin/speshell`. User config and data live under:
 

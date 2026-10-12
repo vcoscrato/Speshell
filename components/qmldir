@@ -17,5 +17,6 @@ SidebarIcon 1.0 SidebarIcon.qml
 SpeshellMark 1.0 SpeshellMark.qml
 SpeshellMarkButton 1.0 SpeshellMarkButton.qml
 StatusBadge 1.0 StatusBadge.qml
+StepSlider 1.0 StepSlider.qml
 StyledSlider 1.0 StyledSlider.qml
 ToggleSwitch 1.0 ToggleSwitch.qml

@@ -41,7 +41,8 @@ PanelWindow {
         anchors.fill: parent
         path: Services.ThemeService.shownWallpaper
         transition: Services.EffectsService.wallpaperTransition
-        timeScale: Services.EffectsService.speed
+        timeScale: Services.EffectsService.wallpaperSpeed
+        frameRate: Services.EffectsService.frameRate
         pixelRatio: root.devicePixelRatio
     }
 }

@@ -44,6 +44,42 @@ Item {
         }
         return "";
     }
+    // The theme effects' backdrop over the base color. It is still, so its texture
+    // renders once and fills the panel shape below.
+    Item {
+        id: material
+
+        width: dashboard.width
+        height: dashboard.height
+        visible: backdropLoader.status === Loader.Ready
+
+        Rectangle {
+            anchors.fill: parent
+            color: ThemeModule.Theme.bg
+        }
+
+        Loader {
+            id: backdropLoader
+
+            anchors.fill: parent
+            sourceComponent: Services.EffectsService.dashboardBackdrop
+        }
+
+        Binding {
+            target: backdropLoader.item
+            property: "theme"
+            value: ThemeModule.Theme
+        }
+    }
+
+    ShaderEffectSource {
+        id: materialTexture
+
+        visible: false
+        sourceItem: material.visible ? material : null
+        hideSource: true
+    }
+
     Shape {
         anchors.fill: parent
         antialiasing: true
@@ -57,6 +93,7 @@ Item {
                 1
             )
             fillColor: ThemeModule.Theme.bg
+            fillItem: material.visible ? materialTexture : null
             capStyle: ShapePath.SquareCap
             joinStyle: ShapePath.MiterJoin
             startX: 0
@@ -559,6 +596,69 @@ Item {
                     }
                 }
             }
+        }
+    }
+
+    // The theme effects' interactions: small effects over the panel where the user
+    // drags a slider, flips a switch, or picks something. They take no input.
+    Loader {
+        id: interactionsLoader
+
+        // EffectClock runs at this speed and frame rate.
+        property real timeScale: Services.EffectsService.dashboardSpeed
+        property int frameRate: Services.EffectsService.frameRate
+
+        z: 200
+        anchors.fill: parent
+        enabled: false
+        active: dashboard.presented && Services.EffectsService.dashboardInteractions !== null
+        sourceComponent: Services.EffectsService.dashboardInteractions
+    }
+
+    // Untyped, so the effects' functions can be called on it.
+    readonly property var interactions: interactionsLoader.item
+
+    Binding {
+        target: interactionsLoader.item
+        property: "theme"
+        value: ThemeModule.Theme
+    }
+
+    // Whether `item` is part of this dashboard; popups and other windows are not.
+    function holds(item) {
+        for (var parentItem = item; parentItem; parentItem = parentItem.parent) {
+            if (parentItem === dashboard)
+                return true;
+        }
+        return false;
+    }
+
+    function areaOf(item) {
+        return item.mapToItem(interactionsLoader, 0, 0, item.width, item.height);
+    }
+
+    Connections {
+        target: Services.EffectsService
+        enabled: interactionsLoader.status === Loader.Ready
+
+        function onKnobMoved(knob, dx) {
+            if (dashboard.holds(knob))
+                dashboard.interactions.slide(knob.mapToItem(interactionsLoader, knob.width / 2, knob.height / 2), dx);
+        }
+
+        function onKnobReleased(knob) {
+            if (dashboard.holds(knob))
+                dashboard.interactions.release(knob.mapToItem(interactionsLoader, knob.width / 2, knob.height / 2));
+        }
+
+        function onPicked(target) {
+            if (dashboard.holds(target))
+                dashboard.interactions.pick(dashboard.areaOf(target));
+        }
+
+        function onSwitched(control, on) {
+            if (dashboard.holds(control))
+                dashboard.interactions.toggle(dashboard.areaOf(control), on);
         }
     }
 }

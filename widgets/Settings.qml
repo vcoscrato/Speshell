@@ -26,6 +26,7 @@ Components.Card {
 
     readonly property var pages: [
         { id: "general", label: "General", icon: "dashboard" },
+        { id: "themes", label: "Themes", icon: "palette" },
         { id: "launcher", label: "Launcher", icon: "search" },
         { id: "weather", label: "Weather", icon: "cloud" },
         { id: "advanced", label: "Advanced", icon: "config-file" }
@@ -74,6 +75,15 @@ Components.Card {
         { value: 10, label: "10" },
         { value: -1, label: "All" }
     ]
+    readonly property var frameRateOptions: [30, 60, 75, 90, 120, 144, 165, 240, 300].map(function(rate) {
+        return { value: rate, label: rate + " fps" };
+    })
+    readonly property var launchShuffleOptions: [
+        { value: "off", label: "Off" },
+        { value: "wallpaper", label: "Wallpaper" },
+        { value: "theme", label: "Theme" },
+        { value: "both", label: "Theme and wallpaper" }
+    ]
     readonly property var weatherIssues: Services.FeatureSupport.issues.filter(function(issue) {
         return issue.id.indexOf("weather") === 0;
     })
@@ -89,7 +99,29 @@ Components.Card {
             root.weatherLocationDraft = root.savedWeatherLocation;
     }
     onActivePageChanged: pageEnter.restart()
-    Component.onCompleted: root.weatherLocationDraft = root.savedWeatherLocation
+    Component.onCompleted: {
+        root.weatherLocationDraft = root.savedWeatherLocation;
+        root.showRequestedPage();
+    }
+
+    function showRequestedPage() {
+        var page = Services.DashboardService.settingsPage;
+        if (page === "")
+            return;
+        Services.DashboardService.settingsPage = "";
+        if (root.pages.some(function(entry) { return entry.id === page; }))
+            root.activePage = page;
+    }
+
+    Connections {
+        target: Services.DashboardService
+
+        function onSettingsPageChanged() { root.showRequestedPage(); }
+    }
+
+    function speedLabel(value) {
+        return value <= 0 ? "Off" : value + "×";
+    }
 
     headerActions: Row {
         spacing: ThemeModule.Theme.spacingTiny
@@ -444,6 +476,76 @@ Components.Card {
                         options: root.notificationOptions
                         currentValue: toastsRow.count
                         onValueSelected: function(value) { Services.ConfigService.setMaxVisibleNotification(value); }
+                    }
+                }
+            }
+
+            Column {
+                width: parent.width
+                spacing: ThemeModule.Theme.spacingSmall
+                visible: root.activePage === "themes"
+
+                Components.SettingRow {
+                    label: "Draw wallpaper"
+                    info: "Speshell draws the theme's wallpapers as the desktop background. Turn off to use another wallpaper tool."
+
+                    Components.ToggleSwitch {
+                        checked: Services.ThemeService.wallpaperEnabled
+                        tooltipText: "Draw wallpaper"
+                        onToggled: function(newState) { Services.ConfigService.setDrawWallpaper(newState); }
+                    }
+                }
+
+                Components.SettingRow {
+                    label: "Shuffle at launch"
+                    info: "Each time Speshell starts, pick another wallpaper of the theme, another theme, or both at random."
+
+                    Components.SelectMenu {
+                        options: root.launchShuffleOptions
+                        currentValue: Services.ThemeService.launchShuffle || "off"
+                        onValueSelected: function(value) { Services.ConfigService.setShuffleAtLaunch(value); }
+                    }
+                }
+
+                Components.SettingRow {
+                    label: "Effects"
+                    info: "The theme's effects, at this frame rate and at the speeds below: launcher transitions; the dashboard's entrance and its effects on sliders, switches, and choices; wallpaper transitions. Off turns them off. Your display's refresh rate is the most it can show."
+
+                    Components.SelectMenu {
+                        enabled: Services.EffectsService.transitionsEnabled
+                        options: root.frameRateOptions
+                        currentValue: Services.EffectsService.frameRate
+                        fallbackLabel: Services.EffectsService.frameRate + " fps"
+                        onValueSelected: function(value) { Services.ConfigService.setTransitionFrameRate(value); }
+                    }
+                }
+
+                Row {
+                    id: speedRow
+                    readonly property real columnWidth: (width - spacing * 2) / 3
+
+                    width: parent.width
+                    spacing: ThemeModule.Theme.spacingMedium
+
+                    Repeater {
+                        model: [
+                            { surface: "launcher", label: "Launcher" },
+                            { surface: "dashboard", label: "Dashboard" },
+                            { surface: "wallpaper", label: "Wallpaper" }
+                        ]
+
+                        Components.StepSlider {
+                            id: speedSlider
+                            required property var modelData
+
+                            width: speedRow.columnWidth
+                            label: speedSlider.modelData.label
+                            from: 0
+                            to: 2
+                            value: Services.EffectsService[speedSlider.modelData.surface + "Speed"]
+                            format: root.speedLabel
+                            onCommitted: function(value) { Services.ConfigService.setTransitionSpeed(speedSlider.modelData.surface, value); }
+                        }
                     }
                 }
             }

@@ -7,6 +7,11 @@ relevant scenarios from this list on a real Hyprland session.
 
 - Open and close the special workspace repeatedly; confirm focus returns to the
   previous window and hidden widgets stop active work.
+- In Home's Workspaces, each tile shows its apps' icons and, on hover, its last
+  focused window's title. Clicking another tile shows that workspace under the
+  dashboard, which stays open.
+- With effects on, open the dashboard and watch the end of its entrance: the panel
+  must not blink or shift when the effect hands over to it.
 - Open, close, and toggle the launcher through IPC on each connected monitor.
 - Exercise application, calculator, panel bang, configured bang, and web-search
   results using both pointer and keyboard input.
@@ -17,7 +22,7 @@ relevant scenarios from this list on a real Hyprland session.
   entrance, close with **Escape** and by launching an app, reopen during the
   exit, and confirm clicks pass through while the exit plays.
 - With `drawWallpaper` off, confirm Speshell leaves the background alone and
-  `!wall` is not offered; toggle **Draw wallpaper** in the Themes panel and confirm the
+  `!wall` is not offered; toggle **Draw wallpaper** in Settings › Themes and confirm the
   background appears and disappears.
 - Switch between the shipped themes and a theme folder of your own in
   `~/.config/speshell/themes` with `!theme`, the dashboard **Themes** panel

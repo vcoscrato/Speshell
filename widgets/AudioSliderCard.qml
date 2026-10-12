@@ -229,6 +229,7 @@ Components.Card {
                             spacing: ThemeModule.Theme.spacingSmall
 
                             Rectangle {
+                                id: outDevDot
                                 width: 14; height: 14; radius: 7
                                 anchors.verticalCenter: parent.verticalCenter
                                 border.width: 2
@@ -250,7 +251,11 @@ Components.Card {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
-                            onClicked: Services.AudioService.setDefaultSink(outDevDelegate.modelData.node)
+                            onClicked: {
+                                if (Services.AudioService.defaultSink !== outDevDelegate.modelData.node)
+                                    Services.EffectsService.picked(outDevDot);
+                                Services.AudioService.setDefaultSink(outDevDelegate.modelData.node);
+                            }
                         }
                     }
                 }
@@ -334,6 +339,7 @@ Components.Card {
                             spacing: ThemeModule.Theme.spacingSmall
 
                             Rectangle {
+                                id: inDevDot
                                 width: 14; height: 14; radius: 7
                                 anchors.verticalCenter: parent.verticalCenter
                                 border.width: 2
@@ -355,7 +361,11 @@ Components.Card {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
-                            onClicked: Services.AudioService.setDefaultSource(inDevDelegate.modelData.node)
+                            onClicked: {
+                                if (Services.AudioService.defaultSource !== inDevDelegate.modelData.node)
+                                    Services.EffectsService.picked(inDevDot);
+                                Services.AudioService.setDefaultSource(inDevDelegate.modelData.node);
+                            }
                         }
                     }
                 }

@@ -1,8 +1,9 @@
 #!/bin/sh
-# usage: lab/preview.sh EFFECT SCENE  (SCENE: launcher | wallpaper)
+# usage: lab/preview.sh EFFECT SCENE  (SCENE: launcher | wallpaper | dashboard | controls)
 # Renders offscreen into lab/out/EFFECT-SCENE.mp4 and EFFECT-SCENE-strip.png, and prints
 # the transition's lifecycle log. Env: CLOSE_AT, REOPEN_AT, SWITCH_AT, SPEED, WALL_A, WALL_B, SPESHELL_DIR,
-# and KEEP_FRAMES=1 to keep the frames in lab/out/EFFECT-SCENE/ (about 700 MB per run).
+# KEEP_FRAMES=1 to keep the frames in lab/out/EFFECT-SCENE/ (about 700 MB per run), and
+# EVERY_FRAME=1 to capture at 60 fps instead of 30.
 set -e
 LAB=$(cd "$(dirname "$0")" && pwd)
 EFFECT=$1
@@ -20,6 +21,7 @@ if [ ! -f "$SAMPLES/a.jpg" ]; then
             -auto-level -resize 1920x1080! -blur 0x24 +level 30%,70% \) -compose overlay -composite "$SAMPLES/$1.jpg"
     done
 fi
+USER_WALL_A=${WALL_A:-}
 WALL_A=${WALL_A:-$SAMPLES/a.jpg}
 WALL_B=${WALL_B:-$SAMPLES/b.jpg}
 # Speshell itself, from this checkout by default.
@@ -28,17 +30,24 @@ SPESHELL_DIR=${SPESHELL_DIR:-$(cd "$LAB/../.." && pwd)}
 case "$SCENE" in
     launcher) END=$(awk -v c="${CLOSE_AT:-2.2}" -v r="${REOPEN_AT:-0}" -v k="${SPEED:-1}" 'BEGIN { k = k > 0 ? k : 1; print (r > c ? r + 1.6 / k : c + 1.2 / k) }'); CROP="crop=1100:760:410:20," ;;
     wallpaper) END=$(awk -v s="${SWITCH_AT:-0.3}" -v k="${SPEED:-1}" 'BEGIN { k = k > 0 ? k : 1; print s + 2.8 / k }'); CROP="scale=1280:720," ;;
+    dashboard) END=$(awk -v k="${SPEED:-1}" 'BEGIN { k = k > 0 ? k : 1; print 1.6 / k }'); CROP="crop=640:1080:0:0,"
+        # The theme of the same name: its palette, and its wallpaper behind the panel.
+        THEME_INI="$LAB/../themes/$EFFECT/theme.ini"
+        [ -n "$USER_WALL_A" ] || WALL_A=$(ls "$LAB/../themes/$EFFECT/"*.jpg 2>/dev/null | head -1) ;;
+    controls) END=$(awk -v k="${SPEED:-1}" 'BEGIN { k = k > 0 ? k : 1; print 4.4 + 0.6 / k }'); CROP="crop=452:452:0:0,scale=904:904,"
+        THEME_INI="$LAB/../themes/$EFFECT/theme.ini" ;;
     *) echo "unknown scene: $SCENE" >&2; exit 2 ;;
 esac
 
 rm -rf "$OUT" && mkdir -p "$OUT"
 LOG="$LAB/out/$NAME.log"
 EFFECTS_DIR="$LAB/../effects/$EFFECT" SCENE="$LAB/$(echo "$SCENE" | sed 's/./\U&/')Scene.qml" \
-    DURATION="$END" OUT="$OUT" SPEED="${SPEED:-1}" WALL_A="$WALL_A" WALL_B="$WALL_B" SPESHELL_DIR="$SPESHELL_DIR" \
+    DURATION="$END" OUT="$OUT" EVERY_FRAME="${EVERY_FRAME:-}" THEME_INI="${THEME_INI:-}" SPEED="${SPEED:-1}" WALL_A="$WALL_A" WALL_B="$WALL_B" SPESHELL_DIR="$SPESHELL_DIR" \
     QT_FORCE_STDERR_LOGGING=1 timeout 90 quickshell --no-color -p "$LAB/shell.qml" >"$LOG" 2>&1 || true
 grep -E "closingFinished|transition|ERROR|rror:|WARN" "$LOG" | grep -v "window masks" || true
 
-ffmpeg -loglevel error -y -framerate 30 -i "$OUT/%04d.bmp" -vf "${CROP}format=yuv420p" \
+FPS=$([ -n "${EVERY_FRAME:-}" ] && echo 60 || echo 30)
+ffmpeg -loglevel error -y -framerate "$FPS" -i "$OUT/%04d.bmp" -vf "${CROP}format=yuv420p" \
     -c:v libx264 -crf 18 "$LAB/out/$NAME.mp4"
 # Contact strip at fixed moments (seconds) of each scene.
 case "$SCENE" in
@@ -46,8 +55,12 @@ case "$SCENE" in
         TILE="-crop 1100x760+410+20 +repage -resize 30%" ;;
     wallpaper) TIMES=$(awk -v s="${SWITCH_AT:-0.3}" -v k="${SPEED:-1}" 'BEGIN { k = k > 0 ? k : 1; print s + 0.3 / k, s + 0.6 / k, s + 1 / k, s + 1.4 / k, s + 1.9 / k }')
         TILE="-resize 18%" ;;
+    dashboard) TIMES="0.05 0.1 0.15 0.2 0.3 0.6"
+        TILE="-crop 452x1080+0+0 +repage -resize 50%" ;;
+    controls) TIMES="0.6 1.0 1.25 1.6 2.15 2.45 2.95 3.45 4.05 4.45"
+        TILE="-crop 452x452+0+0 +repage" ;;
 esac
-magick $(for t in $TIMES; do printf '%s/%04d.bmp ' "$OUT" "$(awk -v t="$t" 'BEGIN { print int(t * 30 + 0.5) }')"; done) \
+magick $(for t in $TIMES; do printf '%s/%04d.bmp ' "$OUT" "$(awk -v t="$t" -v f="$FPS" 'BEGIN { print int(t * f + 0.5) }')"; done) \
     $TILE +append "$LAB/out/$NAME-strip.png"
 [ -n "${KEEP_FRAMES:-}" ] || rm -rf "$OUT"
 echo "$LAB/out/$NAME.mp4"

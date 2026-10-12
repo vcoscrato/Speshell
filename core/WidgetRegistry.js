@@ -17,14 +17,15 @@ var entries = ({
     nowPlaying:         { source: "../widgets/NowPlaying.qml",         icon: "media", capability: "",                 bang: "media",         label: "Now playing" },
     powerMenu:          { source: "../widgets/PowerMenu.qml",          icon: "power", capability: "",                 bang: "power",         label: "Power menu" },
     settings:           { source: "../widgets/Settings.qml",           icon: "config", capability: "",                bang: "settings",      label: "Settings" },
-    themes:             { source: "../widgets/Themes.qml",             icon: "palette", capability: "",               bang: "themes",        label: "Themes" }
+    themes:             { source: "../widgets/Themes.qml",             icon: "palette", capability: "",               bang: "themes",        label: "Themes" },
+    workspaces:         { source: "../widgets/Workspaces.qml",         icon: "apps", capability: "",                  bang: "workspaces",    label: "Workspaces" }
 });
 
 var aliases = ({ configPanel: "settings" });
 // Extra launcher bangs that open a panel; the entry's own bang stays primary.
 var bangAliases = ({ config: "settings" });
 var primaryPanel = "main";
-var primaryPanelWidgets = ["nowPlaying", "notificationCenter"];
+var primaryPanelWidgets = ["workspaces", "nowPlaying", "notificationCenter"];
 var headerPanel = "clock";
 var sidebarPanels = [
     "audioControl", "audioInputControl", "displayControl", "batteryStatus",

@@ -5,7 +5,8 @@ import "../services" as Services
 import "../services/ThemeProvider.js" as ThemeProvider
 import "../theme" as ThemeModule
 
-// Theme picker: the dashboard counterpart of the launcher's !theme and !wall.
+// Theme picker: the dashboard counterpart of the launcher's !theme and !wall. Its
+// settings, from drawing the wallpaper to effect speeds, are in Settings' Themes page.
 Components.Card {
     id: root
     title: "Themes"
@@ -13,30 +14,27 @@ Components.Card {
 
     property bool presented: false
 
-    readonly property var transitionSpeedOptions: [
-        { value: 0, label: "Off" },
-        { value: 0.5, label: "0.5×" },
-        { value: 1, label: "1×" },
-        { value: 1.5, label: "1.5×" },
-        { value: 2, label: "2×" }
-    ]
-    readonly property var launchShuffleOptions: [
-        { value: "off", label: "Off" },
-        { value: "wallpaper", label: "Wallpaper" },
-        { value: "theme", label: "Theme" },
-        { value: "both", label: "Theme and wallpaper" }
-    ]
     readonly property bool wallpapersShown: Services.ThemeService.wallpaperEnabled
     readonly property var ownWallpapers: Services.ThemeService.wallpapers.filter(function(wallpaper) {
         return wallpaper.theme === Services.ThemeService.themeId;
     })
-
 
     // Pick up theme folders added since the last scan.
     onPresentedChanged: if (root.presented) Services.ThemeService.scan()
     Component.onCompleted: Services.ThemeService.scan()
 
     headerActions: [
+        Components.IconButton {
+            iconName: "config"
+            iconSize: ThemeModule.Theme.iconSizeSmall
+            size: ThemeModule.Theme.controlHeightSmall
+            iconColor: ThemeModule.Theme.subtextBright
+            tooltipText: "Wallpaper and effect settings"
+            onClicked: {
+                Services.DashboardService.settingsPage = "themes";
+                Services.DashboardService.openPanel("settings");
+            }
+        },
         Components.IconButton {
             iconName: "shuffle"
             iconSize: ThemeModule.Theme.iconSizeSmall
@@ -56,39 +54,6 @@ Components.Card {
     Column {
         width: parent.width
         spacing: ThemeModule.Theme.spacingSmall
-
-        Components.SettingRow {
-            label: "Draw wallpaper"
-            info: "Speshell draws the theme's wallpapers as the desktop background. Turn off to use another wallpaper tool."
-
-            Components.ToggleSwitch {
-                checked: root.wallpapersShown
-                tooltipText: "Draw wallpaper"
-                onToggled: function(newState) { Services.ConfigService.setDrawWallpaper(newState); }
-            }
-        }
-
-        Components.SettingRow {
-            label: "Transitions"
-            info: "Speed of the theme's launcher and wallpaper transitions. Off opens the launcher and swaps wallpapers at once."
-
-            Components.SegmentedControl {
-                options: root.transitionSpeedOptions
-                currentValue: Services.EffectsService.speed
-                onValueSelected: function(value) { Services.ConfigService.setTransitionSpeed(value); }
-            }
-        }
-
-        Components.SettingRow {
-            label: "Shuffle at launch"
-            info: "Each time Speshell starts, pick another wallpaper of the theme, another theme, or both at random."
-
-            Components.SelectMenu {
-                options: root.launchShuffleOptions
-                currentValue: Services.ThemeService.launchShuffle
-                onValueSelected: function(value) { Services.ConfigService.setShuffleAtLaunch(value); }
-            }
-        }
 
         Grid {
             id: wallpaperGrid

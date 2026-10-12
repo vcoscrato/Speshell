@@ -13,6 +13,8 @@ Item {
     // The current effects' wallpaper transition; read when a change starts.
     property Component transition: null
     property real timeScale: 1
+    // Frames per second of the effects transition.
+    property int frameRate: 60
     property real pixelRatio: 1
 
     property Image shown: imageA
@@ -114,9 +116,10 @@ Item {
     // with hideSource.
     Loader {
         id: transitionLoader
-        // EffectClock runs at this speed; a transition left running after they are
-        // turned off finishes at normal speed.
+        // EffectClock runs at this speed and frame rate; a transition left running
+        // after transitions are turned off finishes at normal speed.
         property real timeScale: root.timeScale > 0 ? root.timeScale : 1
+        property int frameRate: root.frameRate
         z: 2
         anchors.fill: parent
         active: root.transitionRunning && root.runningTransition !== null

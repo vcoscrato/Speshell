@@ -187,13 +187,18 @@ Singleton {
         return setProperty("Audio", "scrollStep", step);
     }
 
-    // 0 turns transitions off; otherwise a multiple of their normal speed.
     function setShuffleAtLaunch(mode) {
         return setProperty("Appearance", "shuffleAtLaunch", mode);
     }
 
-    function setTransitionSpeed(speed) {
-        return setProperty("Appearance", "transitionSpeed", speed);
+    // The speed of one surface's transitions ("launcher", "dashboard", or "wallpaper"):
+    // a multiple of their normal speed; 0 turns them off.
+    function setTransitionSpeed(surface, speed) {
+        return setProperty("Appearance", surface + "TransitionSpeed", speed);
+    }
+
+    function setTransitionFrameRate(frameRate) {
+        return setProperty("Appearance", "transitionFrameRate", frameRate);
     }
 
     function setDrawWallpaper(enabled) {

@@ -13,6 +13,8 @@ Singleton {
     property string workspaceName: "special:term"
     property bool workspaceVisible: false
     property string errorMessage: ""
+    // A Settings page to show, for when Settings next loads or is showing; it clears this.
+    property string settingsPage: ""
     readonly property var availablePanelNames: root.filterAvailablePanels(
         WidgetRegistry.navigationPanels,
         FeatureSupport.supportsBattery,

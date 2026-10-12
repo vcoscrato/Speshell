@@ -12,6 +12,7 @@ A personal setup first, largely built with AI. Borrow whatever is useful.
 
 ## Features
 
+- Home: each workspace's apps (click to show it under the dashboard), media, notifications
 - Clock, weather, focus timer, calendar
 - Markdown notes and clipboard history
 - Media (MPRIS), audio output and input
@@ -84,9 +85,9 @@ Unknown bangs go to the search engine, so its own bangs work too.
 
 ## Themes
 
-Speshell ships Cosmos (the default) and four elements: Fire, Air, Water, and Earth. Each has a palette, a wallpaper, and launcher and wallpaper effects (see [extras/](extras/README.md)). Pick one in the **Themes** panel or with `!theme`.
+Speshell ships Cosmos (the default) and four elements: Fire, Air, Water, and Earth. Each has a palette, a wallpaper, launcher and wallpaper effects, and a dashboard that enters in its element over a still painted backdrop, with themed slider and switch knobs and small effects as you use them (see [extras/](extras/README.md)). Pick one in the **Themes** panel or with `!theme`.
 
-Set `drawWallpaper = true` under `[Appearance]` to let Speshell draw the desktop background. It is off by default so another wallpaper tool can stay in charge. `transitionSpeed` (0–3, default 1) speeds up or slows down the launcher and wallpaper transitions, and 0 turns them off. `shuffleAtLaunch` picks at random each time Speshell starts: `wallpaper` (another wallpaper of the theme), `theme` (another theme), or `both`; the default is `off`. The Themes panel sets both.
+Set `drawWallpaper = true` under `[Appearance]` to let Speshell draw the desktop background. It is off by default so another wallpaper tool can stay in charge. `launcherTransitionSpeed`, `dashboardTransitionSpeed`, and `wallpaperTransitionSpeed` (0–3, default 1) speed up or slow down each surface's transitions, and 0 turns them off; the dashboard's also paces the effects on its sliders, switches, and choices. `transitionFrameRate` (30–300, default 60) sets their frames per second; match it to your display's refresh rate. `shuffleAtLaunch` picks at random each time Speshell starts: `wallpaper` (another wallpaper of the theme), `theme` (another theme), or `both`; the default is `off`. Settings › Themes sets all of these.
 
 Each theme remembers the wallpaper last set for it, so switching back to a theme brings that wallpaper back; a theme you have not picked a wallpaper for starts with its first.
 

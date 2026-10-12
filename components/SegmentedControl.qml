@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import "../services" as Services
 import "../theme" as ThemeModule
 
 // Mutually exclusive choice among a few short options ({ value, label }).
@@ -119,8 +120,10 @@ Rectangle {
                 hoverEnabled: true
                 cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                 onClicked: {
-                    if (!segment.selected)
-                        root.valueSelected(segment.modelData.value);
+                    if (segment.selected)
+                        return;
+                    Services.EffectsService.picked(segment);
+                    root.valueSelected(segment.modelData.value);
                 }
             }
         }

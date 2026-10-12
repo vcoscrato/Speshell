@@ -1,4 +1,5 @@
 import QtQuick
+import "../services" as Services
 import "../theme" as ThemeModule
 import "." as Components
 
@@ -60,7 +61,11 @@ Item {
         onEntered: root.pointerInside = true
         onExited: root.pointerInside = false
         onCanceled: root.pointerInside = false
-        onClicked: root.activated()
+        onClicked: {
+            if (!root.active)
+                Services.EffectsService.picked(root);
+            root.activated();
+        }
     }
 
     Components.HoverLabel {

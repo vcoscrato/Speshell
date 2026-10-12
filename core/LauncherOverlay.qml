@@ -454,9 +454,10 @@ PanelWindow {
     // a ShaderEffectSource to animate the panel itself. Alive only while the launcher is mapped.
     Loader {
         id: transitionLoader
-        // EffectClock runs at this speed; a transition left running after they are
-        // turned off finishes at normal speed.
-        property real timeScale: Services.EffectsService.speed > 0 ? Services.EffectsService.speed : 1
+        // EffectClock runs at this speed and frame rate; a transition left running
+        // after transitions are turned off finishes at normal speed.
+        property real timeScale: Services.EffectsService.launcherSpeed > 0 ? Services.EffectsService.launcherSpeed : 1
+        property int frameRate: Services.EffectsService.frameRate
         z: 2
         anchors.fill: parent
         active: root.transition !== null && root.presenting

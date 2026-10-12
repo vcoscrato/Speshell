@@ -97,7 +97,6 @@ Item {
         readonly property bool exiting: root.burn > 0 && !root.refill
         readonly property real kindled: exiting ? 0 : root.sweep
         time: clock.simTime
-        timeScale: clock.timeScale
         emit: root.active ? root.simmer * Math.max(0, Math.min(1, (kindled - 0.5) / 0.5)) : 0
         frontFuel: (root.sweep > 0 && root.sweep < 1) || (exiting && root.burn < 1) ? 1 : 0
         panelRect: root.panelRect

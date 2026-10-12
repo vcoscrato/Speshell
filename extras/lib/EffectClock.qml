@@ -1,11 +1,12 @@
 import QtQuick
 
-// Effect clock shared by every effect. Emits `advanced(dt)` about 60 times a second
-// with the elapsed time, and steps `simTime` in fixed 1/60 s increments so
-// simulations look the same on any display refresh rate.
+// Effect clock shared by every effect. Emits `advanced(dt)` about `frameRate` times a
+// second with the elapsed time, and steps `simTime` in fixed 1 / `frameRate` s
+// increments, so the timer's jitter does not show.
 //
-// Time runs at Speshell's transition speed: an ancestor item with a `timeScale`
-// property (Speshell's transition host) scales every step.
+// Time runs at Speshell's transition speed and frame rate: an ancestor item with a
+// `timeScale` property (Speshell's transition host) scales every step, and its
+// `frameRate`, if it has one, sets the tick rate. Otherwise the clock ticks at 60 Hz.
 //
 // Inside the offscreen lab, an ancestor item with a `labTime` property drives the
 // clock instead of the wall clock, so previews are frame-exact however slowly
@@ -13,7 +14,7 @@ import QtQuick
 Item {
     id: root
 
-    readonly property real step: 1 / 60
+    readonly property real step: 1 / root.frameRate
     property real clock: 0
     property real simTime: 0
     property real acc: 0
@@ -30,6 +31,8 @@ Item {
         return null;
     }
     readonly property real timeScale: root.speedHost ? Math.max(0, root.speedHost.timeScale) : 1
+    readonly property int frameRate: root.speedHost && root.speedHost.frameRate !== undefined
+        ? Math.max(1, root.speedHost.frameRate) : 60
 
     readonly property Item labHost: {
         for (var item = root.parent; item; item = item.parent) {
@@ -46,21 +49,38 @@ Item {
             return;
         root.clock += dt;
         root.acc += dt;
-        // Fast speeds take several steps per tick; a long stall drops the backlog.
-        if (root.acc > 8 * root.step)
+        // Fast speeds take several steps per tick; a stall over 8 frames at 60 Hz
+        // drops the backlog.
+        if (root.acc > 8 / 60)
             root.acc = root.step;
-        while (root.acc >= root.step - 1e-6) {
+        // Rounded to whole steps, so a tick a little early still takes its step.
+        while (root.acc >= root.step / 2) {
             root.acc -= root.step;
             root.simTime += root.step;
         }
         root.advanced(dt);
     }
 
+    // Timers fire on whole milliseconds, so each tick aims at the next multiple of the
+    // frame period: intervals alternate (7, 7, 6, ... ms at 144 Hz) and average out.
+    property real nextDue: 0
+
     Timer {
-        interval: 16
+        id: ticker
+        interval: Math.max(1, Math.round(1000 / root.frameRate))
         repeat: true
         running: root.labHost === null
-        onTriggered: root.tick(Date.now() / 1000)
+        onTriggered: {
+            var now = Date.now();
+            var period = 1000 / root.frameRate;
+            // Started, or more than a frame off schedule: restart the schedule now.
+            if (Math.abs(now - root.nextDue) > period)
+                root.nextDue = now;
+            root.nextDue += period;
+            // Before the tick: its handlers may destroy this clock.
+            ticker.interval = Math.max(1, Math.round(root.nextDue - now));
+            root.tick(now / 1000);
+        }
     }
 
     Connections {

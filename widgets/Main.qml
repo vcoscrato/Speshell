@@ -10,6 +10,11 @@ Column {
     width: parent ? parent.width : 0
     spacing: ThemeModule.Theme.spacingXL
 
+    Workspaces {
+        width: parent.width
+        presented: root.presented
+    }
+
     NowPlaying {
         width: parent.width
         presented: root.presented

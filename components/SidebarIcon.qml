@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import "../services" as Services
 import "../theme" as ThemeModule
 import "../core/WidgetRegistry.js" as WidgetRegistry
 import "." as Components
@@ -129,7 +130,11 @@ Rectangle {
         onEntered: root.pointerInside = true
         onExited: root.pointerInside = false
         onCanceled: root.pointerInside = false
-        onClicked: root.activated(root.widgetName)
+        onClicked: {
+            if (!root.active)
+                Services.EffectsService.picked(box);
+            root.activated(root.widgetName);
+        }
         onWheel: function(wheel) {
             root.wheelDelta(wheel.angleDelta.y, root.pointerSecondary)
         }

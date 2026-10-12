@@ -1,6 +1,6 @@
 #version 440
 #extension GL_GOOGLE_include_directive : enable
-// Low-resolution flame simulation. Feeds back into itself every 60 Hz step:
+// Low-resolution flame simulation. Feeds back into itself every step of `dt` s:
 // R = fuel density, G = heat. Velocity is buoyancy plus curl-noise turbulence.
 layout(location = 0) in vec2 qt_TexCoord0;
 layout(location = 0) out vec4 fragColor;

@@ -8,9 +8,10 @@ import Quickshell.Wayland
 // Time is virtual: each rendered frame advances the scene's `labTime` by exactly
 // 1/60 s, and every second frame is captured before time moves on, so the 30 fps
 // output is frame-exact however slow capturing is.
-// Env: SCENE (qml file), DURATION (seconds), OUT (directory). With PERF set, nothing
-// is captured and the mean real frame time is logged instead, from PERF_FROM seconds
-// (at least 0.5 s, past the warm-up of shader compiles and image loads).
+// Env: SCENE (qml file), DURATION (seconds), OUT (directory); EVERY_FRAME captures all
+// 60 frames a second. With PERF set, nothing is captured and the mean real frame time
+// is logged instead, from PERF_FROM seconds (at least 0.5 s, past the warm-up of
+// shader compiles and image loads).
 ShellRoot {
     id: lab
     readonly property real duration: Number(Quickshell.env("DURATION") || 3)
@@ -18,6 +19,8 @@ ShellRoot {
     property int frame: 0
     property bool capturing: false
     readonly property bool perf: Quickshell.env("PERF") !== null && Quickshell.env("PERF") !== ""
+    // Capture all 60 frames a second instead of every second one.
+    readonly property bool everyFrame: Quickshell.env("EVERY_FRAME") !== null && Quickshell.env("EVERY_FRAME") !== ""
     property real perfStart: 0
     readonly property int perfFrom: Math.max(30, Math.round(Number(Quickshell.env("PERF_FROM") || 0) * 60))
 
@@ -47,10 +50,10 @@ ShellRoot {
                 loader.item.labTime = lab.frame / 60;
                 if (lab.frame === lab.perfFrom)
                     lab.perfStart = Date.now();
-                if (lab.perf || lab.frame % 2 !== 0)
+                if (lab.perf || (!lab.everyFrame && lab.frame % 2 !== 0))
                     return;
                 lab.capturing = true;
-                const index = lab.frame / 2;
+                const index = lab.everyFrame ? lab.frame : lab.frame / 2;
                 loader.item.grabToImage(function(result) {
                     result.saveToFile(lab.out + "/" + String(index).padStart(4, "0") + ".bmp");
                     lab.capturing = false;

@@ -9,7 +9,10 @@ TestCase {
         "[Appearance]",
         "drawWallpaper = true",
         "textScale = 1.15",
-        "transitionSpeed = 0.5",
+        "launcherTransitionSpeed = 0.5",
+        "dashboardTransitionSpeed = 2",
+        "wallpaperTransitionSpeed = 0",
+        "transitionFrameRate = 144",
         "shuffleAtLaunch = both",
         "panelWorkspace = special:dash",
         "panelWidth = 600",
@@ -62,7 +65,10 @@ TestCase {
         var result = Config.parseAndValidate(validConfig);
         verify(result.ok, result.errors.length > 0 ? result.errors[0].message : "");
         compare(result.config.textScale, 1.15);
-        compare(result.config.transitionSpeed, 0.5);
+        compare(result.config.launcherTransitionSpeed, 0.5);
+        compare(result.config.dashboardTransitionSpeed, 2);
+        compare(result.config.wallpaperTransitionSpeed, 0);
+        compare(result.config.transitionFrameRate, 144);
         compare(result.config.shuffleAtLaunch, "both");
         compare(result.config.panelWorkspace, "special:dash");
         compare(result.config.panelWidth, 600);
@@ -87,7 +93,10 @@ TestCase {
         var result = Config.parseAndValidate("[Appearance]\n");
         verify(result.ok);
         compare(result.config.textScale, 1.0);
-        compare(result.config.transitionSpeed, 1.0);
+        compare(result.config.launcherTransitionSpeed, 1.0);
+        compare(result.config.dashboardTransitionSpeed, 1.0);
+        compare(result.config.wallpaperTransitionSpeed, 1.0);
+        compare(result.config.transitionFrameRate, 60);
         compare(result.config.shuffleAtLaunch, "off");
         compare(result.config.drawWallpaper, false);
         compare(result.config.panelMargin, 16);
@@ -101,7 +110,8 @@ TestCase {
             { tag: "bad margin", text: "[Appearance]\npanelMargin = -1", message: "Expected a value from 0 to 128" },
             { tag: "bad text scale", text: "[Appearance]\ntextScale = 1.75", message: "Expected a value from 0.8 to 1.5" },
             { tag: "malformed text scale", text: "[Appearance]\ntextScale = large", message: "Expected a number" },
-            { tag: "bad transition speed", text: "[Appearance]\ntransitionSpeed = 4", message: "Expected a value from 0 to 3" },
+            { tag: "bad transition speed", text: "[Appearance]\ndashboardTransitionSpeed = 4", message: "Expected a value from 0 to 3" },
+            { tag: "bad transition frame rate", text: "[Appearance]\ntransitionFrameRate = 301", message: "Expected a value from 30 to 300" },
             { tag: "bad launch shuffle", text: "[Appearance]\nshuffleAtLaunch = always", message: "Expected one of" },
             { tag: "partial integer", text: "[Launcher]\nvisibleRows = 5rows", message: "Expected a whole number" },
             { tag: "bad boolean", text: "[Weather]\nenabled = yes", message: "Expected true or false" },

@@ -76,7 +76,7 @@ clean:
     rm -f effects/*/shaders/*.qsb paintings/*.qsb
     rm -rf lab/out
 
-# Build and install a package from this checkout, uncommitted changes included, and restart Speshell.
+# Build and install a package from this checkout, uncommitted changes included.
 local-package-install:
     #!/bin/sh
     set -e
@@ -88,16 +88,4 @@ local-package-install:
         --exclude='./extras/lab/out' \
         -cf - . | tar -C "$builddir/src/speshell" -xf -
     (cd "$builddir" && makepkg -efsi)
-    if [ -z "${WAYLAND_DISPLAY:-}" ]; then
-        echo "Not in a Wayland session; restart Speshell to load the new package."
-        exit 0
-    fi
-    # A running Speshell keeps the shaders it loaded until it exits, so start a fresh
-    # one. kill fails when none is running; wait until none is.
-    /usr/bin/quickshell kill -p /usr/share/speshell >/dev/null 2>&1 || true
-    for _ in $(seq 50); do
-        /usr/bin/quickshell list -p /usr/share/speshell 2>/dev/null | grep -q '^Instance' || break
-        sleep 0.1
-    done
-    /usr/bin/speshell --no-duplicate --daemonize
-    echo "Started a fresh Speshell."
+    echo "Installed. Restart Speshell to load new shaders."

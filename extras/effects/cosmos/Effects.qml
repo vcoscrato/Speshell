@@ -13,4 +13,20 @@ QtObject {
     readonly property Component wallpaperTransition: Component {
         WallpaperTransition {}
     }
+
+    readonly property Component dashboardTransition: Component {
+        DashboardTransition {}
+    }
+
+    readonly property Component dashboardBackdrop: Component {
+        DashboardBackdrop {}
+    }
+
+    readonly property Component dashboardInteractions: Component {
+        Interactions {}
+    }
+
+    readonly property Component knob: Component {
+        Knob {}
+    }
 }

@@ -20,3 +20,4 @@ singleton MediaService 1.0 MediaService.qml
 singleton DashboardService 1.0 DashboardService.qml
 singleton EffectsService 1.0 EffectsService.qml
 singleton ThemeService 1.0 ThemeService.qml
+singleton WorkspaceService 1.0 WorkspaceService.qml

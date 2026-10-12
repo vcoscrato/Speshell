@@ -69,7 +69,6 @@ Item {
     Flames {
         anchors.fill: parent
         time: clock.simTime
-        timeScale: clock.timeScale
         frontFuel: root.sweep < 1 ? 1 : 0
         panelRect: Qt.rect(0, 0, root.width, root.height)
         origin: root.origin

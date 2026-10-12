@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls as Controls
+import "../services" as Services
 import "../theme" as ThemeModule
 
 Controls.Slider {
@@ -12,6 +13,24 @@ Controls.Slider {
     property real trackHeight: 8
     property real handleSize: 18
     signal wheelAdjusted(real nextValue)
+
+    // Where the knob was when last reported to the theme effects.
+    property real reportedKnobX: 0
+
+    function reportKnob(dx) {
+        if (dx !== 0)
+            Services.EffectsService.knobMoved(root.handle, dx);
+    }
+
+    onPressedChanged: {
+        root.reportedKnobX = root.handle.x;
+        if (!root.pressed)
+            Services.EffectsService.knobReleased(root.handle);
+    }
+    onMoved: {
+        root.reportKnob(root.handle.x - root.reportedKnobX);
+        root.reportedKnobX = root.handle.x;
+    }
 
     from: 0
     to: 100
@@ -30,8 +49,10 @@ Controls.Slider {
             var step = root.stepSize > 0 ? root.stepSize : 5;
             var delta = wheel.angleDelta.y > 0 ? step : -step;
             var newVal = Math.max(root.from, Math.min(root.to, root.value + delta));
-            if (newVal !== root.value)
+            if (newVal !== root.value) {
+                root.reportKnob((newVal - root.value) / (root.to - root.from) * (root.availableWidth - root.handle.width));
                 root.wheelAdjusted(newVal);
+            }
             wheel.accepted = true;
         }
     }
@@ -67,8 +88,8 @@ Controls.Slider {
         width: sliderMouse.containsMouse || root.pressed ? 20 : root.handleSize
         height: sliderMouse.containsMouse || root.pressed ? 20 : root.handleSize
         radius: height / 2
-        color: root.handleColor
-        border.width: 2
+        color: knob.status === Loader.Ready ? "transparent" : root.handleColor
+        border.width: knob.status === Loader.Ready ? 0 : 2
         border.color: root.handleBorderColor
 
         Behavior on width {
@@ -78,6 +99,19 @@ Controls.Slider {
         Behavior on height {
             NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing }
         }
+
+        // The theme effects' knob, when they have one.
+        Loader {
+            id: knob
+            anchors.fill: parent
+            sourceComponent: Services.EffectsService.knob
+        }
+
+        Binding { target: knob.item; property: "theme"; value: ThemeModule.Theme }
+        Binding { target: knob.item; property: "pressed"; value: root.pressed }
+        Binding { target: knob.item; property: "hovered"; value: sliderMouse.containsMouse || root.hovered }
+        Binding { target: knob.item; property: "checked"; value: true }
+        Binding { target: knob.item; property: "travel"; value: root.handle ? root.handle.x : 0 }
 
         MouseArea {
             id: sliderMouse

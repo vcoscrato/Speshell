@@ -15,7 +15,10 @@ ShellRoot {
             return;
         ThemeModule.Theme.textScale = configValue.textScale;
         Services.ThemeService.wallpaperEnabled = configValue.drawWallpaper;
-        Services.EffectsService.speed = configValue.transitionSpeed;
+        Services.EffectsService.launcherSpeed = configValue.launcherTransitionSpeed;
+        Services.EffectsService.dashboardSpeed = configValue.dashboardTransitionSpeed;
+        Services.EffectsService.wallpaperSpeed = configValue.wallpaperTransitionSpeed;
+        Services.EffectsService.frameRate = configValue.transitionFrameRate;
         Services.ThemeService.launchShuffle = configValue.shuffleAtLaunch;
         Services.AudioService.scrollStep = configValue.audioScrollStep;
         Services.WeatherService.location = configValue.weatherLocation;
