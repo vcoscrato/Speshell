@@ -1,35 +1,28 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as Controls
-import Quickshell
 import "../components" as Components
 import "../services" as Services
-import "../services/Shell.js" as Shell
 import "../theme" as ThemeModule
 
 Components.Card {
     id: root
 
-    property bool relaunching: false
     property string activePage: "general"
-    property string weatherLocationDraft: ""
+    // The location being typed; null shows the saved one. Deriving the field from both,
+    // rather than copying the saved value in on change, keeps `dirty` free of a loop.
+    property var weatherLocationEdit: null
 
     readonly property var settingsConfig: Services.ConfigService.config || ({})
     readonly property var launcherConfig: root.settingsConfig.launcher || ({})
     readonly property string savedWeatherLocation: String(root.settingsConfig.weatherLocation || "")
     readonly property bool weatherEnabled: root.settingsConfig.weatherEnabled || false
-    readonly property string configDisplayDir: {
-        var dir = Services.ConfigService.configDir || "~/.config/speshell";
-        var home = String(Quickshell.env("HOME") || "");
-        return home !== "" && dir.indexOf(home) === 0 ? "~" + dir.substring(home.length) : dir;
-    }
 
     readonly property var pages: [
         { id: "general", label: "General", icon: "dashboard" },
         { id: "themes", label: "Themes", icon: "palette" },
         { id: "launcher", label: "Launcher", icon: "search" },
-        { id: "weather", label: "Weather", icon: "cloud" },
-        { id: "advanced", label: "Advanced", icon: "config-file" }
+        { id: "weather", label: "Weather", icon: "cloud" }
     ]
     readonly property var panelWidthOptions: [
         { value: 360, label: "Compact · 360 px" },
@@ -87,20 +80,12 @@ Components.Card {
     readonly property var weatherIssues: Services.FeatureSupport.issues.filter(function(issue) {
         return issue.id.indexOf("weather") === 0;
     })
-    readonly property var configIssues: Services.FeatureSupport.issues.filter(function(issue) {
-        return issue.id.indexOf("weather") !== 0;
-    })
 
     title: "Settings"
     iconName: "config"
 
-    onSavedWeatherLocationChanged: {
-        if (!locationInput.activeFocus)
-            root.weatherLocationDraft = root.savedWeatherLocation;
-    }
     onActivePageChanged: pageEnter.restart()
     Component.onCompleted: {
-        root.weatherLocationDraft = root.savedWeatherLocation;
         root.showRequestedPage();
     }
 
@@ -157,43 +142,13 @@ Components.Card {
             if (options[i].value === value)
                 return info;
         }
-        return info + " Currently " + customLabel + ", set in config.ini.";
+        return info + " Set to " + customLabel + " in config.ini.";
     }
 
     function applyWeatherLocation() {
-        Services.ConfigService.setWeatherLocation(root.weatherLocationDraft.trim());
+        if (root.weatherLocationEdit !== null)
+            Services.ConfigService.setWeatherLocation(root.weatherLocationEdit.trim());
         locationInput.focus = false;
-    }
-
-    function relaunch() {
-        if (root.relaunching || Services.ConfigService.savingConfig)
-            return;
-
-        root.relaunching = true;
-        Services.NotesService.flush(true);
-
-        var shellPath = Quickshell.shellDir !== ""
-            ? Quickshell.shellDir
-            : Quickshell.shellRoot;
-        var command = "launcher=$(readlink -f /proc/" + Quickshell.processId + "/exe 2>/dev/null || command -v quickshell || printf quickshell); "
-            + "while kill -0 " + Quickshell.processId + " 2>/dev/null; do sleep 0.05; done; "
-            + "sleep 0.1; "
-            + "exec \"$launcher\" --daemonize";
-        if (shellPath !== "")
-            command += " -p " + Shell.quote(shellPath);
-
-        Quickshell.execDetached(["sh", "-c", command]);
-        Qt.quit();
-    }
-
-    component SectionHeader: Text {
-        topPadding: ThemeModule.Theme.spacingTiny
-        font.pixelSize: ThemeModule.Theme.fontSizeMicro
-        font.family: ThemeModule.Theme.fontFamily
-        font.bold: true
-        font.letterSpacing: 0.8
-        font.capitalization: Font.AllUppercase
-        color: ThemeModule.Theme.overlay
     }
 
     component Notice: Rectangle {
@@ -428,7 +383,7 @@ Components.Card {
 
                 Components.SettingRow {
                     label: "Text size"
-                    info: "Scales text across the dashboard, launcher, and toasts."
+                    info: "Text size in the dashboard, launcher, and notifications."
 
                     Components.SelectMenu {
                         options: root.textScaleOptions
@@ -454,7 +409,7 @@ Components.Card {
                     readonly property var step: root.configValue(root.settingsConfig, "audioScrollStep", 5)
 
                     label: "Volume scroll step"
-                    info: root.explain("Volume change per wheel notch over the sidebar speaker or microphone.",
+                    info: root.explain("How much one scroll over the sidebar's volume icons changes the volume.",
                         root.scrollStepOptions, step, step + "%")
 
                     Components.SegmentedControl {
@@ -469,7 +424,7 @@ Components.Card {
                     readonly property var count: root.configValue(root.settingsConfig, "maxVisibleNotification", 3)
 
                     label: "Toasts on screen"
-                    info: root.explain("When more arrive, the oldest toast closes first.", root.notificationOptions,
+                    info: root.explain("Notifications shown at once. The oldest closes first.", root.notificationOptions,
                         count, String(count))
 
                     Components.SegmentedControl {
@@ -487,7 +442,7 @@ Components.Card {
 
                 Components.SettingRow {
                     label: "Draw wallpaper"
-                    info: "Speshell draws the theme's wallpapers as the desktop background. Turn off to use another wallpaper tool."
+                    info: "Show the theme's wallpaper on the desktop. Turn off if another app sets your wallpaper."
 
                     Components.ToggleSwitch {
                         checked: Services.ThemeService.wallpaperEnabled
@@ -498,7 +453,7 @@ Components.Card {
 
                 Components.SettingRow {
                     label: "Shuffle at launch"
-                    info: "Each time Speshell starts, pick another wallpaper of the theme, another theme, or both at random."
+                    info: "Pick a random wallpaper, theme, or both each time Speshell starts."
 
                     Components.SelectMenu {
                         options: root.launchShuffleOptions
@@ -509,7 +464,7 @@ Components.Card {
 
                 Components.SettingRow {
                     label: "Effects"
-                    info: "The theme's effects, at this frame rate and at the speeds below: launcher transitions; the dashboard's entrance and its effects on sliders, switches, and choices; wallpaper transitions. Off turns them off. Your display's refresh rate is the most it can show."
+                    info: "How smooth the theme's animations are. The sliders below set how fast each one plays, or turn it off."
 
                     Components.SelectMenu {
                         enabled: Services.EffectsService.transitionsEnabled
@@ -560,7 +515,7 @@ Components.Card {
                     readonly property var rows: root.configValue(root.launcherConfig, "visibleRows", 5)
 
                     label: "Visible results"
-                    info: root.explain("Rows shown before the result list scrolls.", root.launcherRowOptions,
+                    info: root.explain("Results shown before the list scrolls.", root.launcherRowOptions,
                         rows, rows + " rows")
 
                     Components.SegmentedControl {
@@ -583,7 +538,7 @@ Components.Card {
 
                 Components.SettingRow {
                     label: "Web search"
-                    info: "Handles ? queries and bangs Speshell doesn't know. Set a custom search URL in config.ini."
+                    info: "Used for ? searches. Other search engines can be set in config.ini."
 
                     Components.SelectMenu {
                         options: root.searchEngineOptions
@@ -601,7 +556,7 @@ Components.Card {
 
                 Components.SettingRow {
                     label: "Show weather"
-                    info: "Shown beside the clock. Fetched from wttr.in with curl."
+                    info: "Show the weather next to the clock."
 
                     Components.ToggleSwitch {
                         checked: root.weatherEnabled
@@ -613,7 +568,7 @@ Components.Card {
                 Components.SettingRow {
                     enabled: root.weatherEnabled
                     label: "Location"
-                    info: "A city or place name. Leave empty to estimate it from your IP address."
+                    info: "A city name. Leave empty to detect it automatically."
 
                     Rectangle {
                         implicitWidth: 180
@@ -627,14 +582,15 @@ Components.Card {
                         TextInput {
                             id: locationInput
 
-                            readonly property bool dirty: root.weatherLocationDraft.trim() !== root.savedWeatherLocation
+                            readonly property bool dirty: root.weatherLocationEdit !== null
+                                && root.weatherLocationEdit.trim() !== root.savedWeatherLocation
 
                             anchors.left: parent.left
                             anchors.leftMargin: ThemeModule.Theme.spacingSmall
                             anchors.right: applyLocation.visible ? applyLocation.left : parent.right
                             anchors.rightMargin: ThemeModule.Theme.spacingSmall
                             anchors.verticalCenter: parent.verticalCenter
-                            text: root.weatherLocationDraft
+                            text: root.weatherLocationEdit !== null ? root.weatherLocationEdit : root.savedWeatherLocation
                             color: ThemeModule.Theme.text
                             selectionColor: ThemeModule.Theme.accent
                             selectedTextColor: ThemeModule.Theme.bg
@@ -642,10 +598,10 @@ Components.Card {
                             font.family: ThemeModule.Theme.fontFamily
                             clip: true
                             Accessible.name: "Weather location"
-                            onTextEdited: root.weatherLocationDraft = text
+                            onTextEdited: root.weatherLocationEdit = text
                             onAccepted: root.applyWeatherLocation()
                             Keys.onEscapePressed: {
-                                root.weatherLocationDraft = root.savedWeatherLocation;
+                                root.weatherLocationEdit = null;
                                 locationInput.focus = false;
                             }
 
@@ -682,114 +638,6 @@ Components.Card {
 
                         heading: modelData.title
                         detail: modelData.detail
-                    }
-                }
-            }
-
-            Column {
-                width: parent.width
-                spacing: ThemeModule.Theme.spacingSmall
-                visible: root.activePage === "advanced"
-
-                SectionHeader { text: "Config file" }
-
-                Item {
-                    width: parent.width
-                    height: Math.max(ThemeModule.Theme.controlHeight, fileText.implicitHeight)
-
-                    Components.AppIcon {
-                        id: fileIcon
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
-                        name: "config-file"
-                        size: ThemeModule.Theme.iconSizeLarge
-                        iconColor: ThemeModule.Theme.accent
-                    }
-
-                    Column {
-                        id: fileText
-                        anchors.left: fileIcon.right
-                        anchors.leftMargin: ThemeModule.Theme.spacingSmall
-                        anchors.right: fileActions.left
-                        anchors.rightMargin: ThemeModule.Theme.spacingSmall
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 0
-
-                        Row {
-                            spacing: ThemeModule.Theme.spacingMicro
-
-                            Text {
-                                text: "config.ini"
-                                font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                                font.family: ThemeModule.Theme.fontFamily
-                                font.bold: true
-                                color: ThemeModule.Theme.text
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-
-                            Components.InfoTip {
-                                text: "Saved edits apply right away. Panel margin, the backlight device, the audio "
-                                    + "panel mode and device mappings, custom bangs and search URLs, the workspace, "
-                                    + "and power commands are only set here."
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-                        }
-
-                        Text {
-                            width: parent.width
-                            text: root.configDisplayDir
-                            font.pixelSize: ThemeModule.Theme.fontSizeCaption
-                            font.family: ThemeModule.Theme.fontFamily
-                            color: ThemeModule.Theme.subtext
-                            elide: Text.ElideMiddle
-                        }
-                    }
-
-                    Row {
-                        id: fileActions
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: ThemeModule.Theme.spacingTiny
-
-                        Components.ActionButton {
-                            label: "Edit"
-                            iconName: "notes"
-                            enabled: !Services.ConfigService.savingConfig
-                            onActivated: Services.ConfigService.openConfig()
-                        }
-
-                        Components.ActionButton {
-                            label: Services.ConfigService.loading ? "Loading" : "Reload"
-                            iconName: "refresh"
-                            enabled: !Services.ConfigService.loading && !Services.ConfigService.savingConfig
-                            onActivated: Services.ConfigService.load()
-                        }
-                    }
-                }
-
-                Repeater {
-                    model: root.configIssues
-
-                    delegate: Notice {
-                        required property var modelData
-
-                        heading: modelData.title
-                        detail: modelData.detail
-                    }
-                }
-
-                SectionHeader { text: "Runtime" }
-
-                Components.SettingRow {
-                    label: "Relaunch Speshell"
-                    info: "Restarts the shell process. Notes are saved first."
-
-                    Components.ActionButton {
-                        label: root.relaunching ? "Starting" : "Relaunch"
-                        iconName: "restart"
-                        toneColor: ThemeModule.Theme.warning
-                        enabled: !root.relaunching && !Services.ConfigService.savingConfig
-                        onActivated: root.relaunch()
                     }
                 }
             }

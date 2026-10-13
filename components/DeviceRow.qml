@@ -4,197 +4,136 @@ import QtQuick
 import "../theme" as ThemeModule
 import "." as Components
 
+// A device or network: an icon disc, a title over a detail line, and action chips.
+// `current` marks the active connection; `busy` spins the icon while it changes.
 Rectangle {
     id: root
 
     property string title: ""
     property string subtitle: ""
-    property string leadingIconName: ""
-    property int signalLevel: -1
-    property bool showLock: false
-    property var badges: [] // [{text:"Known", tone:"success"}]
-
+    property color subtitleColor: ThemeModule.Theme.subtext
+    property string iconName: ""
+    property bool current: false
+    property bool busy: false
     property bool primaryEnabled: true
-    property var actionChips: [] // [{text,tone,armed,enabled,actionId}]
-    property bool controlsBelow: false
+    property var actionChips: [] // [{text, tone, enabled, actionId}]
 
-    property bool expanded: false
     default property alias expandedContent: expandedColumn.data
 
     signal primaryTriggered()
     signal actionTriggered(string actionId)
 
-    function itemCount(items) {
-        return items ? items.length : 0;
-    }
-
-    function signalIconName() {
-        if (signalLevel < 0) return "";
-        if (signalLevel > 75) return "wifi";
-        if (signalLevel > 50) return "wifi-medium";
-        if (signalLevel > 25) return "wifi-low";
-        return "wifi-empty";
-    }
+    // The spinner stops wherever it is; set the icon upright again.
+    onBusyChanged: if (!root.busy) statusIcon.rotation = 0
 
     width: parent ? parent.width : 300
-    radius: ThemeModule.Theme.borderRadiusSmall
-    color: rowMouse.containsMouse ? ThemeModule.Theme.cardHover : "transparent"
     implicitHeight: contentColumn.implicitHeight + ThemeModule.Theme.spacingSmall * 2
+    radius: ThemeModule.Theme.borderRadiusSmall
+    color: root.current
+        ? ThemeModule.Theme.selectedFill
+        : (rowMouse.containsMouse && root.primaryEnabled ? ThemeModule.Theme.controlFill : "transparent")
+    border.width: ThemeModule.Theme.borderWidth
+    border.color: root.current ? ThemeModule.Theme.selectedBorder : "transparent"
 
     Accessible.role: Accessible.Button
     Accessible.name: root.title
     Accessible.description: root.subtitle
     Accessible.onPressAction: if (root.primaryEnabled) root.primaryTriggered()
 
-    readonly property bool hasControls: root.itemCount(root.badges) > 0 || root.itemCount(root.actionChips) > 0
-    readonly property bool hasLeadingVisual: root.leadingIconName !== ""
-    readonly property real leadingVisualWidth: root.leadingIconName !== "" ? leadingAppIcon.width : 0
-
     MouseArea {
         id: rowMouse
         anchors.fill: parent
         hoverEnabled: true
+        enabled: root.primaryEnabled
         cursorShape: root.primaryEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-        onClicked: {
-            if (root.primaryEnabled)
-                root.primaryTriggered();
-        }
+        onClicked: root.primaryTriggered()
     }
 
     Column {
         id: contentColumn
-        z: 1
-        anchors.fill: parent
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
         anchors.margins: ThemeModule.Theme.spacingSmall
         spacing: ThemeModule.Theme.spacingSmall
 
-        Row {
+        Item {
             width: parent.width
-            spacing: ThemeModule.Theme.spacingSmall
+            height: Math.max(iconDisc.height, textColumn.implicitHeight)
 
-            Components.AppIcon {
-                id: leadingAppIcon
-                name: root.leadingIconName
-                size: ThemeModule.Theme.iconSizeMedium
-                iconColor: ThemeModule.Theme.text
+            Rectangle {
+                id: iconDisc
+                anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
-                visible: root.leadingIconName !== ""
-            }
+                width: ThemeModule.Theme.controlHeight
+                height: width
+                radius: width / 2
+                color: ThemeModule.Theme.alpha(root.current ? ThemeModule.Theme.accent : ThemeModule.Theme.overlay,
+                    root.current ? ThemeModule.Theme.tintStrong : ThemeModule.Theme.tintSubtle)
 
-            Components.AppIcon {
-                id: signalLevelText
-                name: root.signalIconName()
-                size: ThemeModule.Theme.iconSizeMedium
-                iconColor: ThemeModule.Theme.accent
-                anchors.verticalCenter: parent.verticalCenter
-                visible: root.signalLevel >= 0
-            }
+                Components.AppIcon {
+                    id: statusIcon
+                    anchors.centerIn: parent
+                    name: root.busy ? "loader" : root.iconName
+                    size: ThemeModule.Theme.iconSizeMedium
+                    iconColor: root.current || root.busy ? ThemeModule.Theme.accent : ThemeModule.Theme.subtextBright
 
-            Text {
-                id: titleText
-                text: root.title
-                font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                font.family: ThemeModule.Theme.fontFamily
-                font.bold: true
-                color: ThemeModule.Theme.text
-                anchors.verticalCenter: parent.verticalCenter
-                elide: Text.ElideRight
-                width: root.controlsBelow
-                    ? Math.max(40, Math.min(implicitWidth, parent.width * 0.46))
-                    : Math.max(40, parent.width - subtitleText.implicitWidth - rightActions.implicitWidth
-                        - (root.hasLeadingVisual ? root.leadingVisualWidth + ThemeModule.Theme.spacingSmall : 0)
-                        - (root.signalLevel >= 0 ? signalLevelText.implicitWidth + ThemeModule.Theme.spacingSmall : 0)
-                        - (root.showLock ? lockText.implicitWidth + ThemeModule.Theme.spacingSmall : 0)
-                        - ThemeModule.Theme.spacingSmall * 4)
-            }
-
-            Components.AppIcon {
-                id: lockText
-                name: "lock"
-                size: ThemeModule.Theme.iconSizeTiny
-                iconColor: ThemeModule.Theme.subtext
-                anchors.verticalCenter: parent.verticalCenter
-                visible: root.showLock
-            }
-
-            Text {
-                id: subtitleText
-                text: root.subtitle
-                font.pixelSize: ThemeModule.Theme.fontSizeCaption
-                font.family: ThemeModule.Theme.fontFamily
-                color: ThemeModule.Theme.subtext
-                anchors.verticalCenter: parent.verticalCenter
-                visible: text !== ""
-                elide: Text.ElideRight
-                width: root.controlsBelow
-                    ? Math.max(0, parent.width - titleText.width
-                        - (root.hasLeadingVisual ? root.leadingVisualWidth + ThemeModule.Theme.spacingSmall : 0)
-                        - (root.signalLevel >= 0 ? signalLevelText.implicitWidth + ThemeModule.Theme.spacingSmall : 0)
-                        - (root.showLock ? lockText.implicitWidth + ThemeModule.Theme.spacingSmall : 0)
-                        - ThemeModule.Theme.spacingSmall * 4)
-                    : implicitWidth
-            }
-
-            Item { width: 1; height: 1 }
-
-            Row {
-                id: rightActions
-                spacing: ThemeModule.Theme.spacingTiny
-                anchors.verticalCenter: parent.verticalCenter
-                visible: !root.controlsBelow && root.hasControls
-
-                Repeater {
-                    model: root.badges
-                    delegate: Components.StatusBadge {
-                        id: inlineBadge
-                        required property var modelData
-                        text: inlineBadge.modelData.text || ""
-                        tone: inlineBadge.modelData.tone || "neutral"
+                    RotationAnimator on rotation {
+                        from: 0
+                        to: 360
+                        duration: 1200
+                        loops: Animation.Infinite
+                        running: root.busy && root.visible
                     }
                 }
+            }
+
+            Column {
+                id: textColumn
+                anchors.left: iconDisc.right
+                anchors.leftMargin: ThemeModule.Theme.spacingMedium
+                anchors.right: chipRow.left
+                anchors.rightMargin: chipRow.width > 0 ? ThemeModule.Theme.spacingSmall : 0
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: ThemeModule.Theme.spacingMicro
+
+                Text {
+                    width: parent.width
+                    text: root.title
+                    font.pixelSize: ThemeModule.Theme.fontSizeNormal
+                    font.family: ThemeModule.Theme.fontFamily
+                    font.weight: root.current ? Font.DemiBold : Font.Medium
+                    color: ThemeModule.Theme.text
+                    elide: Text.ElideRight
+                }
+
+                Text {
+                    width: parent.width
+                    text: root.subtitle
+                    font.pixelSize: ThemeModule.Theme.fontSizeCaption
+                    font.family: ThemeModule.Theme.fontFamily
+                    color: root.subtitleColor
+                    elide: Text.ElideRight
+                    visible: text !== ""
+                }
+            }
+
+            Row {
+                id: chipRow
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: ThemeModule.Theme.spacingTiny
 
                 Repeater {
                     model: root.actionChips
                     delegate: Components.InlineActionChip {
-                        id: inlineAction
+                        id: chip
                         required property var modelData
-                        visible: true
-                        text: inlineAction.modelData.text || ""
-                        tone: inlineAction.modelData.tone || "neutral"
-                        armed: !!inlineAction.modelData.armed
-                        enabled: inlineAction.modelData.enabled !== false
-                        onActivated: root.actionTriggered(inlineAction.modelData.actionId || "")
+                        text: chip.modelData.text || ""
+                        tone: chip.modelData.tone || "neutral"
+                        enabled: chip.modelData.enabled !== false
+                        onActivated: root.actionTriggered(chip.modelData.actionId || "")
                     }
-                }
-            }
-        }
-
-        Flow {
-            visible: root.controlsBelow && root.hasControls
-            width: parent.width
-            spacing: ThemeModule.Theme.spacingTiny
-
-            Repeater {
-                model: root.badges
-                delegate: Components.StatusBadge {
-                    id: bottomBadge
-                    required property var modelData
-                    text: bottomBadge.modelData.text || ""
-                    tone: bottomBadge.modelData.tone || "neutral"
-                }
-            }
-
-            Repeater {
-                model: root.actionChips
-                delegate: Components.InlineActionChip {
-                    id: bottomAction
-                    required property var modelData
-                    visible: true
-                    text: bottomAction.modelData.text || ""
-                    tone: bottomAction.modelData.tone || "neutral"
-                    armed: !!bottomAction.modelData.armed
-                    enabled: bottomAction.modelData.enabled !== false
-                    onActivated: root.actionTriggered(bottomAction.modelData.actionId || "")
                 }
             }
         }
@@ -203,8 +142,6 @@ Rectangle {
             id: expandedColumn
             width: parent.width
             spacing: ThemeModule.Theme.spacingSmall
-            visible: root.expanded
         }
     }
-
 }

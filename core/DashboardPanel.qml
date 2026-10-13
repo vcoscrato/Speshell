@@ -1,6 +1,7 @@
 // qmllint disable uncreatable-type unqualified unresolved-type
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Wayland
 import "../services" as Services
 import "../theme" as ThemeModule
@@ -17,6 +18,11 @@ PanelWindow {
     property Component entrance: null
     // Untyped, for the API property only entrances have.
     readonly property var entranceItem: entranceLoader.item
+    // Hyprland gives a mapping on-demand layer no focus while the focused window holds
+    // a pointer lock or confinement, as games do, and that window then keeps the
+    // pointer. So the panel maps exclusive, which takes focus and releases the
+    // constraint, and drops to on-demand once mapped so windows can take focus again.
+    property bool focusTaken: false
     readonly property int panelMargin: root.config && root.config.panelMargin !== undefined
         ? Math.max(0, root.config.panelMargin)
         : 16
@@ -36,7 +42,9 @@ PanelWindow {
 
     WlrLayershell.namespace: "speshell-dashboard"
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: root.visible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: !root.visible
+        ? WlrKeyboardFocus.None
+        : (root.focusTaken ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.Exclusive)
 
     anchors {
         left: true
@@ -54,6 +62,9 @@ PanelWindow {
     // qmllint enable missing-property
 
     onVisibleChanged: {
+        root.focusTaken = false;
+        if (root.visible)
+            focusReleaseTimer.restart();
         root.endEntrance();
         root.entrance = root.visible ? Services.EffectsService.dashboardTransition : null;
         if (root.entrance)
@@ -68,6 +79,23 @@ PanelWindow {
         if (root.entranceItem)
             root.entranceItem.panel = null;
         root.entrance = null;
+    }
+
+    Connections {
+        target: Hyprland
+        enabled: root.visible && !root.focusTaken
+
+        function onRawEvent(event) {
+            if (event.name === "openlayer" && event.data === "speshell-dashboard")
+                root.focusTaken = true;
+        }
+    }
+
+    // Bounds the exclusive grab if the openlayer event never arrives.
+    Timer {
+        id: focusReleaseTimer
+        interval: 1000
+        onTriggered: root.focusTaken = true
     }
 
     Dashboard {

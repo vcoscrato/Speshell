@@ -15,6 +15,8 @@ Components.Card {
     visible: Services.FeatureSupport.supportsDisplayControl
 
     property bool presented: false
+    // With one display there is nothing to arrange, so the map and picker step aside.
+    readonly property bool multiple: Services.DisplayService.draftMonitors.length > 1
     readonly property bool busy: Services.DisplayService.displayEditingLocked
     readonly property var selectedMonitor: Services.DisplayService.monitorByName(
         Services.DisplayService.draftMonitors,
@@ -88,7 +90,8 @@ Components.Card {
         return "neutral";
     }
 
-    function statusText() {
+    // What needs attention; "" when the displays are just as reported.
+    function noticeText() {
         if (Services.DisplayService.errorText !== "") {
             return Services.DisplayService.errorText;
         }
@@ -110,9 +113,12 @@ Components.Card {
         if (Services.DisplayService.monitors.length === 0) {
             return "No displays reported by Hyprland.";
         }
+        return "";
+    }
 
-        return Services.DisplayService.draftActiveMonitors.length + " active / "
-            + Services.DisplayService.draftMonitors.length + " detected";
+    function statusText() {
+        return root.noticeText() || (Services.DisplayService.draftActiveMonitors.length + " active / "
+            + Services.DisplayService.draftMonitors.length + " detected");
     }
 
     function positionLabel() {
@@ -173,7 +179,7 @@ Components.Card {
         Components.RefreshButton {
             active: root.busy
             enabled: !root.busy
-            tooltipText: root.busy ? "Display refresh is busy" : "Refresh displays"
+            tooltipText: root.busy ? "Refreshing displays" : "Refresh displays"
             onClicked: Services.DisplayService.refresh()
         }
     }
@@ -186,11 +192,11 @@ Components.Card {
             id: statusRow
             width: parent.width
             spacing: ThemeModule.Theme.spacingSmall
-            visible: Services.DisplayService.monitors.length > 0 || root.statusText() !== ""
+            visible: root.multiple || root.noticeText() !== ""
 
             Components.StatusBadge {
                 id: layoutBadge
-                visible: Services.DisplayService.monitors.length > 0
+                visible: root.multiple
                 text: root.layoutLabel(Services.DisplayService.draftLayoutMode)
                 tone: root.layoutTone(Services.DisplayService.draftLayoutMode)
                 anchors.verticalCenter: parent.verticalCenter
@@ -199,7 +205,7 @@ Components.Card {
             Text {
                 width: Math.max(0, statusRow.width
                     - (layoutBadge.visible ? layoutBadge.width + statusRow.spacing : 0))
-                text: root.statusText()
+                text: root.multiple ? root.statusText() : root.noticeText()
                 font.pixelSize: ThemeModule.Theme.fontSizeSmall
                 font.family: ThemeModule.Theme.fontFamily
                 color: Services.DisplayService.errorText !== ""
@@ -279,7 +285,7 @@ Components.Card {
             id: displayMap
             width: parent.width
             height: 148
-            visible: Services.DisplayService.monitors.length > 0
+            visible: root.multiple
             radius: ThemeModule.Theme.borderRadiusSmall
             color: ThemeModule.Theme.controlFill
             border.width: ThemeModule.Theme.borderWidth
@@ -364,7 +370,7 @@ Components.Card {
             id: displayPicker
             width: parent.width
             spacing: ThemeModule.Theme.spacingSmall
-            visible: Services.DisplayService.draftMonitors.length > 0
+            visible: root.multiple
 
             Repeater {
                 model: Services.DisplayService.draftMonitors
@@ -459,7 +465,8 @@ Components.Card {
                     }
 
                     Column {
-                        width: Math.max(40, parent.width - ThemeModule.Theme.iconSizeMedium - outputSwitch.width - ThemeModule.Theme.spacingSmall * 2)
+                        width: Math.max(40, parent.width - ThemeModule.Theme.iconSizeMedium - ThemeModule.Theme.spacingSmall
+                            - (outputSwitch.visible ? outputSwitch.width + ThemeModule.Theme.spacingSmall : 0))
                         spacing: ThemeModule.Theme.spacingMicro
                         anchors.verticalCenter: parent.verticalCenter
 
@@ -486,6 +493,7 @@ Components.Card {
 
                     Components.ToggleSwitch {
                         id: outputSwitch
+                        visible: root.multiple
                         checked: root.selectedEnabled
                         enabled: root.selectedMonitor !== null
                             && !root.busy
@@ -500,7 +508,7 @@ Components.Card {
 
                 Components.SelectRow {
                     id: layoutRow
-                    visible: Services.DisplayService.draftMonitors.length > 1
+                    visible: root.multiple
                     enabled: !root.busy
                     label: "Layout"
                     value: root.layoutLabel(Services.DisplayService.draftLayoutMode)
@@ -532,7 +540,7 @@ Components.Card {
 
                 Components.SelectRow {
                     id: positionRow
-                    visible: Services.DisplayService.draftMonitors.length > 1
+                    visible: root.multiple
                     enabled: root.canPositionSelected && !root.busy
                     label: "Position"
                     value: root.positionLabel()

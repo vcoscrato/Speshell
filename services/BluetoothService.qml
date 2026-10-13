@@ -27,6 +27,28 @@ Singleton {
         discoveryTimeout.stop();
     }
 
+    // BlueZ names a device's class with a freedesktop icon name; map it to ours.
+    function deviceIcon(device) {
+        var icon = String(device && device.icon || "");
+        if (icon.indexOf("audio-head") === 0)
+            return "device-headphones";
+        if (icon.indexOf("audio") === 0)
+            return "device-speaker";
+        if (icon === "input-gaming")
+            return "device-gamepad";
+        if (icon === "input-keyboard")
+            return "device-keyboard";
+        if (icon === "input-mouse" || icon === "input-tablet")
+            return "device-mouse";
+        if (icon === "phone")
+            return "device-phone";
+        if (icon === "computer")
+            return "device-laptop";
+        if (icon.indexOf("watch") >= 0)
+            return "device-watch";
+        return "bluetooth";
+    }
+
     function toggleDiscovery() {
         if (root.scanning)
             root.stopDiscovery();

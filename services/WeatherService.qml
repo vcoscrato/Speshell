@@ -8,29 +8,52 @@ Singleton {
     id: root
 
     property bool enabled: false
-    property string currentWeatherStr: ""
+    // "", "loading", "ready", or "offline" (no answer; retried soon).
+    property string status: ""
+    property string temperature: ""
+    property string condition: ""
+    property string iconName: "weather-cloudy"
     property string location: ""
     property bool fetchQueued: false
 
-    function normalizeWeatherText(text, exitCode, errorText) {
-        var trimmed = (text || "").trim();
-        var error = (errorText || "").trim().toLowerCase();
+    // wttr.in's plain-text condition symbols (format %x), by icon name.
+    readonly property var symbolIcons: ({
+        "o": "weather-clear",
+        "m": "weather-cloudy", "mm": "weather-cloudy", "mmm": "weather-cloudy",
+        "=": "weather-fog",
+        "/": "weather-rain", "//": "weather-rain", "///": "weather-rain", ".": "weather-rain",
+        "x": "weather-rain", "x/": "weather-rain",
+        "*": "weather-snow", "**": "weather-snow", "*/": "weather-snow", "*/*": "weather-snow",
+        "!/": "weather-storm", "/!/": "weather-storm", "*!*": "weather-storm"
+    })
 
-        if (exitCode === 0 && trimmed.length > 0
-                && !trimmed.includes("Sorry")
-                && !trimmed.includes("Unknown")) {
-            return trimmed;
-        }
+    function secondsOfDay(clock) {
+        var parts = String(clock || "").split(":");
+        if (parts.length < 2)
+            return -1;
+        return Number(parts[0]) * 3600 + Number(parts[1]) * 60 + Number(parts[2] || 0);
+    }
 
-        if (error.indexOf("command not found") !== -1 || error.indexOf("not found") !== -1) {
-            return "Weather unavailable";
-        }
-
-        if (exitCode !== 0 || trimmed === "") {
-            return "Weather offline";
-        }
-
-        return "Weather unavailable";
+    // Parses the "symbol|temperature|sunrise|sunset|condition" answer, or returns null
+    // when wttr.in answered with an error. A clear sky outside sunrise..sunset shows
+    // the night icon.
+    function parse(text) {
+        var fields = String(text || "").trim().split("|");
+        if (fields.length < 5 || !/\d/.test(fields[1]))
+            return null;
+        var icon = root.symbolIcons[fields[0].trim()] || "weather-cloudy";
+        var now = new Date();
+        var seconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+        var sunrise = root.secondsOfDay(fields[2]);
+        var sunset = root.secondsOfDay(fields[3]);
+        if (icon === "weather-clear" && sunrise >= 0 && sunset >= 0
+                && (seconds < sunrise || seconds >= sunset))
+            icon = "weather-night";
+        return {
+            icon: icon,
+            temperature: fields[1].trim().replace(/^\+/, ""),
+            condition: fields[4].trim()
+        };
     }
 
     Timer {
@@ -57,13 +80,13 @@ Singleton {
 
     onEnabledChanged: {
         if (root.enabled) {
-            root.currentWeatherStr = "Loading...";
+            root.status = "loading";
             root.fetchWeather();
         } else {
             root.fetchQueued = false;
             retryTimer.stop();
             weatherProc.running = false;
-            root.currentWeatherStr = "";
+            root.status = "";
         }
     }
 
@@ -72,7 +95,7 @@ Singleton {
             return;
         if (!weatherProc.running) {
             const loc = String(root.location || "").trim();
-            const url = "https://wttr.in/" + (loc !== "" ? encodeURIComponent(loc) : "") + "?format=%c+%t+%l";
+            const url = "https://wttr.in/" + (loc !== "" ? encodeURIComponent(loc) : "") + "?format=%x|%t|%S|%s|%C";
             weatherProc.command = ["curl", "-fsS", "--proto", "=https", "--max-time", "8", url];
             weatherProc.running = true;
         } else {
@@ -85,12 +108,10 @@ Singleton {
         running: false
 
         property string output: ""
-        property string errorOutput: ""
 
         onRunningChanged: {
             if (running) {
                 weatherProc.output = "";
-                weatherProc.errorOutput = "";
             }
         }
 
@@ -100,19 +121,20 @@ Singleton {
             }
         }
 
-        stderr: SplitParser {
-            onRead: function(data) {
-                weatherProc.errorOutput += data;
-            }
-        }
-
         onExited: function(exitCode) {
             var text = weatherProc.output.trim();
-            var errorText = weatherProc.errorOutput.trim();
             weatherProc.output = "";
-            weatherProc.errorOutput = "";
-            root.currentWeatherStr = root.normalizeWeatherText(text, exitCode, errorText);
-            if (exitCode !== 0 && root.enabled)
+            var weather = exitCode === 0 ? root.parse(text) : null;
+            if (weather) {
+                root.iconName = weather.icon;
+                root.temperature = weather.temperature;
+                root.condition = weather.condition;
+                root.status = "ready";
+            } else if (root.status !== "ready") {
+                // Keep the last reading through a failed refresh.
+                root.status = "offline";
+            }
+            if (!weather && root.enabled)
                 retryTimer.restart();
             else
                 retryTimer.stop();

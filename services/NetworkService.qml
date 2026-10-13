@@ -15,7 +15,8 @@ Singleton {
     property double cacheUpdatedAtMs: 0
     property double nowMs: Date.now()
     property int networkListRevision: 0
-    property bool nearbyExpanded: true
+    // Whether the user scanned this session, so an empty list can say what it means.
+    property bool scanRequested: false
 
     // ── Native API helpers ──
     function findWifiDevice() {
@@ -167,20 +168,24 @@ Singleton {
         return root.connectedWifi ? root.networkKey(root.connectedWifi) : "";
     }
 
+    // One row per network name: a snapshot taken before NetworkManager reported a
+    // network's security has another key, so names, not keys, decide what repeats.
     function buildDisplayedNetworks() {
-        var result = [];
+        var byName = {};
         var connectedKey = root.connectedNetworkKey();
+        var connectedName = root.connectedWifi ? root.connectedWifi.name : "";
         var now = root.nowMs;
         var revision = root.networkListRevision;
 
         for (var i = 0; i < root.cachedNetworks.length; i++) {
             var cached = root.cachedNetworks[i];
-            if (!cached || cached.key === connectedKey || now - cached.lastSeenMs > root.cacheMaxAgeMs) {
+            if (!cached || cached.key === connectedKey || now - cached.lastSeenMs > root.cacheMaxAgeMs
+                    || (connectedName !== "" && cached.name === connectedName)) {
                 continue;
             }
 
             var liveNetwork = root.findLiveNetwork(cached);
-            result.push({
+            var item = {
                 key: cached.key,
                 name: cached.name,
                 signalStrength: liveNetwork ? Number(liveNetwork.signalStrength) || 0 : cached.signalStrength,
@@ -191,9 +196,15 @@ Singleton {
                 network: liveNetwork || null,
                 live: liveNetwork !== null,
                 lastSeenMs: cached.lastSeenMs
-            });
+            };
+            var seen = byName[item.name];
+            if (!seen || (item.live && !seen.live) || (item.live === seen.live && item.signalLevel > seen.signalLevel))
+                byName[item.name] = item;
         }
 
+        var result = [];
+        for (var name in byName)
+            result.push(byName[name]);
         return root.sortNetworks(result);
     }
 
@@ -212,14 +223,17 @@ Singleton {
         return Math.floor(elapsed / 60000) + "m ago";
     }
 
-    function networkListStatusText() {
-        if (root.isScanning) {
-            return root.displayedNetworks.length > 0 ? "Refreshing nearby networks." : "Looking for nearby networks.";
-        }
-        if (root.cacheUpdatedAtMs > 0) {
-            return "Last refreshed " + root.cacheAgeText() + ".";
-        }
+    // The nearby list's status, beside its title.
+    function nearbyStatusText() {
+        if (root.isScanning)
+            return "Scanning…";
+        if (root.cacheUpdatedAtMs > 0 && (root.scanRequested || root.displayedNetworks.length > 0))
+            return "Updated " + root.cacheAgeText();
         return "";
+    }
+
+    function isOpen(security) {
+        return security === WifiSecurityType.Open || security === WifiSecurityType.Owe;
     }
 
     function networkSubtitle(item) {
@@ -227,9 +241,24 @@ Singleton {
             return "";
         }
         if (item.stateChanging) {
-            return "Connecting...";
+            return "Connecting…";
         }
-        return "";
+        var parts = [];
+        if (item.known)
+            parts.push("Saved");
+        parts.push(root.isOpen(item.security) ? "Open" : "Secured");
+        parts.push(item.signalLevel + "%");
+        if (!item.live)
+            parts.push("out of range");
+        return parts.join(" · ");
+    }
+
+    function connectedSubtitle() {
+        var network = root.connectedWifi;
+        if (!network)
+            return "";
+        return ["Connected", root.isOpen(network.security) ? "Open" : "Secured",
+                root.signalPercent(network.signalStrength) + "%"].join(" · ");
     }
 
     function onNetworkItemPrimary(item) {
@@ -267,7 +296,7 @@ Singleton {
 
     function onNetworkPrimary(network) {
         if (network.connected) return;
-        if (network.known || network.security === WifiSecurityType.Open || network.security === WifiSecurityType.Owe) {
+        if (network.known || root.isOpen(network.security)) {
             root.beginConnection(network, "");
             return;
         }
@@ -349,6 +378,7 @@ Singleton {
     function startWifiScan() {
         if (!root.wifiDevice || !root.wifiOn)
             return;
+        root.scanRequested = true;
         root.wifiDevice.scannerEnabled = true;
         wifiScanTimeoutTimer.restart();
     }
@@ -365,31 +395,6 @@ Singleton {
         } else {
             root.startWifiScan();
         }
-    }
-
-    function wifiStatusText() {
-        if (root.wiredDevice !== null && root.connectedWifi === null) {
-            return "Ethernet connected.";
-        }
-        if (root.wifiDevice === null) {
-            return "No Wi-Fi adapter found.";
-        }
-        if (!root.wifiOn) {
-            return "Wi-Fi is off.";
-        }
-        if (root.connectedWifi !== null) {
-            return "Connected to " + root.connectedWifi.name + ".";
-        }
-        if (root.connectingNetwork !== null) {
-            return "Connecting to " + root.connectingNetwork.name + ".";
-        }
-        if (root.isScanning) {
-            return "Refreshing nearby networks.";
-        }
-        if (root.displayedNetworks.length > 0) {
-            return "Wi-Fi is ready.";
-        }
-        return "Refresh to find nearby networks.";
     }
 
     // ── Derived bindings ──

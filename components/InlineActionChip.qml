@@ -7,7 +7,7 @@ Rectangle {
 
     property string text: ""
     property string iconName: ""
-    property string tone: "neutral" // neutral | success | warning | error | info
+    property string tone: "neutral" // neutral | success | warning | error | info | accent
     property bool armed: false
 
     signal activated()

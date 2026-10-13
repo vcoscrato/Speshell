@@ -22,7 +22,7 @@ lint:
 
 # Run the QML unit tests.
 test:
-    QT_QPA_PLATFORM=offscreen {{ qmltestrunner }} -input tests
+    QT_QPA_PLATFORM=offscreen QML_XHR_ALLOW_FILE_READ=1 {{ qmltestrunner }} -input tests
 
 # Compile the effect and painting shaders that changed.
 [working-directory: 'extras']

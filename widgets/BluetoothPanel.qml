@@ -20,78 +20,46 @@ Components.Card {
     readonly property bool btOn: Services.BluetoothService.enabled
     readonly property bool scanning: Services.BluetoothService.scanning
 
-    function buildConnectedDevices() {
+    // Scanning waits for the refresh button; closing the panel stops it.
+    onPresentedChanged: if (!root.presented && root.scanning) Services.BluetoothService.stopDiscovery()
+    Component.onDestruction: if (Services.BluetoothService.scanning) Services.BluetoothService.stopDiscovery()
+
+    function devicesWhere(test) {
         if (!root.adapter) return [];
         var result = [];
         for (var i = 0; i < root.adapter.devices.values.length; i++) {
             var dev = root.adapter.devices.values[i];
-            if (dev.connected) result.push(dev);
+            if (test(dev)) result.push(dev);
         }
         return result;
     }
 
-    function buildKnownDevices() {
-        if (!root.adapter) return [];
-        var result = [];
-        for (var i = 0; i < root.adapter.devices.values.length; i++) {
-            var dev = root.adapter.devices.values[i];
-            if (dev.paired && !dev.connected) result.push(dev);
-        }
-        return result;
+    readonly property var connectedDevices: root.devicesWhere(function(dev) { return dev.connected; })
+    readonly property var knownDevices: root.devicesWhere(function(dev) { return dev.paired && !dev.connected; })
+    readonly property var discoveredDevices: root.devicesWhere(function(dev) { return !dev.paired && !dev.connected; })
+    readonly property int deviceCount: root.connectedDevices.length + root.knownDevices.length
+        + root.discoveredDevices.length
+    readonly property bool anyBusy: root.devicesWhere(function(dev) { return root.isBusy(dev); }).length > 0
+
+    function isBusy(dev) {
+        return dev.state === BluetoothDeviceState.Connecting
+            || dev.state === BluetoothDeviceState.Disconnecting;
     }
 
-    function buildDiscoveredDevices() {
-        if (!root.adapter) return [];
-        var result = [];
-        for (var i = 0; i < root.adapter.devices.values.length; i++) {
-            var dev = root.adapter.devices.values[i];
-            if (!dev.paired && !dev.connected) result.push(dev);
-        }
-        return result;
-    }
-
-    readonly property var connectedDevices: root.buildConnectedDevices()
-    readonly property var knownDevices: root.buildKnownDevices()
-    readonly property var discoveredDevices: root.buildDiscoveredDevices()
-
-    // Helper to build subtitle with connecting/disconnecting status
     function deviceSubtitle(dev) {
-        if (dev.state === BluetoothDeviceState.Connecting) return "Connecting...";
-        if (dev.state === BluetoothDeviceState.Disconnecting) return "Disconnecting...";
-        if (dev.batteryAvailable) return "Battery " + dev.battery + "%";
-        return "";
-    }
-
-    function deviceBadges(dev) {
-        if (dev.state === BluetoothDeviceState.Connecting) return [{ text: "Connecting", tone: "info" }];
-        if (dev.state === BluetoothDeviceState.Disconnecting) return [{ text: "Disconnecting", tone: "warning" }];
-        if (dev.connected) return [{ text: "Connected", tone: "success" }];
-        if (dev.paired) return [{ text: "Paired", tone: "neutral" }];
-        return [{ text: "New", tone: "info" }];
+        if (dev.state === BluetoothDeviceState.Connecting) return "Connecting…";
+        if (dev.state === BluetoothDeviceState.Disconnecting) return "Disconnecting…";
+        var parts = [dev.connected ? "Connected" : (dev.paired ? "Paired" : "Available")];
+        if (dev.batteryAvailable)
+            parts.push("Battery " + Math.round(dev.battery * 100) + "%");
+        return parts.join(" · ");
     }
 
     function deviceActions(dev) {
-        var busy = dev.state === BluetoothDeviceState.Connecting
-            || dev.state === BluetoothDeviceState.Disconnecting;
-        if (dev.connected) {
-            return [{ text: "Disconnect", tone: "warning", enabled: !busy, actionId: "disconnect" }];
-        }
+        var busy = root.isBusy(dev);
+        if (dev.connected)
+            return [{ text: "Disconnect", tone: "neutral", enabled: !busy, actionId: "disconnect" }];
         return [{ text: "Connect", tone: "success", enabled: !busy, actionId: "connect" }];
-    }
-
-    function deviceOpacity(dev) {
-        var busy = dev.state === BluetoothDeviceState.Connecting
-                || dev.state === BluetoothDeviceState.Disconnecting;
-        if (busy) return 1.0;
-        // Check if any device is busy
-        if (root.adapter) {
-            for (var i = 0; i < root.adapter.devices.values.length; i++) {
-                var d = root.adapter.devices.values[i];
-                if (d.state === BluetoothDeviceState.Connecting
-                    || d.state === BluetoothDeviceState.Disconnecting) return 0.5;
-            }
-        }
-        return 1.0;
     }
 
     headerActions: Row {
@@ -116,137 +84,95 @@ Components.Card {
         }
     }
 
-    pinnedContent: [
+    component DeviceList: Column {
+        id: list
+
+        property string title: ""
+        property var devices: []
+
+        width: parent.width
+        spacing: ThemeModule.Theme.spacingTiny
+        visible: root.btOn && list.devices.length > 0
+
         Components.DeviceSection {
-            visible: root.btOn && root.connectedDevices.length > 0
-            width: parent.width
-            title: "Connected"
-            count: root.connectedDevices.length
-        },
+            title: list.title
+            count: list.devices.length
+        }
+
+        Item { width: 1; height: ThemeModule.Theme.spacingTiny }
 
         Repeater {
-            model: root.btOn ? root.connectedDevices : []
+            model: list.devices
             delegate: Components.DeviceRow {
-                id: connectedDeviceRow
+                id: deviceRow
                 required property var modelData
-                width: parent.width
-                title: connectedDeviceRow.modelData.name
-                subtitle: root.deviceSubtitle(connectedDeviceRow.modelData)
-                leadingIconName: "bluetooth"
-                badges: root.deviceBadges(connectedDeviceRow.modelData)
-                actionChips: root.deviceActions(connectedDeviceRow.modelData)
+                title: deviceRow.modelData.name
+                subtitle: root.deviceSubtitle(deviceRow.modelData)
+                iconName: Services.BluetoothService.deviceIcon(deviceRow.modelData)
+                current: deviceRow.modelData.connected
+                busy: root.isBusy(deviceRow.modelData)
                 primaryEnabled: false
-                opacity: root.deviceOpacity(connectedDeviceRow.modelData)
+                actionChips: root.deviceActions(deviceRow.modelData)
+                opacity: root.anyBusy && !deviceRow.busy ? 0.5 : 1.0
                 onActionTriggered: function(actionId) {
-                    if (actionId === "disconnect") connectedDeviceRow.modelData.disconnect();
-                    if (actionId === "connect") connectedDeviceRow.modelData.connect();
+                    if (actionId === "disconnect") deviceRow.modelData.disconnect();
+                    if (actionId === "connect") deviceRow.modelData.connect();
                 }
 
                 Behavior on opacity {
                     NumberAnimation { duration: ThemeModule.Theme.animDuration }
                 }
             }
+        }
+    }
+
+    pinnedContent: [
+        DeviceList {
+            title: "Connected"
+            devices: root.connectedDevices
         },
 
-        Text {
-            visible: !root.btOn
-            text: "Bluetooth is off"
-            font.pixelSize: ThemeModule.Theme.fontSizeSmall
-            font.family: ThemeModule.Theme.fontFamily
-            color: ThemeModule.Theme.overlay
-            anchors.horizontalCenter: parent.horizontalCenter
+        Components.EmptyState {
+            visible: root.adapter === null
+            iconName: "bluetooth-off"
+            title: "No Bluetooth adapter"
+            detail: "This computer has no Bluetooth adapter Speshell can use."
         },
 
-        Text {
-            visible: root.btOn && root.connectedDevices.length === 0
-            text: "No connected devices"
-            font.pixelSize: ThemeModule.Theme.fontSizeSmall
-            font.family: ThemeModule.Theme.fontFamily
-            color: ThemeModule.Theme.overlay
-            anchors.horizontalCenter: parent.horizontalCenter
+        Components.EmptyState {
+            visible: root.adapter !== null && !root.btOn
+            iconName: "bluetooth-off"
+            title: "Bluetooth is off"
+            detail: "Turn it on to connect headphones, controllers, and other devices."
+            actionLabel: "Turn on Bluetooth"
+            actionIconName: "bluetooth"
+            onActivated: root.adapter.enabled = true
         }
     ]
 
     Column {
         width: parent.width
-        spacing: ThemeModule.Theme.spacingSmall
+        spacing: ThemeModule.Theme.spacingMedium
 
-        Components.DeviceSection {
-            visible: root.btOn && root.knownDevices.length > 0
-            width: parent.width
-            title: "Known"
-            count: root.knownDevices.length
+        DeviceList {
+            title: "Paired"
+            devices: root.knownDevices
         }
 
-        Repeater {
-            model: root.btOn ? root.knownDevices : []
-            delegate: Components.DeviceRow {
-                id: knownDeviceRow
-                required property var modelData
-                width: parent.width
-                title: knownDeviceRow.modelData.name
-                subtitle: root.deviceSubtitle(knownDeviceRow.modelData)
-                leadingIconName: "bluetooth"
-                badges: root.deviceBadges(knownDeviceRow.modelData)
-                actionChips: root.deviceActions(knownDeviceRow.modelData)
-                primaryEnabled: false
-                opacity: root.deviceOpacity(knownDeviceRow.modelData)
-                onActionTriggered: function(actionId) {
-                    if (actionId === "connect") knownDeviceRow.modelData.connect();
-                }
-
-                Behavior on opacity {
-                    NumberAnimation { duration: ThemeModule.Theme.animDuration }
-                }
-            }
+        DeviceList {
+            title: "Nearby"
+            devices: root.discoveredDevices
         }
 
-        Components.DeviceSection {
-            visible: root.btOn && root.discoveredDevices.length > 0
-            width: parent.width
-            title: "Discovered"
-            count: root.discoveredDevices.length
-        }
-
-        Repeater {
-            model: root.btOn ? root.discoveredDevices : []
-            delegate: Components.DeviceRow {
-                id: discoveredDeviceRow
-                required property var modelData
-                width: parent.width
-                title: discoveredDeviceRow.modelData.name
-                subtitle: root.deviceSubtitle(discoveredDeviceRow.modelData)
-                leadingIconName: "bluetooth"
-                badges: root.deviceBadges(discoveredDeviceRow.modelData)
-                actionChips: root.deviceActions(discoveredDeviceRow.modelData)
-                primaryEnabled: false
-                opacity: root.deviceOpacity(discoveredDeviceRow.modelData)
-                onActionTriggered: function(actionId) {
-                    if (actionId === "connect") discoveredDeviceRow.modelData.connect();
-                }
-
-                Behavior on opacity {
-                    NumberAnimation { duration: ThemeModule.Theme.animDuration }
-                }
-            }
-        }
-
-        Text {
-            visible: root.btOn && root.scanning && root.connectedDevices.length === 0 && root.knownDevices.length === 0 && root.discoveredDevices.length === 0
-            text: "Scanning for devices..."
-            font.pixelSize: ThemeModule.Theme.fontSizeSmall
-            font.family: ThemeModule.Theme.fontFamily
-            color: ThemeModule.Theme.accent
-            anchors.horizontalCenter: parent.horizontalCenter
-        }
-
-        Text {
-            visible: root.btOn && !root.scanning && root.connectedDevices.length === 0 && root.knownDevices.length === 0 && root.discoveredDevices.length === 0
-            text: "No devices found. Run a scan."
-            font.pixelSize: ThemeModule.Theme.fontSizeSmall
-            font.family: ThemeModule.Theme.fontFamily
-            color: ThemeModule.Theme.overlay
-            anchors.horizontalCenter: parent.horizontalCenter
+        Components.EmptyState {
+            visible: root.btOn && (root.deviceCount === 0 || (root.scanning && root.discoveredDevices.length === 0))
+            iconName: "bluetooth"
+            busy: root.scanning
+            title: root.scanning ? "Looking for devices…" : "No devices found"
+            detail: "Put the device in pairing mode to find it."
+            actionLabel: root.scanning ? "" : "Scan"
+            actionIconName: "refresh"
+            onActivated: Services.BluetoothService.startDiscovery()
         }
     }
 }

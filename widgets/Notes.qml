@@ -34,13 +34,43 @@ Components.Card {
         focus: true
     }
 
+    // Qt leaves almost no room between Markdown paragraphs. Put a short spacer
+    // paragraph between two plain ones; lists, quotes, headings, tables, and code
+    // keep their own structure.
+    function spaceParagraphs(src) {
+        const structural = /^\s*([-*+]\s|\d+[.)]\s|#|>|\||```|~~~)|^\s{4}/;
+        const lines = src.split("\n");
+        const out = [];
+        let inFence = false;
+        let previous = "";
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            if (/^\s*(```|~~~)/.test(line))
+                inFence = !inFence;
+            if (inFence || line.trim() !== "") {
+                out.push(line);
+                previous = line;
+                continue;
+            }
+            let next = i + 1;
+            while (next < lines.length && lines[next].trim() === "")
+                next++;
+            const between = previous.trim() !== "" && next < lines.length
+                && !structural.test(previous) && !structural.test(lines[next]);
+            out.push(between ? "\n<span style='font-size:4px'>&nbsp;</span>\n" : "");
+            i = next - 1;
+            previous = "";
+        }
+        return out.join("\n");
+    }
+
     function updateRenderedMarkdown() {
         var src = notesInput.text;
         if (!src || src.trim() === "") {
             root.renderedMarkdown = "*No note content. Click anywhere in box to add notes.*";
             return;
         }
-        var str = String(src);
+        var str = root.spaceParagraphs(String(src));
 
         // Subscripts: $X_1$ or $X_{12}$
         str = str.replace(/\$([a-zA-Z0-9]+)_\{?([a-zA-Z0-9+\-=]+)\}?\$/g, "$1<sub>$2</sub>");

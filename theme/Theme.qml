@@ -151,6 +151,7 @@ QtObject {
         if (tone === "warning") return root.warning;
         if (tone === "error") return root.error;
         if (tone === "info") return root.sky;
+        if (tone === "accent") return root.accent;
         return root.overlay;
     }
 }

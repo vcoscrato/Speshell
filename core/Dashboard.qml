@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 // qmllint disable missing-type unresolved-type
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Shapes
 import Quickshell
 import Quickshell.Services.SystemTray
 import "../theme" as ThemeModule
@@ -44,68 +43,14 @@ Item {
         }
         return "";
     }
-    // The theme effects' backdrop over the base color. It is still, so its texture
-    // renders once and fills the panel shape below.
-    Item {
-        id: material
-
-        width: dashboard.width
-        height: dashboard.height
-        visible: backdropLoader.status === Loader.Ready
-
-        Rectangle {
-            anchors.fill: parent
-            color: ThemeModule.Theme.bg
-        }
-
-        Loader {
-            id: backdropLoader
-
-            anchors.fill: parent
-            sourceComponent: Services.EffectsService.dashboardBackdrop
-        }
-
-        Binding {
-            target: backdropLoader.item
-            property: "theme"
-            value: ThemeModule.Theme
-        }
-    }
-
-    ShaderEffectSource {
-        id: materialTexture
-
-        visible: false
-        sourceItem: material.visible ? material : null
-        hideSource: true
-    }
-
-    Shape {
+    // The panel's surface, with the theme effects' backdrop; its cut corners and
+    // accent edge face the screen's center.
+    Components.Surface {
         anchors.fill: parent
-        antialiasing: true
-
-        ShapePath {
-            strokeWidth: 2
-            strokeColor: Qt.rgba(
-                ThemeModule.Theme.surface2.r * 0.88 + ThemeModule.Theme.overlay.r * 0.12,
-                ThemeModule.Theme.surface2.g * 0.88 + ThemeModule.Theme.overlay.g * 0.12,
-                ThemeModule.Theme.surface2.b * 0.88 + ThemeModule.Theme.overlay.b * 0.12,
-                1
-            )
-            fillColor: ThemeModule.Theme.bg
-            fillItem: material.visible ? materialTexture : null
-            capStyle: ShapePath.SquareCap
-            joinStyle: ShapePath.MiterJoin
-            startX: 0
-            startY: 0
-
-            PathLine { x: dashboard.width - ThemeModule.Theme.surfaceCornerCut; y: 0 }
-            PathLine { x: dashboard.width; y: ThemeModule.Theme.surfaceCornerCut }
-            PathLine { x: dashboard.width; y: dashboard.height - ThemeModule.Theme.surfaceCornerCut }
-            PathLine { x: dashboard.width - ThemeModule.Theme.surfaceCornerCut; y: dashboard.height }
-            PathLine { x: 0; y: dashboard.height }
-            PathLine { x: 0; y: 0 }
-        }
+        backdrop: true
+        cutTopRight: true
+        cutBottomRight: true
+        edge: "right"
     }
 
     Rectangle {
@@ -117,29 +62,6 @@ Item {
         anchors.bottomMargin: ThemeModule.Theme.borderWidth
         width: ThemeModule.Theme.sidebarWidth - ThemeModule.Theme.borderWidth
         color: ThemeModule.Theme.mantle
-    }
-
-    Rectangle {
-        z: 100
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        anchors.topMargin: 40
-        anchors.bottomMargin: 40
-        width: 2
-
-        gradient: Gradient {
-            GradientStop {
-                position: 0
-                color: ThemeModule.Theme.alpha(ThemeModule.Theme.accent, 0)
-            }
-            GradientStop { position: 0.10; color: ThemeModule.Theme.accent }
-            GradientStop { position: 0.88; color: ThemeModule.Theme.accent }
-            GradientStop {
-                position: 1
-                color: ThemeModule.Theme.alpha(ThemeModule.Theme.accent, 0)
-            }
-        }
     }
 
     onActivePanelChanged: {
@@ -348,17 +270,23 @@ Item {
                 }
             }
 
-            // ── System Tray (centered in the free zone between top and bottom icons) ──
-            Item {
-                anchors.top: sidebarTopCol.bottom
+            // ── System Tray: other apps' icons, in a well of their own above the
+            // bottom group, so they don't read as Speshell's panels ──
+            Rectangle {
                 anchors.bottom: sidebarBottomCol.top
-                anchors.left: parent.left
-                anchors.right: parent.right
+                anchors.bottomMargin: ThemeModule.Theme.spacingLarge
+                anchors.horizontalCenter: parent.horizontalCenter
                 visible: sidebarTrayRepeater.count > 0
+                width: ThemeModule.Theme.controlHeight + ThemeModule.Theme.spacingTiny * 2
+                height: trayColumn.implicitHeight + ThemeModule.Theme.spacingTiny * 2
+                radius: ThemeModule.Theme.borderRadius
+                color: ThemeModule.Theme.controlFill
+                border.width: ThemeModule.Theme.borderWidth
+                border.color: ThemeModule.Theme.controlBorder
 
                 Column {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.verticalCenter: parent.verticalCenter
+                    id: trayColumn
+                    anchors.centerIn: parent
                     spacing: ThemeModule.Theme.spacingTiny
 
                     Repeater {
@@ -375,8 +303,8 @@ Item {
                                 || modelData.title
                                 || modelData.id
                                 || "System tray icon"
-                            width: ThemeModule.Theme.sidebarIconSize
-                            height: ThemeModule.Theme.sidebarIconSize
+                            width: ThemeModule.Theme.controlHeight
+                            height: ThemeModule.Theme.controlHeight
 
                             Connections {
                                 target: sidebarTrayDelegate.Window

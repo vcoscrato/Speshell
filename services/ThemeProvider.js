@@ -173,20 +173,20 @@ function themeWallpaper(wallpapers, theme, chosen) {
 }
 
 // A random theme id other than `current`, or "" when there is no other.
-function pickRandomTheme(themes, current, random) {
+function pickRandomTheme(themes, current) {
     var pool = (themes || []).filter(function(theme) { return theme.id !== current; });
     if (pool.length === 0)
         return "";
-    return pool[Math.min(pool.length - 1, Math.floor((random === undefined ? Math.random() : random) * pool.length))].id;
+    return pool[Math.floor(Math.random() * pool.length)].id;
 }
 
-function pickRandom(wallpapers, theme, current, random) {
+function pickRandom(wallpapers, theme, current) {
     var pool = (wallpapers || []).filter(function(wallpaper) {
         return wallpaper.theme === theme && wallpaper.path !== current;
     });
     if (pool.length === 0)
         return "";
-    return pool[Math.min(pool.length - 1, Math.floor((random === undefined ? Math.random() : random) * pool.length))].path;
+    return pool[Math.floor(Math.random() * pool.length)].path;
 }
 
 // ── Launcher ────────────────────────────────────────────────

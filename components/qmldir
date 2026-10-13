@@ -4,6 +4,7 @@ AppIcon 1.0 AppIcon.qml
 Card 1.0 Card.qml
 DeviceRow 1.0 DeviceRow.qml
 DeviceSection 1.0 DeviceSection.qml
+EmptyState 1.0 EmptyState.qml
 HoverLabel 1.0 HoverLabel.qml
 IconButton 1.0 IconButton.qml
 InfoTip 1.0 InfoTip.qml

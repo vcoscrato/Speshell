@@ -172,7 +172,7 @@ PanelWindow {
         }
     }
 
-    Rectangle {
+    Item {
         id: launcherPanel
         z: 1
         anchors.horizontalCenter: parent.horizontalCenter
@@ -180,11 +180,17 @@ PanelWindow {
         anchors.verticalCenterOffset: -Math.round(parent.height * 0.10)
         width: root.paletteWidth
         height: paletteColumn.implicitHeight + ThemeModule.Theme.spacingLarge * 2
-        radius: ThemeModule.Theme.borderRadiusSmall
-        color: ThemeModule.Theme.bg
-        border.width: ThemeModule.Theme.borderWidth
-        border.color: ThemeModule.Theme.cardHover
         clip: true
+
+        // The dashboard's surface, and the top of its backdrop painted at about the
+        // dashboard's height; centered, so cut on a diagonal.
+        Components.Surface {
+            anchors.fill: parent
+            backdrop: true
+            backdropHeight: 1050
+            cutTopRight: true
+            cutBottomLeft: true
+        }
 
         MouseArea {
             anchors.fill: parent
@@ -264,8 +270,10 @@ PanelWindow {
 
                 Text {
                     anchors.left: searchField.left
+                    anchors.right: searchField.right
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Search apps and panels, calculate, type !, or search with ?"
+                    text: "Search apps, calculate, ! for commands, ? for the web"
+                    elide: Text.ElideRight
                     color: ThemeModule.Theme.subtext
                     font.family: ThemeModule.Theme.fontFamily
                     font.pixelSize: ThemeModule.Theme.fontSizeNormal

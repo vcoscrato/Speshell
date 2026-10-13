@@ -110,21 +110,16 @@ PanelWindow {
         }
     }
 
-    Rectangle {
+    Item {
         id: osdCard
         anchors.fill: parent
-        radius: ThemeModule.Theme.borderRadius
-        color: ThemeModule.Theme.card
-        border.width: ThemeModule.Theme.borderWidth
-        border.color: ThemeModule.Theme.alpha(root.indicatorColor, ThemeModule.Theme.tintOutline)
-        clip: true
 
-        Rectangle {
-            anchors.left: parent.left
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            width: 4
-            color: root.indicatorColor
+        // Bottom center of the screen: cut toward its center.
+        Components.Surface {
+            anchors.fill: parent
+            cut: ThemeModule.Theme.spacingMedium
+            cutTopLeft: true
+            cutTopRight: true
         }
 
         Row {

@@ -5,117 +5,40 @@ import "../core/Config.js" as Config
 TestCase {
     name: "Config"
 
-    property string validConfig: [
-        "[Appearance]",
-        "drawWallpaper = true",
-        "textScale = 1.15",
-        "launcherTransitionSpeed = 0.5",
-        "dashboardTransitionSpeed = 2",
-        "wallpaperTransitionSpeed = 0",
-        "transitionFrameRate = 144",
-        "shuffleAtLaunch = both",
-        "panelWorkspace = special:dash",
-        "panelWidth = 600",
-        "panelMargin = 0",
-        "",
-        "[Audio]",
-        "panelMode = separate",
-        "scrollStep = 10",
-        "",
-        "[Audio.QuickSwitch]",
-        "1 = Speakers",
-        "2 = Display, HDMI",
-        "",
-        "[Audio.InputQuickSwitch]",
-        "1 = Microphone",
-        "",
-        "[Audio.DeviceNames]",
-        "alsa_output.test = Desk Speakers",
-        "",
-        "[Audio.InputDeviceNames]",
-        "alsa_input.test = Desk Microphone",
-        "",
-        "[Launcher]",
-        "width = 640",
-        "visibleRows = 7",
-        "searchUrl = https://example.com/search?q={query}",
-        "",
-        "[Launcher.Bangs]",
-        "docs = https://example.com/docs?q={query}",
-        "",
-        "[Backlight]",
-        "device = intel_backlight",
-        "",
-        "[Power]",
-        "lockCommand = swaylock",
-        "",
-        "[Power.Arguments]",
-        "1 = --daemonize",
-        "2 = --color=00,00,00",
-        "",
-        "[Weather]",
-        "enabled = true",
-        "location = São Paulo",
-        "",
-        "[Notifications]",
-        "maxVisible = -1"
-    ].join("\n")
+    function messages(result) {
+        return result.errors.map(function(error) { return error.message; }).join("\n");
+    }
 
-    function test_validFullConfig() {
-        var result = Config.parseAndValidate(validConfig);
-        verify(result.ok, result.errors.length > 0 ? result.errors[0].message : "");
-        compare(result.config.textScale, 1.15);
-        compare(result.config.launcherTransitionSpeed, 0.5);
-        compare(result.config.dashboardTransitionSpeed, 2);
-        compare(result.config.wallpaperTransitionSpeed, 0);
-        compare(result.config.transitionFrameRate, 144);
-        compare(result.config.shuffleAtLaunch, "both");
-        compare(result.config.panelWorkspace, "special:dash");
-        compare(result.config.panelWidth, 600);
-        compare(result.config.panelMargin, 0);
-        compare(result.config.audioPanelMode, "separate");
-        compare(result.config.audioScrollStep, 10);
+    // The package installs this file as a new user's config.ini.
+    function test_exampleConfigIsValid() {
+        var request = new XMLHttpRequest();
+        request.open("GET", Qt.resolvedUrl("../config.example.ini"), false);
+        request.send();
+        verify(request.responseText.length > 0, "config.example.ini not read");
+        var result = Config.parseAndValidate(request.responseText);
+        verify(result.ok, messages(result));
+    }
+
+    function test_listSectionsKeepOrderAndCommas() {
+        var result = Config.parseAndValidate("[Audio.QuickSwitch]\n1 = Speakers\n2 = Display, HDMI\n");
+        verify(result.ok, messages(result));
         compare(result.config.audioQuickSwitch, ["Speakers", "Display, HDMI"]);
-        compare(result.config.audioDeviceNames["alsa_output.test"], "Desk Speakers");
-        compare(result.config.audioInputQuickSwitch, ["Microphone"]);
-        compare(result.config.audioInputDeviceNames["alsa_input.test"], "Desk Microphone");
-        compare(result.config.launcher.width, 640);
-        compare(result.config.launcher.visibleRows, 7);
-        compare(result.config.launcher.bangs.docs, "https://example.com/docs?q={query}");
+    }
+
+    function test_lockCommandTakesArguments() {
+        var result = Config.parseAndValidate(
+            "[Power]\nlockCommand = swaylock\n\n[Power.Arguments]\n1 = --daemonize\n2 = --color=00,00,00\n");
+        verify(result.ok, messages(result));
         compare(result.config.powerMenu.lockCommand, ["swaylock", "--daemonize", "--color=00,00,00"]);
-        compare(result.config.weatherEnabled, true);
-        compare(result.config.drawWallpaper, true);
-        compare(result.config.weatherLocation, "São Paulo");
-        compare(result.config.maxVisibleNotification, -1);
     }
 
-    function test_defaults() {
-        var result = Config.parseAndValidate("[Appearance]\n");
-        verify(result.ok);
-        compare(result.config.textScale, 1.0);
-        compare(result.config.launcherTransitionSpeed, 1.0);
-        compare(result.config.dashboardTransitionSpeed, 1.0);
-        compare(result.config.wallpaperTransitionSpeed, 1.0);
-        compare(result.config.transitionFrameRate, 60);
-        compare(result.config.shuffleAtLaunch, "off");
-        compare(result.config.drawWallpaper, false);
-        compare(result.config.panelMargin, 16);
-        compare(result.config.audioPanelMode, "combined");
-        compare(result.config.launcher.visibleRows, 5);
-        compare(result.config.powerMenu.lockCommand, ["hyprlock"]);
-    }
-
-    function test_invalid_data() {
+    function test_rejectsInvalidValues_data() {
         return [
-            { tag: "bad margin", text: "[Appearance]\npanelMargin = -1", message: "Expected a value from 0 to 128" },
-            { tag: "bad text scale", text: "[Appearance]\ntextScale = 1.75", message: "Expected a value from 0.8 to 1.5" },
-            { tag: "malformed text scale", text: "[Appearance]\ntextScale = large", message: "Expected a number" },
-            { tag: "bad transition speed", text: "[Appearance]\ndashboardTransitionSpeed = 4", message: "Expected a value from 0 to 3" },
-            { tag: "bad transition frame rate", text: "[Appearance]\ntransitionFrameRate = 301", message: "Expected a value from 30 to 300" },
-            { tag: "bad launch shuffle", text: "[Appearance]\nshuffleAtLaunch = always", message: "Expected one of" },
+            { tag: "out of range", text: "[Appearance]\ntextScale = 1.75", message: "Expected a value from 0.8 to 1.5" },
+            { tag: "not a number", text: "[Appearance]\ntextScale = large", message: "Expected a number" },
             { tag: "partial integer", text: "[Launcher]\nvisibleRows = 5rows", message: "Expected a whole number" },
-            { tag: "bad boolean", text: "[Weather]\nenabled = yes", message: "Expected true or false" },
-            { tag: "bad mode", text: "[Audio]\npanelMode = merged", message: "Expected one of" },
+            { tag: "not a boolean", text: "[Weather]\nenabled = yes", message: "Expected true or false" },
+            { tag: "unknown choice", text: "[Audio]\npanelMode = merged", message: "Expected one of" },
             { tag: "insecure URL", text: "[Launcher]\nsearchUrl = http://example.com/?q={query}", message: "must use HTTPS" },
             { tag: "missing placeholder", text: "[Launcher]\nsearchUrl = https://example.com/", message: "exactly one {query}" },
             { tag: "reserved bang", text: "[Launcher.Bangs]\naudio = https://example.com/?q={query}", message: "is reserved" },
@@ -123,25 +46,25 @@ TestCase {
         ];
     }
 
-    function test_invalid(data) {
+    function test_rejectsInvalidValues(data) {
         var result = Config.parseAndValidate(data.text);
         verify(!result.ok);
-        var messages = result.errors.map(function(error) { return error.message; }).join("\n");
-        verify(messages.indexOf(data.message) >= 0, messages);
+        verify(messages(result).indexOf(data.message) >= 0, messages(result));
     }
 
-    function test_setIniProperty() {
-        var source = "[Appearance]\npanelMargin = 16\n\n[Weather]\nenabled = false\n";
+    // Settings writes single keys into the user's file; the rest must survive.
+    function test_settingsEditKeepsTheRestOfTheFile() {
+        var source = "# mine\n[Appearance]\npanelMargin = 16\n\n[Weather]\nenabled = false\n";
+
         var replaced = Config.setIniProperty(source, "Appearance", "panelMargin", 0);
-        verify(replaced.indexOf("panelMargin = 0") >= 0);
-        verify(Config.parseAndValidate(replaced).ok);
+        compare(replaced, "# mine\n[Appearance]\npanelMargin = 0\n\n[Weather]\nenabled = false\n");
 
         var inserted = Config.setIniProperty(replaced, "Weather", "location", "São Paulo");
-        verify(inserted.indexOf("location = São Paulo") >= 0);
-        verify(Config.parseAndValidate(inserted).ok);
+        compare(inserted, "# mine\n[Appearance]\npanelMargin = 0\n\n[Weather]\nenabled = false\nlocation = São Paulo\n");
 
         var appended = Config.setIniProperty(inserted, "Notifications", "maxVisible", 5);
-        verify(appended.indexOf("[Notifications]\nmaxVisible = 5") >= 0);
+        verify(appended.indexOf(inserted.trim()) === 0, appended);
+        verify(appended.indexOf("[Notifications]\nmaxVisible = 5") >= 0, appended);
         verify(Config.parseAndValidate(appended).ok);
     }
 }

@@ -46,7 +46,7 @@ Components.Card {
         },
         Components.RefreshButton {
             active: Services.ThemeService.scanning
-            tooltipText: "Rescan themes"
+            tooltipText: "Look for new themes"
             onClicked: Services.ThemeService.scan()
         }
     ]
@@ -109,9 +109,15 @@ Components.Card {
             }
         }
 
-        Item { width: 1; height: ThemeModule.Theme.spacingTiny }
+        // Divides the theme's wallpapers from the themes; alone, the card title says it.
+        Item {
+            width: 1
+            height: ThemeModule.Theme.spacingTiny
+            visible: wallpaperGrid.visible
+        }
 
         Text {
+            visible: wallpaperGrid.visible
             text: "Themes"
             font.pixelSize: ThemeModule.Theme.fontSizeCaption
             font.family: ThemeModule.Theme.fontFamily

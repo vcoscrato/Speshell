@@ -124,7 +124,8 @@ Singleton {
         root.notificationHistory = [];
     }
 
-    function addInternalNotification(id, summary, body) {
+    // alwaysShow lets a notice the user asked for, like the focus timer, through Do Not Disturb.
+    function addInternalNotification(id, summary, body, alwaysShow) {
         var notificationId = "internal:" + String(id || "notice");
         var receivedAt = new Date();
         var history = [];
@@ -144,7 +145,7 @@ Singleton {
         });
         root.notificationHistory = history.slice(0, 50);
 
-        if (!root.showsPopup(1))
+        if (!alwaysShow && !root.showsPopup(1))
             return;
 
         root.pushPopup({

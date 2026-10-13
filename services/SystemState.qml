@@ -3,12 +3,38 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "." as AppServices
+import "Shell.js" as Shell
 
 Singleton {
     id: root
 
     property string appVersion: "Unknown"
     readonly property string appDir: Qt.resolvedUrl("..").toString().replace(/^file:\/\//, "")
+    property bool relaunching: false
+    readonly property bool canRelaunch: !root.relaunching && !AppServices.ConfigService.savingConfig
+
+    // Starts a new Speshell once this process has exited; notes are saved first.
+    function relaunch() {
+        if (!root.canRelaunch)
+            return;
+
+        root.relaunching = true;
+        AppServices.NotesService.flush(true);
+
+        var shellPath = Quickshell.shellDir !== ""
+            ? Quickshell.shellDir
+            : Quickshell.shellRoot;
+        var command = "launcher=$(readlink -f /proc/" + Quickshell.processId + "/exe 2>/dev/null || command -v quickshell || printf quickshell); "
+            + "while kill -0 " + Quickshell.processId + " 2>/dev/null; do sleep 0.05; done; "
+            + "sleep 0.1; "
+            + "exec \"$launcher\" --daemonize";
+        if (shellPath !== "")
+            command += " -p " + Shell.quote(shellPath);
+
+        Quickshell.execDetached(["sh", "-c", command]);
+        Qt.quit();
+    }
 
     Process {
         id: appVersionProc

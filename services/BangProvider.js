@@ -12,13 +12,31 @@ function panelResult(panel) {
         id: "panel:" + panel.panel,
         kind: "panel",
         title: panel.title,
-        subtitle: "Open the Speshell " + panel.title.toLowerCase() + " panel",
+        // The bangs that open it, so the shortcut is learned by seeing it.
+        subtitle: [panel.bang].concat(panel.aliases).map(function(bang) { return "!" + bang; }).join(" · "),
         iconName: panel.icon,
         iconSource: "",
         badge: "PANEL",
         activatable: true,
         payload: { panel: panel.panel },
         completion: "!" + panel.bang
+    };
+}
+
+// An action the launcher runs itself, such as !mirror.
+function commandResult(bang, title, detail, iconName) {
+    return {
+        id: "command:" + bang,
+        kind: "command",
+        title: title,
+        subtitle: "!" + bang + " · " + detail,
+        iconName: iconName,
+        iconSource: "",
+        badge: "ACTION",
+        activatable: true,
+        payload: { command: bang },
+        completion: "!" + bang,
+        bang: bang
     };
 }
 
@@ -79,7 +97,8 @@ function panelAvailable(panel, availablePanelNames) {
         && availablePanelNames.indexOf(panel.panel) >= 0;
 }
 
-function bangResults(query, launcherConfig, availablePanelNames) {
+// `commands`: commandResult()s available right now.
+function bangResults(query, launcherConfig, availablePanelNames, commands) {
     var raw = String(query || "").trim();
     var config = launcherConfig || ({});
     var bangs = config.bangs || ({});
@@ -87,6 +106,7 @@ function bangResults(query, launcherConfig, availablePanelNames) {
     var space = body.search(/\s/);
     var alias = (space < 0 ? body : body.substring(0, space)).toLowerCase();
     var terms = space < 0 ? "" : body.substring(space).trim();
+    var actions = commands || [];
 
     if (space < 0) {
         var suggestions = [];
@@ -95,10 +115,17 @@ function bangResults(query, launcherConfig, availablePanelNames) {
                     && matchesBangPrefix(panels[i], alias))
                 suggestions.push(panelResult(panels[i]));
         }
+        suggestions = suggestions.concat(actions.filter(function(command) {
+            return command.bang.indexOf(alias) === 0;
+        }));
         suggestions = suggestions.concat(configuredBangResults(alias, bangs));
         if (suggestions.length > 0 || alias === "")
             return suggestions;
     }
+
+    var action = actions.filter(function(command) { return command.bang === alias; })[0];
+    if (action)
+        return [action];
 
     var bangPanel = WidgetRegistry.panelForBang(alias);
     for (var j = 0; j < panels.length; j++) {
@@ -113,7 +140,7 @@ function bangResults(query, launcherConfig, availablePanelNames) {
         return [webResult(
             "bang:" + alias + ":" + terms,
             "Search !" + alias + (terms !== "" ? " for “" + terms + "”" : ""),
-            "Configured web bang",
+            "Your search shortcut",
             urlFromTemplate(bangs[alias], terms)
         )];
     }
@@ -121,7 +148,7 @@ function bangResults(query, launcherConfig, availablePanelNames) {
     return [webResult(
         "bang:passthrough:" + body,
         "Search “" + raw + "”",
-        "Pass this bang through to the configured search engine",
+        "No shortcut by that name, so search the web for it",
         urlFromTemplate(config.searchUrl, raw)
     )];
 }
@@ -134,7 +161,7 @@ function searchResult(query, launcherConfig) {
     return [webResult(
         "search:" + terms,
         "Search the web for “" + terms + "”",
-        "Open in the configured search engine",
+        "Open in your search engine",
         urlFromTemplate(launcherConfig.searchUrl, terms)
     )];
 }

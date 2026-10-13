@@ -21,6 +21,72 @@ Singleton {
     property string lastCopiedId: ""
     property string pendingCopyId: ""
     readonly property string liveUpdateWarning: "Live clipboard updates are unavailable."
+    // Decoded images for thumbnails: private to the user, gone at logout, and pruned to
+    // the listed history on every refresh.
+    readonly property string thumbnailDir: Quickshell.env("XDG_RUNTIME_DIR")
+        ? Quickshell.env("XDG_RUNTIME_DIR") + "/speshell/clipboard"
+        : ""
+
+    // cliphist lists binary entries as "[[ binary data 33 KiB png 349x118 ]]".
+    function parseEntry(id, preview) {
+        var binary = /^\[\[ binary data (.+? [KMG]?i?B)(?: (\w+))?(?: (\d+)x(\d+))? \]\]$/.exec(preview);
+        if (binary) {
+            var format = binary[2] || "";
+            var image = format !== "" && binary[3] !== undefined;
+            return {
+                "id": id,
+                "kind": image ? "image" : "binary",
+                "preview": image
+                    ? format.toUpperCase() + " image · " + binary[3] + "×" + binary[4] + " · " + binary[1]
+                    : "Binary data · " + binary[1],
+                "format": format,
+                "thumbnail": ""
+            };
+        }
+        var text = preview.replace(/\s+/g, " ").trim();
+        return {
+            "id": id,
+            "kind": /^https?:\/\/\S+$/.test(text) ? "link" : "text",
+            "preview": text !== "" ? text : "Whitespace",
+            "format": "",
+            "thumbnail": ""
+        };
+    }
+
+    function thumbnailName(entry) {
+        return entry.id + "." + entry.format;
+    }
+
+    function decodeThumbnails() {
+        if (root.thumbnailDir === "" || thumbnailProc.running)
+            return;
+        var names = [];
+        for (var i = 0; i < root.history.length; i++) {
+            if (root.history[i].kind === "image")
+                names.push(root.thumbnailName(root.history[i]));
+        }
+        thumbnailProc.command = ["sh", "-c",
+            "dir=$1; shift; mkdir -p \"$dir\" && chmod 700 \"$dir\" || exit 1\n"
+            + "for name in \"$@\"; do [ -s \"$dir/$name\" ] || cliphist decode \"${name%%.*}\" > \"$dir/$name\"; done\n"
+            + "for file in \"$dir\"/*; do [ -e \"$file\" ] || continue\n"
+            + "case \" $* \" in *\" ${file##*/} \"*) ;; *) rm -f \"$file\" ;; esac; done",
+            "speshell-thumbnails", root.thumbnailDir].concat(names);
+        thumbnailProc.running = true;
+    }
+
+    Process {
+        id: thumbnailProc
+        running: false
+        onExited: function(exitCode) {
+            if (exitCode !== 0)
+                return;
+            root.history = root.history.map(function(entry) {
+                return entry.kind === "image" && entry.thumbnail === ""
+                    ? Object.assign({}, entry, { "thumbnail": root.thumbnailDir + "/" + root.thumbnailName(entry) })
+                    : entry;
+            });
+        }
+    }
 
     function startWatching() {
         if (!clipboardWatchProc.running) {
@@ -150,20 +216,25 @@ Singleton {
                 var lines = cliphistListProc.buffer.split("\n");
                 cliphistListProc.buffer = "";
                 var newHistory = [];
+                // Keep decoded thumbnails, so a refresh doesn't blank the images.
+                var thumbnails = {};
+                for (var k = 0; k < root.history.length; k++)
+                    thumbnails[root.history[k].id] = root.history[k].thumbnail;
 
                 for (var i = 0; i < lines.length; i++) {
                     var line = lines[i].trim();
                     if (line === "") continue;
 
                     var tabIndex = line.indexOf("\t");
-                    if (tabIndex > 0) {
-                        newHistory.push({
-                            "id": line.substring(0, tabIndex),
-                            "preview": line.substring(tabIndex + 1)
-                        });
-                    }
+                    if (tabIndex <= 0)
+                        continue;
+                    var entry = root.parseEntry(line.substring(0, tabIndex), line.substring(tabIndex + 1));
+                    if (entry.kind === "image")
+                        entry.thumbnail = thumbnails[entry.id] || "";
+                    newHistory.push(entry);
                 }
                 root.history = newHistory;
+                root.decodeThumbnails();
             }
 
             if (root.refreshQueued) {

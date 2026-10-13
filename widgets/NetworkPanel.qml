@@ -13,67 +13,66 @@ Components.Card {
     collapsible: true
     property bool presented: false
     readonly property var network: Services.NetworkService
+    readonly property bool wifiReady: root.network.wifiOn && root.network.wifiDevice !== null
+    readonly property bool connecting: root.network.connectingNetwork !== null && root.network.connectedWifi === null
 
+    // Scanning waits for the refresh button; closing the panel stops it.
+    onPresentedChanged: if (!root.presented && root.network.isScanning) root.network.stopWifiScan()
+    Component.onDestruction: if (root.network.isScanning) root.network.stopWifiScan()
+
+    headerActions: Row {
+        spacing: ThemeModule.Theme.spacingSmall
+
+        Components.RefreshButton {
+            visible: root.wifiReady
+            active: root.presented && root.network.isScanning
+            tooltipText: root.network.isScanning ? "Stop Wi-Fi scan" : "Scan for Wi-Fi networks"
+            onClicked: root.network.toggleWifiScan()
+        }
+
+        Components.ToggleSwitch {
+            visible: root.network.wifiDevice !== null
+            checked: root.network.wifiOn
+            activeColor: ThemeModule.Theme.accent
+            tooltipText: root.network.wifiOn ? "Turn Wi-Fi off" : "Turn Wi-Fi on"
+            onToggled: function(state) {
+                Networking.wifiEnabled = state;
+            }
+        }
+    }
 
     pinnedContent: [
-        // Ethernet Section
         Components.DeviceRow {
             visible: root.network.wiredDevice !== null
-            width: parent.width
             title: root.network.wiredDevice ? root.network.wiredDevice.name : "Ethernet"
-            subtitle: "Connected"
-            leadingIconName: "plug"
+            subtitle: "Wired · Connected"
+            iconName: "network-wired"
+            current: true
             primaryEnabled: false
         },
 
-        // Wi-Fi Header / Controls
-        Item {
-            width: parent.width
-            height: ThemeModule.Theme.controlHeight
-
-            Text {
-                text: "Wi-Fi"
-                font.pixelSize: ThemeModule.Theme.fontSizeNormal
-                font.family: ThemeModule.Theme.fontFamily
-                font.bold: true
-                color: ThemeModule.Theme.text
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Row {
-                spacing: ThemeModule.Theme.spacingSmall
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.right: parent.right
-
-                Components.RefreshButton {
-                    visible: root.network.wifiOn && root.network.wifiDevice !== null
-                    active: root.presented && root.network.isScanning
-                    tooltipText: root.network.isScanning ? "Stop Wi-Fi scan" : "Refresh Wi-Fi networks"
-                    onClicked: root.network.toggleWifiScan()
-                }
-
-                Components.ToggleSwitch {
-                    visible: root.network.wifiDevice !== null
-                    checked: root.network.wifiOn
-                    activeColor: ThemeModule.Theme.accent
-                    tooltipText: root.network.wifiOn ? "Turn Wi-Fi off" : "Turn Wi-Fi on"
-                    onToggled: function(state) {
-                        Networking.wifiEnabled = state;
-                    }
-                }
+        Components.DeviceRow {
+            visible: root.network.connectedWifi !== null
+            title: root.network.connectedWifi ? root.network.connectedWifi.name : ""
+            subtitle: root.network.connectedSubtitle()
+            iconName: root.network.signalIcon(root.network.signalPercent(
+                root.network.connectedWifi ? root.network.connectedWifi.signalStrength : 0))
+            current: true
+            primaryEnabled: false
+            actionChips: [{ text: "Disconnect", tone: "neutral", actionId: "disconnect" }]
+            onActionTriggered: {
+                if (root.network.connectedWifi)
+                    root.network.connectedWifi.disconnect();
             }
         },
 
-        Text {
-            visible: root.network.connectedWifi === null || root.network.connectingNetwork !== null
-            width: parent.width
-            text: root.network.wifiStatusText()
-            font.pixelSize: ThemeModule.Theme.fontSizeSmall
-            font.family: ThemeModule.Theme.fontFamily
-            color: root.network.wifiDevice === null || !root.network.wifiOn
-                ? ThemeModule.Theme.overlay
-                : ThemeModule.Theme.subtext
-            wrapMode: Text.WordWrap
+        Components.DeviceRow {
+            visible: root.connecting
+            title: root.network.connectingNetwork ? root.network.connectingNetwork.name : ""
+            subtitle: "Connecting…"
+            subtitleColor: ThemeModule.Theme.accent
+            busy: true
+            primaryEnabled: false
         },
 
         Text {
@@ -86,220 +85,63 @@ Components.Card {
             wrapMode: Text.WordWrap
         },
 
-        Item {
-            visible: root.network.connectedWifi !== null
-            width: parent.width
-            height: visible ? 44 : 0
-
-            Rectangle {
-                anchors.fill: parent
-                radius: ThemeModule.Theme.borderRadiusSmall
-                color: "transparent"
-            }
-
-            Row {
-                anchors.left: parent.left
-                anchors.right: disconnectChip.left
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.rightMargin: ThemeModule.Theme.spacingMedium
-                spacing: ThemeModule.Theme.spacingSmall
-
-                Components.AppIcon {
-                    id: connectedSignalText
-                    name: root.network.signalIcon(root.network.signalPercent(root.network.connectedWifi ? root.network.connectedWifi.signalStrength : 0))
-                    size: ThemeModule.Theme.iconSizeMedium
-                    iconColor: ThemeModule.Theme.success
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Column {
-                    width: parent.width - connectedSignalText.width - ThemeModule.Theme.spacingSmall
-                    spacing: ThemeModule.Theme.spacingMicro
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    Text {
-                        width: parent.width
-                        text: root.network.connectedWifi ? root.network.connectedWifi.name : ""
-                        font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                        font.family: ThemeModule.Theme.fontFamily
-                        font.bold: true
-                        color: ThemeModule.Theme.text
-                        elide: Text.ElideRight
-                    }
-
-                    Row {
-                        spacing: ThemeModule.Theme.spacingTiny
-
-                        Text {
-                            text: "Connected"
-                            font.pixelSize: ThemeModule.Theme.fontSizeCaption
-                            font.family: ThemeModule.Theme.fontFamily
-                            color: ThemeModule.Theme.success
-                        }
-
-                        Components.AppIcon {
-                            name: "lock"
-                            size: ThemeModule.Theme.iconSizeTiny
-                            iconColor: ThemeModule.Theme.subtext
-                            visible: root.network.connectedWifi && root.network.connectedWifi.security !== WifiSecurityType.Open
-                        }
-                    }
-                }
-            }
-
-            Components.InlineActionChip {
-                id: disconnectChip
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                text: "Disconnect"
-                tone: "error"
-                onActivated: {
-                    if (root.network.connectedWifi) root.network.connectedWifi.disconnect();
-                }
-            }
+        Components.EmptyState {
+            visible: root.network.wifiDevice === null && root.network.wiredDevice === null
+            iconName: "wifi-off"
+            title: "No network adapter"
+            detail: "No Wi-Fi or wired network device was found."
         },
 
-        // ── Connecting indicator ──
-        Item {
-            visible: root.network.connectingNetwork !== null && root.network.connectedWifi === null
-            width: parent.width
-            height: ThemeModule.Theme.controlHeight
-
-            Row {
-                anchors.centerIn: parent
-                spacing: ThemeModule.Theme.spacingSmall
-
-                Components.AppIcon {
-                    name: "loader"
-                    size: ThemeModule.Theme.iconSizeMedium
-                    iconColor: ThemeModule.Theme.accent
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    RotationAnimator on rotation {
-                        from: 0
-                        to: 360
-                        duration: 1200
-                        loops: Animation.Infinite
-                        running: root.presented && root.network.connectingNetwork !== null
-                    }
-                }
-
-                Text {
-                    text: "Connecting to " + (root.network.connectingNetwork ? root.network.connectingNetwork.name : "") + "..."
-                    font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                    font.family: ThemeModule.Theme.fontFamily
-                    color: ThemeModule.Theme.accent
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
+        Components.EmptyState {
+            visible: root.network.wifiDevice !== null && !root.network.wifiOn
+            iconName: "wifi-off"
+            title: "Wi-Fi is off"
+            detail: "Turn it on to see networks nearby."
+            actionLabel: "Turn on Wi-Fi"
+            actionIconName: "wifi"
+            onActivated: Networking.wifiEnabled = true
         }
     ]
 
     content: [
         Column {
-            visible: root.network.wifiOn && root.network.wifiDevice !== null
+            visible: root.wifiReady
             width: parent.width
-            spacing: ThemeModule.Theme.spacingSmall
+            spacing: ThemeModule.Theme.spacingTiny
 
-            Components.SelectRow {
-                visible: root.network.displayedNetworks.length > 0 || root.network.cacheUpdatedAtMs > 0 || root.network.isScanning
-                enabled: root.network.displayedNetworks.length > 0
-                label: "Nearby"
-                value: root.network.displayedNetworks.length
-                    + (root.network.nearbyExpanded ? " shown" : " hidden")
-                onActivated: root.network.nearbyExpanded = !root.network.nearbyExpanded
+            Components.DeviceSection {
+                title: "Nearby"
+                count: root.network.displayedNetworks.length
+                status: root.network.nearbyStatusText()
+                statusActive: root.network.isScanning
             }
 
+            Item { width: 1; height: ThemeModule.Theme.spacingTiny }
+
             Repeater {
-                model: root.network.nearbyExpanded ? root.network.displayedNetworks : []
-                delegate: Column {
-                    id: nearbyNetworkDelegate
+                model: root.network.displayedNetworks
+                delegate: Components.DeviceRow {
+                    id: networkRow
                     required property var modelData
+                    readonly property bool prompting: root.network.passwordRowName === networkRow.modelData.name
 
-                    width: parent.width
-                    spacing: ThemeModule.Theme.spacingSmall
-                    opacity: modelData.live && !modelData.stateChanging ? 1.0 : ThemeModule.Theme.disabledOpacity
-
-                    Rectangle {
-                        width: parent.width
-                        height: ThemeModule.Theme.controlHeight
-                        radius: ThemeModule.Theme.borderRadiusSmall
-                        color: nearbyRowMouse.containsMouse && nearbyRowMouse.enabled
-                            ? ThemeModule.Theme.cardHover
-                            : "transparent"
-
-                        Accessible.role: Accessible.Button
-                        Accessible.name: "Connect to " + nearbyNetworkDelegate.modelData.name
-                        Accessible.description: root.network.networkSubtitle(nearbyNetworkDelegate.modelData)
-                        Accessible.onPressAction: root.network.onNetworkItemPrimary(nearbyNetworkDelegate.modelData)
-
-                        MouseArea {
-                            id: nearbyRowMouse
-                            anchors.fill: parent
-                            enabled: nearbyNetworkDelegate.modelData.live && !nearbyNetworkDelegate.modelData.stateChanging
-                            hoverEnabled: true
-                            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            onClicked: root.network.onNetworkItemPrimary(nearbyNetworkDelegate.modelData)
-                        }
-
-                        Row {
-                            anchors.left: parent.left
-                            anchors.right: nearbyActionArea.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.rightMargin: ThemeModule.Theme.spacingSmall
-                            spacing: ThemeModule.Theme.spacingSmall
-
-                            Components.AppIcon {
-                                id: nearbySignalText
-                                name: root.network.signalIcon(nearbyNetworkDelegate.modelData.signalLevel)
-                                size: ThemeModule.Theme.iconSizeMedium
-                                iconColor: ThemeModule.Theme.success
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-
-                            Text {
-                                width: parent.width - nearbySignalText.width - ThemeModule.Theme.spacingSmall
-                                text: nearbyNetworkDelegate.modelData.name
-                                font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                                font.family: ThemeModule.Theme.fontFamily
-                                font.bold: true
-                                color: ThemeModule.Theme.text
-                                elide: Text.ElideRight
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-                        }
-
-                        Row {
-                            id: nearbyActionArea
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: ThemeModule.Theme.spacingSmall
-
-                            Components.AppIcon {
-                                visible: nearbyNetworkDelegate.modelData.security !== WifiSecurityType.Open
-                                name: "lock"
-                                size: ThemeModule.Theme.iconSizeTiny
-                                iconColor: ThemeModule.Theme.subtext
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-
-                            Components.InlineActionChip {
-                                visible: nearbyNetworkDelegate.modelData.live
-                                    && nearbyNetworkDelegate.modelData.known
-                                    && nearbyNetworkDelegate.modelData.network
-                                text: "Forget"
-                                tone: "warning"
-                                anchors.verticalCenter: parent.verticalCenter
-                                onActivated: {
-                                    if (nearbyNetworkDelegate.modelData.network)
-                                        nearbyNetworkDelegate.modelData.network.forget();
-                                }
-                            }
-                        }
+                    title: networkRow.modelData.name
+                    subtitle: root.network.networkSubtitle(networkRow.modelData)
+                    iconName: root.network.signalIcon(networkRow.modelData.signalLevel)
+                    busy: networkRow.modelData.stateChanging
+                    primaryEnabled: networkRow.modelData.live && !networkRow.modelData.stateChanging
+                    opacity: networkRow.modelData.live ? 1.0 : ThemeModule.Theme.disabledOpacity
+                    actionChips: networkRow.modelData.live && networkRow.modelData.known && networkRow.modelData.network
+                        ? [{ text: "Forget", tone: "warning", actionId: "forget" }]
+                        : []
+                    onPrimaryTriggered: root.network.onNetworkItemPrimary(networkRow.modelData)
+                    onActionTriggered: {
+                        if (networkRow.modelData.network)
+                            networkRow.modelData.network.forget();
                     }
 
                     Rectangle {
-                        visible: root.network.passwordRowName === nearbyNetworkDelegate.modelData.name
+                        visible: networkRow.prompting
                         width: parent.width
                         height: ThemeModule.Theme.controlHeight
                         radius: ThemeModule.Theme.borderRadiusSmall
@@ -309,21 +151,51 @@ Components.Card {
 
                         TextInput {
                             id: passwordInput
-                            anchors.fill: parent
-                            anchors.margins: ThemeModule.Theme.spacingSmall
+                            anchors.left: parent.left
+                            anchors.right: promptActions.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.leftMargin: ThemeModule.Theme.spacingSmall
+                            anchors.rightMargin: ThemeModule.Theme.spacingSmall
                             text: root.network.passwordText
                             echoMode: TextInput.Password
                             color: ThemeModule.Theme.text
                             font.pixelSize: ThemeModule.Theme.fontSizeSmall
                             font.family: ThemeModule.Theme.fontFamily
+                            clip: true
                             onTextChanged: root.network.passwordText = text
-                            onAccepted: root.network.requestConnectForItem(nearbyNetworkDelegate.modelData, root.network.passwordText)
-                            Keys.onReturnPressed: root.network.requestConnectForItem(nearbyNetworkDelegate.modelData, root.network.passwordText)
-                            Keys.onEnterPressed: root.network.requestConnectForItem(nearbyNetworkDelegate.modelData, root.network.passwordText)
+                            onAccepted: root.network.requestConnectForItem(networkRow.modelData, root.network.passwordText)
+                            Keys.onEscapePressed: root.network.cancelPasswordPrompt()
 
                             Component.onCompleted: {
-                                if (root.network.passwordRowName === nearbyNetworkDelegate.modelData.name)
+                                if (networkRow.prompting)
                                     passwordInput.forceActiveFocus();
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Password"
+                                color: ThemeModule.Theme.overlay
+                                font: passwordInput.font
+                                visible: passwordInput.text === ""
+                            }
+                        }
+
+                        Row {
+                            id: promptActions
+                            anchors.right: parent.right
+                            anchors.rightMargin: ThemeModule.Theme.spacingTiny
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: ThemeModule.Theme.spacingTiny
+
+                            Components.InlineActionChip {
+                                text: "Connect"
+                                tone: "success"
+                                onActivated: root.network.requestConnectForItem(networkRow.modelData, root.network.passwordText)
+                            }
+
+                            Components.InlineActionChip {
+                                text: "Cancel"
+                                onActivated: root.network.cancelPasswordPrompt()
                             }
                         }
 
@@ -333,30 +205,14 @@ Components.Card {
                         }
                     }
 
-                    Row {
-                        visible: root.network.passwordRowName === nearbyNetworkDelegate.modelData.name
-                        spacing: ThemeModule.Theme.spacingSmall
-
-                        Components.InlineActionChip {
-                            text: "Connect"
-                            tone: "success"
-                            onActivated: root.network.requestConnectForItem(nearbyNetworkDelegate.modelData, root.network.passwordText)
-                        }
-
-                        Components.InlineActionChip {
-                            text: "Cancel"
-                            tone: "neutral"
-                            onActivated: root.network.cancelPasswordPrompt()
-                        }
-                    }
-
                     Text {
-                        visible: root.network.passwordRowName === nearbyNetworkDelegate.modelData.name
-                            && root.network.connectErrorName === nearbyNetworkDelegate.modelData.name
+                        visible: networkRow.prompting && root.network.connectErrorName === networkRow.modelData.name
+                        width: parent.width
                         text: root.network.connectError
                         font.pixelSize: ThemeModule.Theme.fontSizeCaption
                         font.family: ThemeModule.Theme.fontFamily
                         color: ThemeModule.Theme.error
+                        wrapMode: Text.WordWrap
                     }
 
                     Behavior on opacity {
@@ -365,24 +221,18 @@ Components.Card {
                 }
             }
 
-            Text {
-                visible: root.network.wifiOn && root.network.wifiDevice !== null && root.network.networkListStatusText() !== ""
-                text: root.network.networkListStatusText()
-                font.pixelSize: ThemeModule.Theme.fontSizeCaption
-                font.family: ThemeModule.Theme.fontFamily
-                color: root.network.isScanning ? ThemeModule.Theme.accent : ThemeModule.Theme.overlay
-                anchors.horizontalCenter: parent.horizontalCenter
+            Components.EmptyState {
+                visible: root.network.displayedNetworks.length === 0
+                iconName: "wifi"
+                busy: root.network.isScanning
+                title: root.network.isScanning ? "Looking for networks…"
+                    : (root.network.scanRequested ? "No other networks found" : "No scan yet")
+                detail: root.network.isScanning ? ""
+                    : (root.network.scanRequested ? "Nothing else is in range right now." : "Scan to see the Wi-Fi networks around you.")
+                actionLabel: root.network.isScanning ? "" : (root.network.scanRequested ? "Scan again" : "Scan")
+                actionIconName: "refresh"
+                onActivated: root.network.startWifiScan()
             }
-
-            Text {
-                visible: root.network.nearbyExpanded && root.network.displayedNetworks.length === 0 && root.network.wifiOn && !root.network.isScanning
-                text: root.network.cacheUpdatedAtMs > 0 ? "No nearby networks from the last refresh" : "Refresh to scan for networks"
-                font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                font.family: ThemeModule.Theme.fontFamily
-                color: ThemeModule.Theme.overlay
-                anchors.horizontalCenter: parent.horizontalCenter
-            }
-
         }
     ]
 }

@@ -5,7 +5,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
-import "DisplayLogic.js" as DisplayLogic
 import "Shell.js" as Shell
 
 Singleton {
@@ -36,37 +35,72 @@ Singleton {
 
     readonly property var draftActiveMonitors: root.buildActiveMonitors(root.draftMonitors)
     readonly property string draftLayoutMode: root.detectLayoutMode(root.draftMonitors)
+    // Mirroring needs a second display, on or off.
+    readonly property bool canMirror: root.monitors.length > 1
+    readonly property bool mirrored: root.detectLayoutMode(root.monitors) === "mirror"
+    property bool mirrorQueued: false
 
     function monitorName(monitor) {
-        return DisplayLogic.monitorName(monitor);
+        return monitor && monitor.name ? String(monitor.name) : "";
     }
 
     function monitorScale(monitor) {
-        return DisplayLogic.monitorScale(monitor);
+        var scale = monitor && monitor.scale !== undefined ? Number(monitor.scale) : 1;
+        return scale > 0 ? scale : 1;
     }
 
     function formatModeRefresh(refreshRate) {
-        return DisplayLogic.formatModeRefresh(refreshRate);
+        var refresh = Number(refreshRate) || 0;
+        return refresh > 0 ? refresh.toFixed(2) : "";
     }
 
     function normalizeMode(mode) {
-        return DisplayLogic.normalizeMode(mode);
+        var raw = String(mode || "").trim();
+        if (raw === "")
+            return "";
+        var parsed = root.parseMode(raw);
+        if (!parsed)
+            return raw;
+        return parsed.width + "x" + parsed.height + "@" + root.formatModeRefresh(parsed.refreshRate) + "Hz";
     }
 
     function parseMode(mode) {
-        return DisplayLogic.parseMode(mode);
+        var match = String(mode || "").trim().match(/^([0-9]+)x([0-9]+)@([0-9.]+)\s*(Hz)?$/i);
+        if (!match)
+            return null;
+        var width = parseInt(match[1], 10);
+        var height = parseInt(match[2], 10);
+        var refreshRate = Number(match[3]) || 0;
+        if (width <= 0 || height <= 0 || refreshRate <= 0)
+            return null;
+        return { width: width, height: height, refreshRate: refreshRate };
     }
 
     function modeLabel(mode) {
-        return DisplayLogic.modeLabel(mode);
+        var parsed = root.parseMode(mode);
+        if (!parsed)
+            return String(mode || "Preferred");
+        var rounded = Math.round(parsed.refreshRate);
+        var refresh = Math.abs(parsed.refreshRate - rounded) < 0.01
+            ? String(rounded)
+            : parsed.refreshRate.toFixed(2);
+        return parsed.width + "x" + parsed.height + "@" + refresh + "Hz";
     }
 
     function modeCommand(mode) {
-        return DisplayLogic.modeCommand(mode);
+        var normalized = root.normalizeMode(mode);
+        return normalized === "" ? "preferred" : normalized.replace(/Hz$/i, "");
     }
 
     function monitorModeString(monitor) {
-        return DisplayLogic.monitorModeString(monitor);
+        if (monitor && monitor.mode)
+            return root.normalizeMode(monitor.mode);
+        var width = Number(monitor && monitor.width) || 0;
+        var height = Number(monitor && monitor.height) || 0;
+        var refresh = Number(monitor && monitor.refreshRate) || 0;
+        if (width <= 0 || height <= 0 || refresh <= 0)
+            return "preferred";
+        return width + "x" + height + "@" + root.formatModeRefresh(refresh) + "Hz";
     }
 
     function availableModesFor(monitor) {
@@ -109,15 +143,15 @@ Singleton {
     }
 
     function logicalWidth(monitor) {
-        return DisplayLogic.logicalWidth(monitor);
+        return Math.max(1, Math.round((Number(monitor && monitor.width) || 1) / root.monitorScale(monitor)));
     }
 
     function logicalHeight(monitor) {
-        return DisplayLogic.logicalHeight(monitor);
+        return Math.max(1, Math.round((Number(monitor && monitor.height) || 1) / root.monitorScale(monitor)));
     }
 
     function buildActiveMonitors(source) {
-        return DisplayLogic.buildActiveMonitors(source);
+        return (source || []).filter(function(monitor) { return monitor && !monitor.disabled; });
     }
 
     function primaryMonitorObject(source) {
@@ -136,12 +170,27 @@ Singleton {
         return active[0];
     }
 
+    // Mirrored when a display mirrors another or two share a position.
     function detectMirrored(source) {
-        return DisplayLogic.detectMirrored(source || root.monitors);
+        var active = root.buildActiveMonitors(source || root.monitors);
+        var occupiedPositions = {};
+        for (var i = 0; i < active.length; i++) {
+            var mirrorOf = String(active[i].mirrorOf || "");
+            if (mirrorOf !== "" && mirrorOf !== "none")
+                return true;
+            var positionKey = Math.round(Number(active[i].x) || 0)
+                + "x" + Math.round(Number(active[i].y) || 0);
+            if (occupiedPositions[positionKey])
+                return true;
+            occupiedPositions[positionKey] = true;
+        }
+        return false;
     }
 
     function detectLayoutMode(source) {
-        return DisplayLogic.detectLayoutMode(source || root.monitors);
+        if (root.buildActiveMonitors(source || root.monitors).length <= 1)
+            return "single";
+        return root.detectMirrored(source) ? "mirror" : "extend";
     }
 
     function cloneMonitor(monitor) {
@@ -226,16 +275,40 @@ Singleton {
         root.ensureSelected();
     }
 
-    function commandForMonitorMode(monitor, position, mirrorTarget) {
-        return DisplayLogic.commandForMonitorMode(monitor, position, mirrorTarget);
+    function luaQuote(value) {
+        return "\"" + String(value || "")
+            .replace(/\\/g, "\\\\")
+            .replace(/\"/g, "\\\"")
+            .replace(/\r/g, "\\r")
+            .replace(/\n/g, "\\n") + "\"";
     }
 
+    // The `hyprctl eval` Lua that applies a draft monitor.
     function commandForDraftMonitor(monitor) {
-        return DisplayLogic.commandForDraftMonitor(monitor);
+        var name = root.monitorName(monitor);
+        if (name === "")
+            return "";
+        if (monitor.disabled)
+            return "hl.monitor({ output = " + root.luaQuote(name) + ", disabled = true })";
+        var mirrorTarget = String(monitor.mirrorOf || "");
+        var position = mirrorTarget !== "" && mirrorTarget !== "none"
+            ? "0x0"
+            : Math.round(Number(monitor.x) || 0) + "x" + Math.round(Number(monitor.y) || 0);
+        var command = "hl.monitor({ output = " + root.luaQuote(name)
+            + ", mode = " + root.luaQuote(root.modeCommand(root.monitorModeString(monitor)))
+            + ", position = " + root.luaQuote(position)
+            + ", scale = " + root.monitorScale(monitor);
+        if (mirrorTarget !== "")
+            command += ", mirror = " + root.luaQuote(mirrorTarget);
+        return command + " })";
     }
 
+    // With connectedOnly, monitors unplugged since `source` was read are skipped.
     function commandsForMonitors(source, connectedOnly) {
-        return DisplayLogic.commandsForMonitors(source, root.monitors, connectedOnly);
+        var connected = root.monitors.map(root.monitorName);
+        return (source || []).filter(function(monitor) {
+            return !connectedOnly || connected.indexOf(root.monitorName(monitor)) >= 0;
+        }).map(root.commandForDraftMonitor);
     }
 
     function runMonitorCommands(commands, operation) {
@@ -308,6 +381,30 @@ Singleton {
             return false;
         }
         return true;
+    }
+
+    // Mirrors every display onto the focused one, or extends them again if they are
+    // mirrored. It reads the displays first, then applies like the Displays panel does,
+    // so the change waits for Keep there and reverts on its own otherwise.
+    function toggleMirror() {
+        root.mirrorQueued = true;
+        root.refresh();
+    }
+
+    function runQueuedMirror() {
+        root.mirrorQueued = false;
+        if (root.applying || root.confirming || root.reverting)
+            return;
+        if (!root.canMirror) {
+            root.errorText = "Mirroring needs a second display.";
+            return;
+        }
+        root.resetDraft();
+        var source = root.primaryMonitorObject(root.draftMonitors);
+        if (source)
+            root.selectedName = root.monitorName(source);
+        root.setDraftLayoutMode(root.mirrored ? "extend" : "mirror");
+        root.applyDraft();
     }
 
     function activeDraftCount() {
@@ -581,6 +678,9 @@ Singleton {
         }
     }
 
+    // Read once at start, so the launcher knows whether !mirror applies.
+    Component.onCompleted: root.refresh()
+
     Timer {
         id: refreshDebounce
         interval: 250
@@ -657,9 +757,12 @@ Singleton {
                     if (root.topologyRollbackQueued) {
                         root.topologyRollbackQueued = false;
                         Qt.callLater(root.revertDisplayChanges);
+                    } else if (root.mirrorQueued) {
+                        Qt.callLater(root.runQueuedMirror);
                     }
                 }
             } catch(e) {
+                root.mirrorQueued = false;
                 root.errorText = "Could not read displays.";
                 console.warn("[Speshell] Failed to parse hyprctl monitors output:", e);
                 if (root.topologyRollbackQueued) {

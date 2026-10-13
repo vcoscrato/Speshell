@@ -112,12 +112,24 @@ Components.Card {
                                     visible: app.iconPath !== "" && status === Image.Ready
                                 }
 
-                                Components.AppIcon {
-                                    anchors.centerIn: parent
+                                // No icon: the class's initial on a tile, like an app icon.
+                                Rectangle {
+                                    anchors.fill: parent
                                     visible: !appIcon.visible
-                                    name: "tray-fallback"
-                                    size: tile.iconSize
-                                    iconColor: ThemeModule.Theme.subtext
+                                    radius: ThemeModule.Theme.borderRadius
+                                    color: ThemeModule.Theme.alpha(ThemeModule.Theme.accent, ThemeModule.Theme.tintStrong)
+                                    border.width: ThemeModule.Theme.borderWidth
+                                    border.color: ThemeModule.Theme.alpha(ThemeModule.Theme.accent, ThemeModule.Theme.tintOutline)
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        // The first letter or digit of the class.
+                                        text: (String(app.modelData).match(/[A-Za-z0-9]/) || ["?"])[0].toUpperCase()
+                                        font.pixelSize: ThemeModule.Theme.fontSizeCaption
+                                        font.family: ThemeModule.Theme.fontFamily
+                                        font.bold: true
+                                        color: ThemeModule.Theme.accent
+                                    }
                                 }
                             }
                         }

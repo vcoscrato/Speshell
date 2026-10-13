@@ -8,63 +8,18 @@ import "../theme" as ThemeModule
 Components.Card {
     id: root
 
+    property bool presented: false
+    // The action waiting for a second click; empty when none is.
     property string pendingAction: ""
 
     readonly property var actions: [
-        {
-            id: "sleep",
-            label: "Sleep",
-            detail: "Lock and suspend",
-            iconName: "sleep",
-            tone: "info"
-        },
-        {
-            id: "logout",
-            label: "Log out",
-            detail: "End this session",
-            iconName: "logout",
-            tone: "warning"
-        },
-        {
-            id: "restart",
-            label: "Restart",
-            detail: "Reboot the system",
-            iconName: "restart",
-            tone: "warning"
-        },
-        {
-            id: "poweroff",
-            label: "Power off",
-            detail: "Shut down safely",
-            iconName: "power",
-            tone: "error"
-        }
+        { id: "sleep", label: "Sleep", detail: "Lock and suspend", iconName: "sleep", tone: "info" },
+        { id: "logout", label: "Log out", detail: "End this session", iconName: "logout", tone: "warning" },
+        { id: "restart", label: "Restart", detail: "Reboot the system", iconName: "restart", tone: "warning" },
+        { id: "poweroff", label: "Power off", detail: "Shut down", iconName: "power", tone: "error" }
     ]
 
-    function actionInfo(action) {
-        for (var i = 0; i < root.actions.length; i++) {
-            if (root.actions[i].id === action)
-                return root.actions[i];
-        }
-        return null;
-    }
-
-    function confirmationTitle(action) {
-        var info = root.actionInfo(action);
-        return info ? info.label + "?" : "Continue?";
-    }
-
-    function confirmationDetail(action) {
-        if (action === "sleep")
-            return "Lock the screen, then suspend this device.";
-        if (action === "logout")
-            return "Close the Hyprland session. Unsaved work may be lost.";
-        if (action === "restart")
-            return "Close all applications and restart this device.";
-        if (action === "poweroff")
-            return "Close all applications and power off this device.";
-        return "";
-    }
+    onPresentedChanged: if (!root.presented) root.cancelConfirmation()
 
     function canRun(action) {
         if (Services.PowerService.busy)
@@ -74,11 +29,20 @@ Components.Card {
         return true;
     }
 
-    function requestConfirmation(action) {
+    // The first click arms an action; a second click within the countdown runs it.
+    function activate(action) {
         if (!root.canRun(action))
             return;
-        root.pendingAction = action;
-        confirmationTimer.restart();
+        if (root.pendingAction !== action) {
+            root.pendingAction = action;
+            confirmationTimer.restart();
+            return;
+        }
+        // A double-click arms and confirms in one gesture; let it only arm.
+        if (confirmationTimer.elapsedMs() < 400)
+            return;
+        root.cancelConfirmation();
+        Services.PowerService.runAction(action);
     }
 
     function cancelConfirmation() {
@@ -86,256 +50,170 @@ Components.Card {
         root.pendingAction = "";
     }
 
-    function confirmPendingAction() {
-        var action = root.pendingAction;
-        if (action === "")
-            return;
-        root.cancelConfirmation();
-        Services.PowerService.runAction(action);
-    }
-
     Timer {
         id: confirmationTimer
-        interval: 10000
-        repeat: false
+
+        property double startedAt: 0
+
+        function elapsedMs() {
+            return Date.now() - confirmationTimer.startedAt;
+        }
+
+        interval: 5000
+        onRunningChanged: if (running) startedAt = Date.now()
         onTriggered: root.pendingAction = ""
     }
 
-    Rectangle {
-        id: lockAction
-        width: parent.width
-        height: 68
+    component PowerTile: Rectangle {
+        id: tile
+
+        property string label: ""
+        property string detail: ""
+        property string iconName: ""
+        property string tone: "accent"
+        property bool pending: false
+        property bool working: false
+        property int countdownMs: 0
+
+        readonly property color toneColor: ThemeModule.Theme.toneColor(tile.tone)
+        readonly property bool hot: tile.pending || (tileMouse.containsMouse && tile.enabled)
+
+        signal activated()
+
+        implicitHeight: Math.max(ThemeModule.Theme.controlHeight, tileText.implicitHeight)
+            + ThemeModule.Theme.spacingMedium * 2
         radius: ThemeModule.Theme.borderRadiusSmall
-        enabled: root.canRun("lock")
-        opacity: enabled ? 1.0 : ThemeModule.Theme.disabledOpacity
-        color: lockMouse.containsMouse && enabled
-            ? ThemeModule.Theme.alpha(ThemeModule.Theme.accent, ThemeModule.Theme.tintStrong)
-            : ThemeModule.Theme.controlFill
+        clip: true
+        opacity: tile.enabled ? 1.0 : ThemeModule.Theme.disabledOpacity
+        color: tile.pending
+            ? ThemeModule.Theme.alpha(tile.toneColor, ThemeModule.Theme.tintStrong)
+            : (tile.hot ? ThemeModule.Theme.alpha(tile.toneColor, ThemeModule.Theme.tintSubtle) : ThemeModule.Theme.controlFill)
         border.width: ThemeModule.Theme.borderWidth
-        border.color: lockMouse.containsMouse && enabled
-            ? ThemeModule.Theme.accent
-            : ThemeModule.Theme.controlBorder
+        border.color: tile.pending
+            ? ThemeModule.Theme.alpha(tile.toneColor, ThemeModule.Theme.tintOutlineStrong)
+            : (tile.hot ? ThemeModule.Theme.alpha(tile.toneColor, ThemeModule.Theme.tintOutline) : "transparent")
+
+        Behavior on color {
+            ColorAnimation { duration: ThemeModule.Theme.animDurationFast }
+        }
 
         Accessible.role: Accessible.Button
-        Accessible.name: "Lock screen"
-        Accessible.description: Services.PowerService.lockerAvailable
-            ? "Secure this session immediately"
-            : "Screen locker unavailable"
-        Accessible.onPressAction: if (enabled) Services.PowerService.runAction("lock")
+        Accessible.name: tile.label
+        Accessible.description: tile.pending ? "Press again to confirm" : tile.detail
+        Accessible.onPressAction: if (tile.enabled) tile.activated()
 
-        Row {
+        Rectangle {
+            id: disc
             anchors.left: parent.left
             anchors.leftMargin: ThemeModule.Theme.spacingMedium
             anchors.verticalCenter: parent.verticalCenter
-            spacing: ThemeModule.Theme.spacingMedium
+            width: ThemeModule.Theme.controlHeight
+            height: width
+            radius: width / 2
+            color: ThemeModule.Theme.alpha(tile.hot ? tile.toneColor : ThemeModule.Theme.overlay,
+                tile.hot ? ThemeModule.Theme.tintStrong : ThemeModule.Theme.tintSubtle)
 
-            Rectangle {
-                width: 40
-                height: 40
-                radius: width / 2
-                color: ThemeModule.Theme.alpha(ThemeModule.Theme.accent, ThemeModule.Theme.tintStrong)
-
-                Components.AppIcon {
-                    anchors.centerIn: parent
-                    name: "lock"
-                    size: ThemeModule.Theme.iconSizeMedium
-                    iconColor: lockAction.enabled ? ThemeModule.Theme.accent : ThemeModule.Theme.subtext
-                }
-            }
-
-            Column {
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: ThemeModule.Theme.spacingMicro
-
-                Text {
-                    text: Services.PowerService.activeAction === "lock" ? "Locking…" : "Lock screen"
-                    color: ThemeModule.Theme.text
-                    font.pixelSize: ThemeModule.Theme.fontSizeNormal
-                    font.family: ThemeModule.Theme.fontFamily
-                    font.bold: true
-                }
-
-                Text {
-                    text: Services.PowerService.lockerChecking
-                        ? "Checking screen locker"
-                        : (Services.PowerService.lockerAvailable
-                            ? "Secure this session immediately"
-                            : "Screen locker unavailable")
-                    color: ThemeModule.Theme.subtext
-                    font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                    font.family: ThemeModule.Theme.fontFamily
-                }
+            Components.AppIcon {
+                anchors.centerIn: parent
+                name: tile.iconName
+                size: ThemeModule.Theme.iconSizeMedium
+                iconColor: tile.hot ? tile.toneColor : ThemeModule.Theme.subtextBright
             }
         }
 
-        Components.StatusBadge {
+        Column {
+            id: tileText
+            anchors.left: disc.right
+            anchors.leftMargin: ThemeModule.Theme.spacingSmall
             anchors.right: parent.right
-            anchors.rightMargin: ThemeModule.Theme.spacingMedium
+            anchors.rightMargin: ThemeModule.Theme.spacingSmall
             anchors.verticalCenter: parent.verticalCenter
-            text: Services.PowerService.lockerChecking
-                ? "CHECKING"
-                : (Services.PowerService.lockerAvailable ? "READY" : "UNAVAILABLE")
-            tone: Services.PowerService.lockerAvailable ? "success" : "warning"
+            spacing: ThemeModule.Theme.spacingMicro
+
+            Text {
+                width: parent.width
+                text: tile.working ? "Working…" : (tile.pending ? tile.label + "?" : tile.label)
+                color: ThemeModule.Theme.text
+                font.pixelSize: ThemeModule.Theme.fontSizeNormal
+                font.family: ThemeModule.Theme.fontFamily
+                font.weight: Font.DemiBold
+                elide: Text.ElideRight
+            }
+
+            Text {
+                width: parent.width
+                text: tile.pending ? "Click again to confirm" : tile.detail
+                color: tile.pending ? tile.toneColor : ThemeModule.Theme.subtext
+                font.pixelSize: ThemeModule.Theme.fontSizeCaption
+                font.family: ThemeModule.Theme.fontFamily
+                elide: Text.ElideRight
+            }
+        }
+
+        // Drains while the confirmation waits.
+        Rectangle {
+            id: countdown
+            anchors.left: parent.left
+            anchors.bottom: parent.bottom
+            height: 2
+            color: tile.toneColor
+            visible: tile.pending
+
+            NumberAnimation on width {
+                running: tile.pending
+                from: tile.width
+                to: 0
+                duration: tile.countdownMs
+            }
         }
 
         MouseArea {
-            id: lockMouse
+            id: tileMouse
             anchors.fill: parent
-            enabled: lockAction.enabled
+            enabled: tile.enabled
             hoverEnabled: true
             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-            onClicked: Services.PowerService.runAction("lock")
+            onClicked: tile.activated()
         }
     }
 
-    Flow {
+    PowerTile {
         width: parent.width
+        label: "Lock screen"
+        detail: Services.PowerService.lockerChecking
+            ? "Checking screen locker"
+            : (Services.PowerService.lockerAvailable ? "Secure this session" : "Screen locker unavailable")
+        iconName: "lock"
+        enabled: root.canRun("lock")
+        working: Services.PowerService.activeAction === "lock"
+        onActivated: {
+            root.cancelConfirmation();
+            Services.PowerService.runAction("lock");
+        }
+    }
+
+    Grid {
+        id: actionGrid
+        width: parent.width
+        columns: 2
         spacing: ThemeModule.Theme.spacingSmall
 
         Repeater {
             model: root.actions
 
-            delegate: Rectangle {
-                id: powerAction
-
+            delegate: PowerTile {
                 required property var modelData
-                readonly property color toneColor: ThemeModule.Theme.toneColor(modelData.tone)
 
-                width: (parent.width - ThemeModule.Theme.spacingSmall) / 2
-                height: 72
-                radius: ThemeModule.Theme.borderRadiusSmall
+                width: (actionGrid.width - actionGrid.spacing) / 2
+                label: modelData.label
+                detail: modelData.detail
+                iconName: modelData.iconName
+                tone: modelData.tone
                 enabled: root.canRun(modelData.id)
-                opacity: enabled ? 1.0 : ThemeModule.Theme.disabledOpacity
-                color: actionMouse.containsMouse && enabled
-                    ? ThemeModule.Theme.alpha(toneColor, ThemeModule.Theme.tintStrong)
-                    : ThemeModule.Theme.controlFill
-                border.width: root.pendingAction === modelData.id ? 2 : ThemeModule.Theme.borderWidth
-                border.color: root.pendingAction === modelData.id
-                    ? toneColor
-                    : ThemeModule.Theme.controlBorder
-
-                Accessible.role: Accessible.Button
-                Accessible.name: modelData.label
-                Accessible.description: modelData.detail + ". Requires confirmation."
-                Accessible.onPressAction: if (enabled) root.requestConfirmation(modelData.id)
-
-                Row {
-                    anchors.left: parent.left
-                    anchors.leftMargin: ThemeModule.Theme.spacingMedium
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: ThemeModule.Theme.spacingSmall
-
-                    Rectangle {
-                        width: ThemeModule.Theme.controlHeight
-                        height: ThemeModule.Theme.controlHeight
-                        radius: width / 2
-                        color: ThemeModule.Theme.alpha(powerAction.toneColor, ThemeModule.Theme.tintStrong)
-
-                        Components.AppIcon {
-                            anchors.centerIn: parent
-                            name: powerAction.modelData.iconName
-                            size: ThemeModule.Theme.iconSizeMedium
-                            iconColor: powerAction.toneColor
-                        }
-                    }
-
-                    Column {
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: ThemeModule.Theme.spacingMicro
-
-                        Text {
-                            text: Services.PowerService.activeAction === powerAction.modelData.id
-                                ? "Working…"
-                                : powerAction.modelData.label
-                            color: ThemeModule.Theme.text
-                            font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                            font.family: ThemeModule.Theme.fontFamily
-                            font.bold: true
-                        }
-
-                        Text {
-                            text: powerAction.modelData.detail
-                            color: ThemeModule.Theme.subtext
-                            font.pixelSize: ThemeModule.Theme.fontSizeCaption
-                            font.family: ThemeModule.Theme.fontFamily
-                        }
-                    }
-                }
-
-                MouseArea {
-                    id: actionMouse
-                    anchors.fill: parent
-                    enabled: powerAction.enabled
-                    hoverEnabled: true
-                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: root.requestConfirmation(powerAction.modelData.id)
-                }
-            }
-        }
-    }
-
-    Rectangle {
-        visible: root.pendingAction !== ""
-        width: parent.width
-        height: visible ? confirmationContent.implicitHeight + ThemeModule.Theme.spacingMedium * 2 : 0
-        radius: ThemeModule.Theme.borderRadiusSmall
-        color: ThemeModule.Theme.alpha(ThemeModule.Theme.warning, ThemeModule.Theme.tintSubtle)
-        border.width: ThemeModule.Theme.borderWidth
-        border.color: ThemeModule.Theme.alpha(ThemeModule.Theme.warning, ThemeModule.Theme.tintOutline)
-
-        Behavior on height {
-            NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing }
-        }
-
-        Column {
-            id: confirmationContent
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.margins: ThemeModule.Theme.spacingMedium
-            spacing: ThemeModule.Theme.spacingSmall
-
-            Text {
-                width: parent.width
-                text: root.confirmationTitle(root.pendingAction)
-                color: ThemeModule.Theme.text
-                font.pixelSize: ThemeModule.Theme.fontSizeNormal
-                font.family: ThemeModule.Theme.fontFamily
-                font.bold: true
-            }
-
-            Text {
-                width: parent.width
-                text: root.confirmationDetail(root.pendingAction)
-                color: ThemeModule.Theme.subtext
-                font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                font.family: ThemeModule.Theme.fontFamily
-                wrapMode: Text.WordWrap
-            }
-
-            Row {
-                width: parent.width
-                spacing: ThemeModule.Theme.spacingSmall
-
-                Components.ActionButton {
-                    width: (parent.width - parent.spacing) / 2
-                    label: "Cancel"
-                    iconName: "close"
-                    toneColor: ThemeModule.Theme.subtext
-                    onActivated: root.cancelConfirmation()
-                }
-
-                Components.ActionButton {
-                    width: (parent.width - parent.spacing) / 2
-                    label: "Confirm " + (root.actionInfo(root.pendingAction)
-                        ? root.actionInfo(root.pendingAction).label.toLowerCase()
-                        : "action")
-                    iconName: "check"
-                    toneColor: root.pendingAction === "poweroff"
-                        ? ThemeModule.Theme.error
-                        : ThemeModule.Theme.warning
-                    onActivated: root.confirmPendingAction()
-                }
+                pending: root.pendingAction === modelData.id
+                working: Services.PowerService.activeAction === modelData.id
+                countdownMs: confirmationTimer.interval
+                onActivated: root.activate(modelData.id)
             }
         }
     }

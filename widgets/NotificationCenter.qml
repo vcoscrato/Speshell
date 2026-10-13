@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
+import Quickshell
 import "../components" as Components
 import "../services" as Services
 import "../theme" as ThemeModule
@@ -62,18 +63,21 @@ Components.Card {
         return notification.appName || "Notification";
     }
 
-    function detailText(notification, tick) {
-        var pieces = [];
-        var appName = root.compactText(notification.appName || "App");
-        var timeAgo = root.formatTimeAgo(notification.time, tick);
+    // The second line: the body when the summary leaves one, else the app.
+    function detailText(notification) {
         var summary = root.compactText(notification.summary);
         var body = root.compactText(notification.body);
+        if (summary !== "" && body !== "" && body !== summary)
+            return body;
+        return root.compactText(notification.appName);
+    }
 
-        if (appName !== "") pieces.push(appName);
-        if (timeAgo !== "") pieces.push(timeAgo);
-        if (summary !== "" && body !== "" && body !== summary) pieces.push(body);
+    function iconSource(notification) {
+        return notification.appIcon ? Quickshell.iconPath(notification.appIcon, true) : "";
+    }
 
-        return pieces.join(" · ");
+    function isInternal(notification) {
+        return String(notification.id).indexOf("internal:") === 0;
     }
 
     headerActions: Row {
@@ -135,9 +139,10 @@ Components.Card {
                 width: ListView.view.width
                 height: expanded
                     ? Math.max(root.notificationRowHeight,
-                        expandedContent.implicitHeight + ThemeModule.Theme.spacingSmall * 2)
+                        rowContent.implicitHeight + ThemeModule.Theme.spacingSmall * 2)
                     : root.notificationRowHeight
                 radius: ThemeModule.Theme.borderRadiusSmall
+                clip: true
                 color: notifMouse.containsMouse ? ThemeModule.Theme.cardHover : ThemeModule.Theme.controlFill
 
                 Accessible.role: Accessible.Button
@@ -149,84 +154,116 @@ Components.Card {
                     NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing }
                 }
 
-                Column {
-                    anchors {
-                        left: parent.left
-                        right: dismissBtn.left
-                        verticalCenter: parent.verticalCenter
-                        leftMargin: ThemeModule.Theme.spacingSmall
-                        rightMargin: ThemeModule.Theme.spacingTiny
-                    }
-                    spacing: ThemeModule.Theme.spacingMicro
-                    visible: !notificationRow.expanded
+                // Critical notifications keep a red edge in the history too.
+                Rectangle {
+                    visible: notificationRow.modelData.urgency === 2
+                    width: 2
+                    height: parent.height
+                    color: ThemeModule.Theme.error
+                }
 
-                    Text {
-                        width: parent.width
-                        text: root.primaryText(notificationRow.modelData)
-                        textFormat: Text.PlainText
-                        font.pixelSize: ThemeModule.Theme.fontSizeSupporting
-                        font.family: ThemeModule.Theme.fontFamily
-                        font.bold: true
-                        color: ThemeModule.Theme.text
-                        elide: Text.ElideRight
+                Item {
+                    id: sourceIcon
+                    readonly property string source: root.iconSource(notificationRow.modelData)
+                    x: ThemeModule.Theme.spacingSmall
+                    y: notificationRow.expanded
+                        ? ThemeModule.Theme.spacingSmall + 1
+                        : (root.notificationRowHeight - height) / 2
+                    width: ThemeModule.Theme.iconSizeMedium
+                    height: width
+
+                    Image {
+                        id: sourceImage
+                        anchors.fill: parent
+                        source: sourceIcon.source
+                        sourceSize: Qt.size(parent.width * 2, parent.height * 2)
+                        fillMode: Image.PreserveAspectFit
+                        visible: status === Image.Ready
                     }
 
-                    Text {
-                        width: parent.width
-                        text: root.detailText(notificationRow.modelData, root.refreshTick)
-                        textFormat: Text.PlainText
-                        font.pixelSize: ThemeModule.Theme.fontSizeCaption
-                        font.family: ThemeModule.Theme.fontFamily
-                        color: ThemeModule.Theme.subtext
-                        elide: Text.ElideRight
-                        visible: text !== ""
+                    Components.SpeshellMark {
+                        anchors.centerIn: parent
+                        size: ThemeModule.Theme.iconSizeMedium - 2
+                        visible: !sourceImage.visible && root.isInternal(notificationRow.modelData)
+                    }
+
+                    Components.AppIcon {
+                        anchors.centerIn: parent
+                        name: "bell"
+                        size: ThemeModule.Theme.iconSizeSmall
+                        iconColor: ThemeModule.Theme.overlay
+                        visible: !sourceImage.visible && !root.isInternal(notificationRow.modelData)
                     }
                 }
 
                 Column {
-                    id: expandedContent
+                    id: rowContent
                     anchors {
-                        left: parent.left
+                        left: sourceIcon.right
                         right: dismissBtn.left
                         top: parent.top
                         leftMargin: ThemeModule.Theme.spacingSmall
                         rightMargin: ThemeModule.Theme.spacingTiny
-                        topMargin: ThemeModule.Theme.spacingSmall
+                        topMargin: notificationRow.expanded
+                            ? ThemeModule.Theme.spacingSmall
+                            : (root.notificationRowHeight - rowContent.implicitHeight) / 2
                     }
-                    spacing: ThemeModule.Theme.spacingTiny
-                    visible: notificationRow.expanded
+                    spacing: ThemeModule.Theme.spacingMicro
+
+                    Item {
+                        width: parent.width
+                        height: summaryText.implicitHeight
+
+                        Text {
+                            id: summaryText
+                            anchors.left: parent.left
+                            anchors.right: ageText.left
+                            anchors.rightMargin: ThemeModule.Theme.spacingSmall
+                            text: root.primaryText(notificationRow.modelData)
+                            textFormat: Text.PlainText
+                            font.pixelSize: ThemeModule.Theme.fontSizeSupporting
+                            font.family: ThemeModule.Theme.fontFamily
+                            font.bold: true
+                            color: ThemeModule.Theme.text
+                            elide: Text.ElideRight
+                            wrapMode: notificationRow.expanded ? Text.Wrap : Text.NoWrap
+                        }
+
+                        Text {
+                            id: ageText
+                            anchors.right: parent.right
+                            anchors.baseline: summaryText.baseline
+                            text: root.formatTimeAgo(notificationRow.modelData.time, root.refreshTick)
+                            font.pixelSize: ThemeModule.Theme.fontSizeCaption
+                            font.family: ThemeModule.Theme.fontFamily
+                            color: ThemeModule.Theme.overlay
+                        }
+                    }
 
                     Text {
                         width: parent.width
-                        text: root.primaryText(notificationRow.modelData)
-                        textFormat: Text.PlainText
-                        font.pixelSize: ThemeModule.Theme.fontSizeSupporting
-                        font.family: ThemeModule.Theme.fontFamily
-                        font.bold: true
-                        color: ThemeModule.Theme.text
-                        wrapMode: Text.WrapAnywhere
-                    }
-
-                    Text {
-                        width: parent.width
-                        text: root.compactText(notificationRow.modelData.appName || "App")
-                            + " · " + root.formatTimeAgo(notificationRow.modelData.time, root.refreshTick)
-                        textFormat: Text.PlainText
-                        font.pixelSize: ThemeModule.Theme.fontSizeCaption
-                        font.family: ThemeModule.Theme.fontFamily
-                        color: ThemeModule.Theme.overlay
-                        wrapMode: Text.WordWrap
-                    }
-
-                    Text {
-                        width: parent.width
-                        text: String(notificationRow.modelData.body || "")
+                        text: notificationRow.expanded
+                            ? String(notificationRow.modelData.body || root.compactText(notificationRow.modelData.appName)).trim()
+                            : root.detailText(notificationRow.modelData)
                         textFormat: Text.PlainText
                         font.pixelSize: ThemeModule.Theme.fontSizeSmall
                         font.family: ThemeModule.Theme.fontFamily
                         color: ThemeModule.Theme.subtext
-                        wrapMode: Text.WrapAnywhere
-                        visible: text !== "" && text !== notificationRow.modelData.summary
+                        elide: notificationRow.expanded ? Text.ElideNone : Text.ElideRight
+                        wrapMode: notificationRow.expanded ? Text.Wrap : Text.NoWrap
+                        maximumLineCount: notificationRow.expanded ? 12 : 1
+                        visible: text !== ""
+                    }
+
+                    Text {
+                        width: parent.width
+                        visible: notificationRow.expanded && root.compactText(notificationRow.modelData.body) !== ""
+                        text: root.compactText(notificationRow.modelData.appName)
+                        textFormat: Text.PlainText
+                        font.pixelSize: ThemeModule.Theme.fontSizeCaption
+                        font.family: ThemeModule.Theme.fontFamily
+                        color: ThemeModule.Theme.overlay
+                        elide: Text.ElideRight
                     }
                 }
 
@@ -259,19 +296,13 @@ Components.Card {
             }
         }
 
-        Row {
-            width: parent.width
-            spacing: ThemeModule.Theme.spacingSmall
+        Components.EmptyState {
             visible: root.notifList.length === 0
-            height: ThemeModule.Theme.controlHeight
-
-            Text {
-                text: "No notifications"
-                font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                font.family: ThemeModule.Theme.fontFamily
-                color: ThemeModule.Theme.overlay
-                anchors.verticalCenter: parent.verticalCenter
-            }
+            iconName: Services.NotificationService.dndEnabled ? "bell-off" : "bell"
+            title: Services.NotificationService.dndEnabled ? "Do Not Disturb is on" : "All caught up"
+            detail: Services.NotificationService.dndEnabled
+                ? "Only critical ones pop up; the rest wait here."
+                : "New notifications will show up here."
         }
     }
 

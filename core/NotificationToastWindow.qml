@@ -58,22 +58,33 @@ PanelWindow {
         Repeater {
             model: Services.NotificationService.activePopups
 
-            delegate: Rectangle {
+            delegate: Item {
                 id: toastCard
                 required property var modelData
                 // Replaced notifications update the live object in place.
                 readonly property var live: modelData.notification
+                readonly property bool internal: String(modelData.id).indexOf("internal:") === 0
                 readonly property string notificationIcon: modelData.image || (
                     modelData.appIcon ? Quickshell.iconPath(modelData.appIcon, true) : ""
                 )
+                readonly property color toneColor: modelData.urgency === 2 ? ThemeModule.Theme.error : ThemeModule.Theme.accent
 
                 width: parent.width
                 height: toastContent.height + (ThemeModule.Theme.spacingMedium * 2)
-                radius: ThemeModule.Theme.borderRadius
-                color: toastMouse.containsMouse ? ThemeModule.Theme.cardHover : ThemeModule.Theme.card
-                border.color: ThemeModule.Theme.cardHover
-                border.width: ThemeModule.Theme.borderWidth
-                clip: true
+
+                // Top right of the screen: cut toward its center, accent edge on the left.
+                Components.Surface {
+                    anchors.fill: parent
+                    cut: ThemeModule.Theme.spacingMedium
+                    cutBottomLeft: true
+                    edge: "left"
+                    edgeColor: toastCard.toneColor
+                    fillColor: toastMouse.containsMouse ? ThemeModule.Theme.card : ThemeModule.Theme.bg
+
+                    Behavior on fillColor {
+                        ColorAnimation { duration: ThemeModule.Theme.animDuration }
+                    }
+                }
                 
                 // Add an entrance animation
                 scale: 0.95
@@ -86,10 +97,6 @@ PanelWindow {
                     id: entranceAnim
                     NumberAnimation { target: toastCard; property: "scale"; to: 1.0; duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutBack }
                     NumberAnimation { target: toastCard; property: "opacity"; to: 1.0; duration: ThemeModule.Theme.animDuration }
-                }
-
-                Behavior on color {
-                    ColorAnimation { duration: ThemeModule.Theme.animDuration }
                 }
 
                 // Click anywhere on the toast background to dismiss.
@@ -110,28 +117,39 @@ PanelWindow {
                         right: dismissBtn.left
                         top: parent.top
                         margins: ThemeModule.Theme.spacingMedium
+                        leftMargin: ThemeModule.Theme.spacingLarge
                     }
                     spacing: ThemeModule.Theme.spacingSmall
 
                     Row {
-                        spacing: ThemeModule.Theme.spacingTiny
+                        spacing: ThemeModule.Theme.spacingSmall
 
                         Image {
-                            width: 18
-                            height: 18
+                            width: 16
+                            height: 16
+                            anchors.verticalCenter: parent.verticalCenter
                             visible: toastCard.notificationIcon !== ""
                             source: toastCard.notificationIcon
-                            sourceSize: Qt.size(18, 18)
+                            sourceSize: Qt.size(32, 32)
                             fillMode: Image.PreserveAspectFit
                         }
-                        
+
+                        Components.SpeshellMark {
+                            size: 16
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: toastCard.internal && toastCard.notificationIcon === ""
+                        }
+
                         Text {
                             text: toastCard.modelData.appName || "App"
                             textFormat: Text.PlainText
-                            font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                            anchors.verticalCenter: parent.verticalCenter
+                            font.pixelSize: ThemeModule.Theme.fontSizeCaption
                             font.family: ThemeModule.Theme.fontFamily
                             font.bold: true
-                            color: ThemeModule.Theme.accent
+                            font.capitalization: Font.AllUppercase
+                            font.letterSpacing: 0.8
+                            color: toastCard.toneColor
                         }
                     }
 

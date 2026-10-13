@@ -6,7 +6,6 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Bluetooth
 import Quickshell.Services.UPower
-import "SupportIssues.js" as SupportIssues
 
 Singleton {
     id: root
@@ -44,25 +43,40 @@ Singleton {
     readonly property bool issuesReady: ConfigService.valid
         && root.probesComplete
         && !PowerService.lockerChecking
-    readonly property var issues: root.buildIssues(
-        root.issuesReady,
-        WeatherService.enabled,
-        root.curlAvailable,
-        root.configuredBacklightDevice,
-        root.backlightDevices,
-        root.brightnessHelperAvailable,
-        PowerService.lockCommand,
-        PowerService.lockerAvailable
-    )
-
-    function buildIssues(ready, weatherEnabled, hasCurl, configuredBacklight,
-                         detectedBacklights, hasBrightnessctl, lockCommand,
-                         lockerAvailable) {
-        return SupportIssues.buildIssues(
-            ready, weatherEnabled, hasCurl, configuredBacklight,
-            detectedBacklights, hasBrightnessctl, lockCommand,
-            lockerAvailable
-        );
+    readonly property var issues: {
+        if (!root.issuesReady)
+            return [];
+        var result = [];
+        if (WeatherService.enabled && !root.curlAvailable) {
+            result.push({
+                id: "weather-curl",
+                title: "Weather unavailable",
+                detail: "Weather is enabled, but curl is not installed."
+            });
+        }
+        var backlight = root.configuredBacklightDevice;
+        if (backlight !== "" && root.backlightDevices.indexOf(backlight) === -1) {
+            result.push({
+                id: "backlight-device",
+                title: "Backlight unavailable",
+                detail: "The configured backlight device '" + backlight + "' was not found."
+            });
+        } else if (backlight !== "" && !root.brightnessHelperAvailable) {
+            result.push({
+                id: "backlight-helper",
+                title: "Brightness controls unavailable",
+                detail: "A backlight device is configured, but brightnessctl is not installed."
+            });
+        }
+        var locker = String((PowerService.lockCommand || [])[0] || "");
+        if (locker !== "" && !PowerService.lockerAvailable) {
+            result.push({
+                id: "power-locker",
+                title: "Screen locking unavailable",
+                detail: "The configured locker '" + locker + "' could not be found."
+            });
+        }
+        return result;
     }
 
     Component.onCompleted: {

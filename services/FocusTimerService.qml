@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import "." as AppServices
 
 // Owns the focus timer countdown and its completion notification.
 Singleton {
@@ -55,7 +56,7 @@ Singleton {
             return;
 
         root.stop();
-        Quickshell.execDetached(["notify-send", "-a", "Speshell", "-u", "critical", "Timer Done", "Your timer has finished."]);
+        AppServices.NotificationService.addInternalNotification("focus-timer", "Timer done", "Your timer has finished.", true);
     }
 
     Timer {

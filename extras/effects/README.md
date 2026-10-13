@@ -1,6 +1,6 @@
 # Effects
 
-An effects directory animates the launcher, wallpaper changes, the dashboard's entrance, and the dashboard's controls, and paints the dashboard's backdrop, for any theme that names it with `effects = <name>` in its `theme.ini`. Speshell looks in `extras/effects` and `~/.local/share/speshell/effects`; a user directory replaces a shipped one of the same name. If effects fail to load, Speshell notifies and runs without them.
+An effects directory animates the launcher, wallpaper changes, the dashboard's entrance, and the dashboard's controls, and paints the backdrop of the dashboard and launcher, for any theme that names it with `effects = <name>` in its `theme.ini`. Speshell looks in `extras/effects` and `~/.local/share/speshell/effects`; a user directory replaces a shipped one of the same name. If effects fail to load, Speshell notifies and runs without them.
 
 Every effect here has the same files:
 
@@ -69,7 +69,7 @@ Emit `finished()` when done; Speshell removes it after 5 s otherwise. Without a 
 
 Emit `finished()` when done; Speshell removes it after 2.5 s otherwise. People open the dashboard to glance at the clock, so the entrance must not keep them waiting: show the top of the panel within a tenth of a second and all of it within about a third, and finish soon after. Speshell shows the panel itself once the entrance goes, so the entrance's last frame must show the panel exactly as it is, or the panel jumps: ease every distortion, tint, and overlay to nothing, let that frame draw, and emit `finished()` on the next tick. `just check` compares the two. Before removing the entrance, Speshell sets `panel` to null, so a `ShaderEffectSource` bound to it lets the panel show in the same frame; bind `sourceItem` to `panel` rather than keeping your own reference.
 
-**Dashboard backdrop.** Painted over the theme's base color and clipped to the panel's cut-corner shape; the cards and text sit on it. It receives `theme`, like the dashboard transition. Speshell renders it once into a texture and redraws it only when its properties change, so it must not animate. Keep it within a few percent of `theme.bg` wherever text may land: it sits behind every panel, including the calendar and the notes.
+**Dashboard backdrop.** Painted over the theme's base color and clipped to the panel's cut-corner shape; the cards and text sit on it. The launcher paints it too, at the launcher's size (about 540 × 400 px against the dashboard's 420 × 1050), so it must hold up in a short, wide box. It receives `theme`, like the dashboard transition. Speshell renders it once into a texture and redraws it only when its properties change, so it must not animate. Keep it within a few percent of `theme.bg` wherever text may land: it sits behind every panel, including the calendar and the notes.
 
 **Dashboard interactions.** Small effects where the user's hand is on the dashboard: dragging a slider, flipping a switch, picking something. Created while the dashboard shows, over the whole panel and above its content, and given no input. It receives `theme`, and Speshell calls its functions, with points and rects in its own coordinates:
 
@@ -114,4 +114,4 @@ GPU time per frame at 1080p on an RTX 3070 (`just perf`):
 | Water | 0.41 ms | 0.31 ms | under 0.07 ms | 0.12 ms | 0.11 ms |
 | Earth | 0.39 ms | 0.48 ms | 0.23 ms | 0.41 ms | 0.10 ms |
 
-The controls column is the whole controls scene, its backdrop included, while effects play. Nothing runs while the launcher is hidden, the wallpaper is still, the dashboard has finished its entrance, and no control effect is playing. The backdrop renders once when the dashboard first shows or the theme changes. Re-measure after a change and update this table.
+The controls column is the whole controls scene, its backdrop included, while effects play. Nothing runs while the launcher is hidden, the wallpaper is still, the dashboard has finished its entrance, and no control effect is playing. The backdrop renders once when the dashboard or launcher first shows or the theme changes. Re-measure after a change and update this table.

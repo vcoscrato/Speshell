@@ -109,7 +109,7 @@ PanelWindow {
         Repeater {
             model: root.displayedActivities
 
-            delegate: Rectangle {
+            delegate: Item {
                 id: activityCard
 
                 required property var modelData
@@ -118,22 +118,21 @@ PanelWindow {
                     modelData.startedAt,
                     root.nowMs
                 )
+                readonly property bool busy: modelData.state === "busy"
+
+                // The spinner stops wherever it is; set the icon upright again.
+                onBusyChanged: if (!activityCard.busy) activityIcon.rotation = 0
 
                 width: activityColumn.width
                 implicitHeight: Math.max(70, cardContent.implicitHeight + ThemeModule.Theme.spacingXL)
                 height: implicitHeight
-                radius: ThemeModule.Theme.borderRadius
-                color: ThemeModule.Theme.card
-                border.width: ThemeModule.Theme.borderWidth
-                border.color: ThemeModule.Theme.alpha(toneColor, ThemeModule.Theme.tintOutline)
-                clip: true
 
-                Rectangle {
-                    anchors.left: parent.left
-                    anchors.top: parent.top
-                    anchors.bottom: parent.bottom
-                    width: 4
-                    color: activityCard.toneColor
+                // Top center of the screen: cut toward its center.
+                Components.Surface {
+                    anchors.fill: parent
+                    cut: ThemeModule.Theme.spacingMedium
+                    cutBottomLeft: true
+                    cutBottomRight: true
                 }
 
                 Row {
@@ -167,7 +166,7 @@ PanelWindow {
                                 to: 360
                                 duration: 900
                                 loops: Animation.Infinite
-                                running: activityCard.modelData.state === "busy"
+                                running: activityCard.busy
                             }
                         }
 
@@ -181,7 +180,7 @@ PanelWindow {
                             radius: 5
                             color: activityCard.toneColor
                             border.width: 2
-                            border.color: ThemeModule.Theme.card
+                            border.color: ThemeModule.Theme.bg
 
                             SequentialAnimation on opacity {
                                 loops: Animation.Infinite

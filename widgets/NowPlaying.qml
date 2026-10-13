@@ -54,17 +54,28 @@ Components.Card {
             spacing: ThemeModule.Theme.spacingMedium
 
             // ── Album art ────────────────────────
+            // Square covers fill an 80 px square; wide art such as video thumbnails
+            // keeps its shape (up to 16:9) instead of being cropped.
             Rectangle {
-                width: 80
-                height: 80
+                id: artBox
+                readonly property real aspect: artImage.status === Image.Ready && artImage.implicitHeight > 0
+                    ? artImage.implicitWidth / artImage.implicitHeight
+                    : 1
+                readonly property bool wide: aspect > 1.2
+
+                width: wide ? 128 : 80
+                height: wide ? Math.round(128 / Math.min(aspect, 16 / 9)) : 80
+                anchors.verticalCenter: parent.verticalCenter
                 radius: ThemeModule.Theme.borderRadiusSmall
                 color: ThemeModule.Theme.surface2
                 clip: true
 
                 Image {
+                    id: artImage
                     anchors.fill: parent
                     source: root.player && root.player.trackArtUrl ? root.player.trackArtUrl : ""
                     fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
                     visible: source !== ""
                 }
 
@@ -74,51 +85,56 @@ Components.Card {
                     name: "media"
                     size: 32
                     iconColor: ThemeModule.Theme.overlay
-                    visible: !root.player || !root.player.trackArtUrl || root.player.trackArtUrl === ""
+                    visible: artImage.status !== Image.Ready
                 }
             }
 
             // ── Track info + controls ────────────
-            Column {
-                width: parent.width - 80 - ThemeModule.Theme.spacingMedium
-                spacing: ThemeModule.Theme.spacingTiny
+            // Fixed height (two title lines), so Home doesn't shift between tracks.
+            Item {
+                width: parent.width - artBox.width - ThemeModule.Theme.spacingMedium
+                height: titleMetrics.lineSpacing * 2 + artistText.height + ThemeModule.Theme.spacingTiny + controlsRow.height
 
-                // Title
-                Text {
-                    text: root.player ? (root.player.trackTitle || "No Track") : "No Track"
+                FontMetrics {
+                    id: titleMetrics
                     font.pixelSize: ThemeModule.Theme.fontSizeNormal
                     font.bold: true
                     font.family: ThemeModule.Theme.fontFamily
-                    color: ThemeModule.Theme.text
-                    width: parent.width
-                    elide: Text.ElideRight
                 }
 
-                // Artist
-                Text {
-                    text: root.player ? (root.player.trackArtist || "") : ""
-                    font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                    font.family: ThemeModule.Theme.fontFamily
-                    color: ThemeModule.Theme.subtext
+                Column {
                     width: parent.width
-                    elide: Text.ElideRight
-                }
+                    spacing: ThemeModule.Theme.spacingMicro
 
-                // Album
-                Text {
-                    text: root.player ? (root.player.trackAlbum || "") : ""
-                    font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                    font.family: ThemeModule.Theme.fontFamily
-                    color: ThemeModule.Theme.overlay
-                    width: parent.width
-                    elide: Text.ElideRight
-                    visible: text !== ""
-                }
+                    Text {
+                        text: root.player ? (root.player.trackTitle || "Unknown track") : ""
+                        font: titleMetrics.font
+                        color: ThemeModule.Theme.text
+                        width: parent.width
+                        wrapMode: Text.Wrap
+                        maximumLineCount: 2
+                        elide: Text.ElideRight
+                    }
 
-                Item { width: 1; height: ThemeModule.Theme.spacingTiny }
+                    Text {
+                        id: artistText
+                        text: root.player
+                            ? [root.player.trackArtist, root.player.trackAlbum].filter(function(part) {
+                                return !!part;
+                            }).join(" · ")
+                            : ""
+                        font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                        font.family: ThemeModule.Theme.fontFamily
+                        color: ThemeModule.Theme.subtext
+                        width: parent.width
+                        elide: Text.ElideRight
+                    }
+                }
 
                 // ── Playback controls ────────────
                 Row {
+                    id: controlsRow
+                    anchors.bottom: parent.bottom
                     anchors.horizontalCenter: parent.horizontalCenter
                     spacing: ThemeModule.Theme.spacingMedium
 
@@ -134,7 +150,7 @@ Components.Card {
                         anchors.verticalCenter: parent.verticalCenter
                         iconName: Services.MediaService.playing ? "media-pause" : "media-play"
                         iconSize: ThemeModule.Theme.iconSizeLarge
-                        size: 44
+                        size: 40
                         iconColor: ThemeModule.Theme.accent
                         iconXOffset: Services.MediaService.playing ? 0 : 2
                         tooltipText: Services.MediaService.playing
@@ -202,9 +218,10 @@ Components.Card {
                 Text {
                     id: elapsedText
                     text: root.player ? root.formatTime(Services.MediaService.displayedPosition) : "0:00"
-                    font.pixelSize: ThemeModule.Theme.fontSizeCaption
+                    font.pixelSize: ThemeModule.Theme.fontSizeSmall
                     font.family: ThemeModule.Theme.fontFamily
-                    color: ThemeModule.Theme.overlay
+                    font.features: { "tnum": 1 }
+                    color: ThemeModule.Theme.subtext
                 }
 
                 Item {
@@ -215,19 +232,22 @@ Components.Card {
                 Text {
                     id: totalText
                     text: root.player ? root.formatTime(root.player.length) : "0:00"
-                    font.pixelSize: ThemeModule.Theme.fontSizeCaption
+                    font.pixelSize: ThemeModule.Theme.fontSizeSmall
                     font.family: ThemeModule.Theme.fontFamily
-                    color: ThemeModule.Theme.overlay
+                    font.features: { "tnum": 1 }
+                    color: ThemeModule.Theme.subtext
                 }
             }
         }
     }
 
-    function formatTime(ms) {
-        if (!ms || ms <= 0) return "0:00";
-        var totalSec = Math.floor(ms / 1000000); // MPRIS uses microseconds
-        var min = Math.floor(totalSec / 60);
+    // Quickshell's MprisPlayer reports position and length in seconds.
+    function formatTime(seconds) {
+        var totalSec = Math.max(0, Math.floor(Number(seconds) || 0));
+        var hours = Math.floor(totalSec / 3600);
+        var min = Math.floor(totalSec / 60) % 60;
         var sec = totalSec % 60;
-        return min + ":" + (sec < 10 ? "0" : "") + sec;
+        var pad = function(value) { return (value < 10 ? "0" : "") + value; };
+        return hours > 0 ? hours + ":" + pad(min) + ":" + pad(sec) : min + ":" + pad(sec);
     }
 }

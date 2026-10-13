@@ -150,22 +150,13 @@ Components.Card {
 
     Column {
         width: parent.width
-        spacing: ThemeModule.Theme.spacingLarge
+        spacing: ThemeModule.Theme.spacingXL
 
         // ── OUTPUT CONTROL SECTION ────────────────────────
         Column {
             width: parent.width
             spacing: ThemeModule.Theme.spacingSmall
             visible: root.mode === "output" || root.mode === "combined"
-
-            Text {
-                visible: root.isCombined
-                text: "Volume"
-                font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                font.family: ThemeModule.Theme.fontFamily
-                font.bold: true
-                color: ThemeModule.Theme.text
-            }
 
             Row {
                 width: parent.width
@@ -214,10 +205,15 @@ Components.Card {
                     delegate: Rectangle {
                         id: outDevDelegate
                         required property var modelData
+                        readonly property bool selected: Services.AudioService.defaultSink === outDevDelegate.modelData.node
                         width: parent.width
                         height: ThemeModule.Theme.controlHeight
                         radius: ThemeModule.Theme.borderRadiusSmall
-                        color: outDevMouse.containsMouse ? ThemeModule.Theme.cardHover : "transparent"
+                        color: outDevDelegate.selected
+                            ? ThemeModule.Theme.selectedFill
+                            : (outDevMouse.containsMouse ? ThemeModule.Theme.controlFill : "transparent")
+                        border.width: ThemeModule.Theme.borderWidth
+                        border.color: outDevDelegate.selected ? ThemeModule.Theme.selectedBorder : "transparent"
 
                         Accessible.role: Accessible.Button
                         Accessible.name: "Use " + outDevDelegate.modelData.label + " for audio output"
@@ -234,16 +230,32 @@ Components.Card {
                                 anchors.verticalCenter: parent.verticalCenter
                                 border.width: 2
                                 border.color: ThemeModule.Theme.accent
-                                color: (Services.AudioService.defaultSink === outDevDelegate.modelData.node) ? ThemeModule.Theme.accent : "transparent"
+                                color: outDevDelegate.selected ? ThemeModule.Theme.accent : "transparent"
                             }
 
                             Text {
                                 text: outDevDelegate.modelData.label
                                 font.pixelSize: ThemeModule.Theme.fontSizeSmall
                                 font.family: ThemeModule.Theme.fontFamily
+                                font.weight: outDevDelegate.selected ? Font.DemiBold : Font.Normal
                                 color: ThemeModule.Theme.text
                                 anchors.verticalCenter: parent.verticalCenter
                             }
+                        }
+
+                        // A renamed device shows its hardware name on hover.
+                        Text {
+                            anchors.right: parent.right
+                            anchors.rightMargin: ThemeModule.Theme.spacingSmall
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: Math.min(implicitWidth, parent.width * 0.5)
+                            visible: outDevDelegate.modelData.label !== outDevDelegate.modelData.rawLabel
+                            opacity: outDevMouse.containsMouse ? 1 : 0
+                            text: outDevDelegate.modelData.rawLabel
+                            font.pixelSize: ThemeModule.Theme.fontSizeCaption
+                            font.family: ThemeModule.Theme.fontFamily
+                            color: ThemeModule.Theme.overlay
+                            elide: Text.ElideRight
                         }
 
                         MouseArea {
@@ -267,15 +279,6 @@ Components.Card {
             width: parent.width
             spacing: ThemeModule.Theme.spacingSmall
             visible: root.mode === "input" || root.mode === "combined"
-
-            Text {
-                visible: root.isCombined
-                text: "Microphone"
-                font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                font.family: ThemeModule.Theme.fontFamily
-                font.bold: true
-                color: ThemeModule.Theme.text
-            }
 
             Row {
                 width: parent.width
@@ -324,10 +327,15 @@ Components.Card {
                     delegate: Rectangle {
                         id: inDevDelegate
                         required property var modelData
+                        readonly property bool selected: Services.AudioService.defaultSource === inDevDelegate.modelData.node
                         width: parent.width
                         height: ThemeModule.Theme.controlHeight
                         radius: ThemeModule.Theme.borderRadiusSmall
-                        color: inDevMouse.containsMouse ? ThemeModule.Theme.cardHover : "transparent"
+                        color: inDevDelegate.selected
+                            ? ThemeModule.Theme.selectedFill
+                            : (inDevMouse.containsMouse ? ThemeModule.Theme.controlFill : "transparent")
+                        border.width: ThemeModule.Theme.borderWidth
+                        border.color: inDevDelegate.selected ? ThemeModule.Theme.selectedBorder : "transparent"
 
                         Accessible.role: Accessible.Button
                         Accessible.name: "Use " + inDevDelegate.modelData.label + " for audio input"
@@ -344,16 +352,32 @@ Components.Card {
                                 anchors.verticalCenter: parent.verticalCenter
                                 border.width: 2
                                 border.color: ThemeModule.Theme.accent
-                                color: (Services.AudioService.defaultSource === inDevDelegate.modelData.node) ? ThemeModule.Theme.accent : "transparent"
+                                color: inDevDelegate.selected ? ThemeModule.Theme.accent : "transparent"
                             }
 
                             Text {
                                 text: inDevDelegate.modelData.label
                                 font.pixelSize: ThemeModule.Theme.fontSizeSmall
                                 font.family: ThemeModule.Theme.fontFamily
+                                font.weight: inDevDelegate.selected ? Font.DemiBold : Font.Normal
                                 color: ThemeModule.Theme.text
                                 anchors.verticalCenter: parent.verticalCenter
                             }
+                        }
+
+                        // A renamed device shows its hardware name on hover.
+                        Text {
+                            anchors.right: parent.right
+                            anchors.rightMargin: ThemeModule.Theme.spacingSmall
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: Math.min(implicitWidth, parent.width * 0.5)
+                            visible: inDevDelegate.modelData.label !== inDevDelegate.modelData.rawLabel
+                            opacity: inDevMouse.containsMouse ? 1 : 0
+                            text: inDevDelegate.modelData.rawLabel
+                            font.pixelSize: ThemeModule.Theme.fontSizeCaption
+                            font.family: ThemeModule.Theme.fontFamily
+                            color: ThemeModule.Theme.overlay
+                            elide: Text.ElideRight
                         }
 
                         MouseArea {

@@ -1,100 +1,107 @@
-# Speshell manual test checklist
+# Manual checks
 
-Run automated checks first with `just lint` and `just test`, then exercise the
-relevant scenarios from this list on a real Hyprland session.
+What the unit tests can't reach: windows, devices, and Hyprland. Run the checks
+for the areas a change touches on a real Hyprland session, after `just lint test`.
 
-## Dashboard and launcher
+## Dashboard
 
-- Open and close the special workspace repeatedly; confirm focus returns to the
-  previous window and hidden widgets stop active work.
-- In Home's Workspaces, each tile shows its apps' icons and, on hover, its last
-  focused window's title. Clicking another tile shows that workspace under the
-  dashboard, which stays open.
-- With effects on, open the dashboard and watch the end of its entrance: the panel
-  must not blink or shift when the effect hands over to it.
-- Open, close, and toggle the launcher through IPC on each connected monitor.
-- Exercise application, calculator, panel bang, configured bang, and web-search
-  results using both pointer and keyboard input.
-- Complete a bang with **Tab**, search by initials (`vsc`), and type a query that
-  matches no application to get the web-search fallback.
-- Launch a `Terminal=true` application such as `btop`.
-- With a theme whose effects have a launcher transition, type during the
-  entrance, close with **Escape** and by launching an app, reopen during the
-  exit, and confirm clicks pass through while the exit plays.
-- With `drawWallpaper` off, confirm Speshell leaves the background alone and
-  `!wall` is not offered; toggle **Draw wallpaper** in Settings › Themes and confirm the
-  background appears and disappears.
-- Switch between the shipped themes and a theme folder of your own in
-  `~/.config/speshell/themes` with `!theme`, the dashboard **Themes** panel
-  (themes, wallpaper grid, shuffle), and by picking wallpapers with `!wall`,
-  including a theme without effects. Add a wallpaper to a shipped theme from
-  the user folder and confirm it joins the shipped one. Confirm the colors,
-  wallpaper, launcher transition, and wallpaper transition follow, the old
-  effects' launcher exit finishes, and the choice survives a relaunch with the
-  right colors from the first frame. Put a bad color in the active theme's
-  `theme.ini` and break an `Effects.qml`; confirm notifications appear and the
-  launcher still opens.
+- Open and close it a few times: focus returns to the previous window.
+- With effects on, the panel doesn't blink or shift at the end of the entrance.
+- Workspaces: tiles show app icons, and hovering one shows its last window's
+  title. Clicking a tile shows that workspace under the dashboard, which stays open.
+- Move the special workspace to another monitor and change fractional scale:
+  everything still lines up.
+
+## Launcher
+
+- `speshell launcher open|close|toggle` works on each monitor.
+- Apps, the calculator, panel bangs, your own bangs and web search all work with
+  mouse and keyboard. **Tab** completes a bang, and `vsc` finds Visual Studio Code.
+- A `Terminal=true` app such as `btop` opens in a terminal.
+- Launch counts still order the results after a relaunch.
+- With a launcher transition, typing works during the entrance. Closing with
+  **Escape** or by launching an app plays the exit, clicks pass through during
+  it, and reopening mid-exit works.
+
+## Themes
+
+- Switch themes with `!theme`, the Themes panel and `speshell theme set ID`,
+  including a theme without effects. Colors, wallpaper and transitions follow,
+  and the old launcher exit finishes.
+- After a relaunch, the chosen theme's colors are there from the first frame.
+- A wallpaper added under `~/.config/speshell/themes/<shipped theme>/` joins
+  that theme.
+- A bad color in `theme.ini` or a broken `Effects.qml` raises a notification, and
+  the launcher still opens.
+- With **Draw wallpaper** off, the background is left alone and `!wall` isn't
+  offered. Toggling it in Settings › Themes adds and removes the background.
 
 ## Displays
 
-- Prepare a harmless layout or mode change, apply it, and select **Keep Changes**.
-- Apply another change and allow the 15-second countdown to restore the previous
-  layout while the dashboard remains open.
-- Repeat the timeout test after closing the dashboard.
-- Apply and select **Revert** immediately.
-- Disconnect or reconnect a monitor during confirmation and verify Speshell
-  attempts a best-effort rollback for displays that remain connected.
-- Force a failed rollback when practical; verify the previous snapshot remains
-  available through **Retry Revert**.
-- Verify brightness reads and writes the configured or auto-detected backlight.
+- Apply a change and press **Keep Changes**: it stays.
+- Apply a change and wait 15 s: it reverts, both with the dashboard open and closed.
+- Apply a change and press **Revert**: it reverts at once.
+- Unplug a monitor during the countdown: the displays still connected roll back.
+- When a rollback fails, **Retry Revert** stays available.
+- `!mirror` mirrors the displays, and running it again extends them.
+- Brightness controls the configured or auto-detected backlight.
 
-## Persistent data
+## Settings and config
 
-- Create, edit, switch, delete, undo, and permanently delete notes.
-- Edit the open note's file in another editor; verify Speshell shows the new text,
-  or keeps unsaved text and shows a warning when it has pending edits.
-- Relaunch while a note has a pending debounced save and verify no text is lost.
-- Edit and reload `config.ini`; verify valid changes apply and invalid input opens
-  the diagnostic window without overwriting the file.
-- Save a valid external edit to `config.ini` while Speshell runs; verify it applies
-  without Reload. Save an invalid edit; verify the old settings stay active and
-  Settings shows the error. Then change a setting in Settings and verify the
-  external edits are still in the file.
-- In Settings, switch tabs and change a toggle, a segmented choice, and a
-  dropdown; confirm each applies at once and **Saved** flashes in the header.
-  Set text size to 150% and confirm wide controls move under their labels.
-  Hover each info icon and confirm the tooltip wraps inside the dashboard.
-- Select **Edit** in Settings → Advanced with and without `$EDITOR` set.
-- Launch several applications and confirm launcher usage ordering survives a
-  relaunch.
+- Changing a toggle, a choice or a dropdown applies at once and flashes **Saved**.
+- At 150 % text size, wide controls move under their labels and tooltips stay
+  inside the dashboard.
+- Editing `config.ini` in an editor applies on save without Reload. An invalid
+  edit keeps the old settings and shows the error in Settings. A later change in
+  Settings keeps your edits in the file.
+- An invalid `config.ini` at launch opens the error window and leaves the file
+  untouched.
+- **Edit** in About opens the config, with and without `$EDITOR` set.
 
-## Integrations
+## Notes
 
-- Exercise audio output/input volume, mute, device selection, and quick switch.
-- Change output volume and mute with the keyboard; verify the OSD appears on the
-  focused monitor, coalesces repeated presses, and never takes focus. Repeat with
-  Speshell's slider and sidebar wheel and verify the OSD stays hidden.
-- Toggle Wi-Fi, scan, connect to open and secured networks, and test a failure.
-  Verify "Last refreshed …" appears after a scan and ages over time.
-- Enable, scan, connect, and disconnect Bluetooth devices.
-- Copy, select, and clear clipboard history; repeat without `cliphist` or
-  `wl-clipboard` and confirm inline guidance remains usable.
-- Send transient, persistent, actionable, resident, and critical notifications;
-  verify DND, history, expiry, dismissal, and configured toast limits.
-- Verify DND survives a relaunch and that critical notifications still show.
-- Replace a notification in place (`notify-send -p`, then `notify-send -r <id>`)
-  and verify the toast and history update. Verify toasts open on the focused monitor.
-- Expand notifications containing long bodies and uninterrupted strings; verify
-  all text is readable, the list grows up to its limit, and overflow can scroll.
-- Enable weather and run a focus timer through completion.
-- Exercise lock and cancel each confirmed power action before testing it for real.
+- Create, edit, switch, delete, undo and permanently delete notes.
+- Editing the open note in another editor shows the new text, or a warning if
+  there are unsaved edits.
+- Relaunching right after typing loses nothing.
 
-## Readiness and input
+## Audio, network, Bluetooth, clipboard
 
-- Enable weather without `curl`, select a missing backlight, or configure a
-  missing locker. Confirm one aggregated warning appears after launch and the
-  same issues appear under Settings → Weather and Settings → Advanced.
-- Verify absent laptop battery or unconfigured optional tools do not create a
-  startup warning.
-- Repeat the dashboard and launcher checks after moving the special workspace to
-  another monitor and after changing fractional monitor scale.
+- Volume, mute, device choice and quick switch work for output and input.
+- Volume keys show the OSD on the focused monitor, merge repeated presses, and
+  never take focus. Changes from Speshell's own slider or the sidebar wheel don't
+  show it.
+- Network and Bluetooth only scan after refresh and stop scanning when you leave
+  the panel. Connect and disconnect devices, including a secured network and a
+  wrong password. "Last refreshed" shows the scan's age.
+- Clipboard history lists, selects and clears entries. Without `cliphist` or
+  `wl-clipboard`, the panel explains what's missing.
+
+## Notifications and activity
+
+- Transient, persistent, actionable, resident and critical notifications follow
+  DND, expiry, dismissal and the toast limit. DND survives a relaunch, and
+  critical notifications still show while it's on.
+- `notify-send -p`, then `notify-send -r <id>`, updates the toast and history
+  in place.
+- Toasts open on the focused monitor. Long bodies and unbroken strings wrap, and
+  the expanded list scrolls.
+- `speshell activity set test active Test` shows the activity OSD, and
+  `speshell activity clear test` hides it. Running `wf-recorder` shows the
+  recording activity, and **Stop** ends it.
+
+## Home chips and power
+
+- Weather shows a condition icon and temperature (a moon after sunset) under the
+  date, without shifting Home.
+- The focus timer shows its chip, preset row, and extra time and Stop while
+  running. At the end, an accent toast appears even with DND on.
+- Lock works. Other power actions arm on the first click (a double-click only
+  arms them) and disarm when the countdown runs out.
+
+## Missing tools
+
+- Weather with no `curl`, a missing backlight or a missing locker each show in
+  one warning after launch and in About. The weather issue also shows in
+  Settings › Weather.
+- A desktop without a battery or the optional tools shows no startup warning.

@@ -23,6 +23,9 @@ Singleton {
 
     property int scrollStep: 5
     property double outputOsdSuppressedUntil: 0
+    // The output level the OSD last saw, so it only shows for real changes.
+    property int osdVolumePercent: -1
+    property bool osdMuted: false
 
     // Emitted for output changes made outside Speshell, such as media keys.
     signal outputOsdRequested(int volumePercent, bool muted)
@@ -33,11 +36,10 @@ Singleton {
 
     function suppressOutputOsd(durationMs) {
         root.outputOsdSuppressedUntil = Math.max(root.outputOsdSuppressedUntil, Date.now() + durationMs);
-        outputOsdDebounce.stop();
     }
 
     function queueOutputOsd() {
-        if (root.hasOutputVolume && Date.now() >= root.outputOsdSuppressedUntil)
+        if (root.hasOutputVolume)
             outputOsdDebounce.restart();
     }
 
@@ -96,11 +98,14 @@ Singleton {
     // user volume change, so keep the OSD quiet for a moment.
     onDefaultSinkChanged: root.suppressOutputOsd(1200)
     onHasOutputVolumeChanged: root.suppressOutputOsd(1200)
+    onSinkAudioChanged: outputOsdDebounce.restart()
 
     PwObjectTracker {
         objects: [root.defaultSink, root.defaultSource].filter(function(node) { return !!node; })
     }
 
+    // PipeWire re-reports the device volume when a stream links to the sink (an app
+    // starting playback or joining a call), so the signals fire without a change.
     Connections {
         target: root.sinkAudio
 
@@ -113,7 +118,11 @@ Singleton {
         interval: 30
         repeat: false
         onTriggered: {
-            if (Date.now() >= root.outputOsdSuppressedUntil)
+            var changed = root.osdVolumePercent >= 0
+                && (root.outputVolumePercent !== root.osdVolumePercent || root.outputMuted !== root.osdMuted);
+            root.osdVolumePercent = root.hasOutputVolume ? root.outputVolumePercent : -1;
+            root.osdMuted = root.outputMuted;
+            if (changed && Date.now() >= root.outputOsdSuppressedUntil)
                 root.outputOsdRequested(root.outputVolumePercent, root.outputMuted);
         }
     }

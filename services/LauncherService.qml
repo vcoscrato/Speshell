@@ -84,6 +84,17 @@ Singleton {
         }];
     }
 
+    // The launcher's own actions that apply right now.
+    function commandResults() {
+        var commands = [];
+        if (FeatureSupport.supportsDisplayControl && DisplayService.canMirror) {
+            commands.push(DisplayService.mirrored
+                ? BangProvider.commandResult("mirror", "Stop mirroring", "Extend the displays again", "display")
+                : BangProvider.commandResult("mirror", "Mirror displays", "Show this display on all of them", "display"));
+        }
+        return commands;
+    }
+
     function rebuild() {
         var trimmed = root.query.trim();
         var wasBrowsing = root.browsingThemes;
@@ -106,7 +117,8 @@ Singleton {
             var bangs = BangProvider.bangResults(
                 trimmed,
                 root.launcherConfig,
-                DashboardService.availablePanelNames
+                DashboardService.availablePanelNames,
+                root.commandResults()
             );
             root.results = themeBang
                 ? themeBang.alias.map(ThemeProvider.suggestion).concat(bangs.filter(function(result) {
@@ -127,6 +139,9 @@ Singleton {
         }
         var extras = BangProvider.panelSearchItems(DashboardService.availablePanelNames);
         extras = extras.concat(ThemeProvider.searchItems(ThemeService.wallpaperEnabled));
+        extras = extras.concat(root.commandResults().map(function(command) {
+            return { id: command.id, title: command.title, keywords: command.bang + " display monitor screen", result: command };
+        }));
         var panels = AppProvider.buildExtraIndex(extras);
         var apps = AppProvider.search(root.appIndex.concat(panels), trimmed, root.usage, 100);
         root.results = apps.length === 0 && trimmed !== ""
@@ -201,6 +216,11 @@ Singleton {
                 root.activationError = DashboardService.errorMessage;
             return opened;
         }
+        if (result.kind === "command" && payload.command === "mirror") {
+            // Keep or Revert waits in the Displays panel; unanswered, the change reverts.
+            DisplayService.toggleMirror();
+            return DashboardService.openPanel("displayControl");
+        }
         if (result.kind === "theme") {
             if (payload.theme !== undefined)
                 return ThemeService.setTheme(payload.theme);
@@ -225,7 +245,7 @@ Singleton {
         if (trimmed.indexOf("?") === 0)
             return "Type a web search after ?";
         if (trimmed.indexOf("!") === 0)
-            return "No matching available panels or configured bangs";
+            return "No matching commands";
         return "No applications found";
     }
 

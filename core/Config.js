@@ -289,7 +289,11 @@ function setIniProperty(sourceText, sectionName, keyName, newValue) {
                 return lines.join("\n");
             }
         }
-        lines.splice(sectionEnd, 0, replacement);
+        // After the section's last line, not after the blank lines that close it.
+        var insertAt = sectionEnd;
+        while (insertAt > sectionStart + 1 && lines[insertAt - 1].trim() === "")
+            insertAt--;
+        lines.splice(insertAt, 0, replacement);
         return lines.join("\n");
     }
 
