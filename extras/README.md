@@ -9,6 +9,7 @@ The themes and effects Speshell ships, the paintings behind their wallpapers, an
 | Air | `air` | `cloud-sea` | Unwinds out of a whirlwind; a breeze with leaves circles it | Whirlwind eye | Blows in on a gust, over cloud banks, curling wind, and leaves | Spinning wind-ball knobs; wisps and leaves, curls of wind |
 | Water | `water` | `polar-night` | A water whip coils into it and clears through rippling caustics; two streams chase its border among orbs, currents, and mist held in the air | Ripple | A sheet of water slides down from the top edge and drains off, over an underwater view with light shafts and bubbles | Drop knobs that stretch as they move; water pours off as a slider goes down and rains onto it as it goes up, ripples, bubbles |
 | Earth | `earth` | `jade-valley` | Punches up out of cracked ground as a stone slab; tumbling boulders with circling pebbles hover in a ring of dust and stones | Cracks and crumbles | Rises into place as stone blocks, top first, over rock strata with jade crystals | Rolling stone knobs; kicked-up rock chips and dust, jade shards |
+| Relâmpago | `relampago` | `thunder-road` | Races in from the left in a red streak with a bolt through it, brakes with sparks and skid marks, and stops in tire smoke as lightning strikes all around it; while open, speed lines stream past, electricity crackles on its border, and now and then a bolt strikes it; tears away on two trails of fire | Lightning splits it, and the halves race apart | Struck by lightning from the top, showing outward from the bolt, over asphalt with a checkered flag and a forked bolt | Racing-wheel knobs carrying a zigzag bolt along the filled track, crackling live while held; sparks and arcs, discharges, lightning striking what you pick |
 
 ## Layout
 
@@ -22,7 +23,7 @@ The themes and effects Speshell ships, the paintings behind their wallpapers, an
 
 The package installs `themes/`, `effects/`, and `lib/` to `/usr/share/speshell/extras`. Nothing else in this directory ships. Keep sources and tools out of those three directories.
 
-Names are lowercase-kebab for directories, paintings, and shaders; QML components are PascalCase. A theme and an effect are named for their element (`fire`), and a painting for its scene (`ember-dusk`). Any theme can use any effects.
+Names are lowercase-kebab for directories, paintings, and shaders; QML components are PascalCase. A theme and an effect share a name (`fire`), and a painting for its scene (`ember-dusk`). Any theme can use any effects.
 
 ## Rules
 
