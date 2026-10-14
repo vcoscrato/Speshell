@@ -201,6 +201,11 @@ Singleton {
         return setProperty("Appearance", "transitionFrameRate", frameRate);
     }
 
+    // One [Bar] key: position, height, width, margin, gap, or outline.
+    function setBar(key, value) {
+        return setProperty("Bar", key, value);
+    }
+
     function setDrawWallpaper(enabled) {
         return setProperty("Appearance", "drawWallpaper", enabled ? "true" : "false");
     }

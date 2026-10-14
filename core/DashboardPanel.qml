@@ -37,7 +37,8 @@ PanelWindow {
     focusable: true
     aboveWindows: true
     // Workspace-specific gaps provide the panel space without resizing other workspaces.
-    exclusionMode: ExclusionMode.Ignore
+    // It reserves none itself but stays clear of bars that do, such as Speshell's bar.
+    exclusionMode: ExclusionMode.Normal
     updatesEnabled: root.visible
 
     WlrLayershell.namespace: "speshell-dashboard"

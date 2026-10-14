@@ -160,6 +160,21 @@ function urlValue(document, sectionName, keyName, fallback, errors) {
     return value;
 }
 
+// Whitespace-separated codes, each matching `pattern`, joined by `separator`.
+function codesValue(document, sectionName, keyName, fallback, pattern, separator, errors) {
+    var valueEntry = entry(document, sectionName, keyName);
+    if (!valueEntry)
+        return fallback;
+    var codes = valueEntry.value.split(/[\s,+]+/).filter(function(code) { return code !== ""; });
+    for (var i = 0; i < codes.length; i++) {
+        if (!pattern.test(codes[i])) {
+            addError(errors, pathFor(sectionName, keyName), valueEntry.line, "'" + codes[i] + "' is not a language code.");
+            return fallback;
+        }
+    }
+    return codes.join(separator);
+}
+
 function sectionList(document, sectionName, errors) {
     var valueSection = section(document, sectionName);
     var result = [];
@@ -255,7 +270,21 @@ function parseAndValidate(iniText) {
         powerMenu: { lockCommand: [lockCommand].concat(lockArguments) },
         weatherEnabled: booleanValue(document, "Weather", "enabled", false, errors),
         weatherLocation: stringValue(document, "Weather", "location", "", errors, true),
-        maxVisibleNotification: maxVisible
+        maxVisibleNotification: maxVisible,
+        tools: {
+            ocrLanguages: codesValue(document, "Tools", "ocrLanguages", "eng", /^[A-Za-z0-9_]+$/, "+", errors) || "eng",
+            dictationLanguages: codesValue(document, "Tools", "dictationLanguages", "", /^[a-z]{2,3}$/, ",", errors),
+            dictationVocabulary: stringValue(document, "Tools", "dictationVocabulary", "", errors, true),
+            dictationModel: stringValue(document, "Tools", "dictationModel", "", errors, true)
+        },
+        bar: {
+            position: enumValue(document, "Bar", "position", "off", ["off", "top", "bottom"], errors),
+            height: integerValue(document, "Bar", "height", 40, 24, 64, errors),
+            width: integerValue(document, "Bar", "width", 100, 20, 100, errors),
+            margin: integerValue(document, "Bar", "margin", 0, 0, 64, errors),
+            gap: integerValue(document, "Bar", "gap", 0, 0, 64, errors),
+            outline: enumValue(document, "Bar", "outline", "edges", ["edges", "full"], errors)
+        }
     };
 
     return errors.length > 0

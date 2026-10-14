@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import QtQuick.Controls as Controls
+import QtQuick.Templates as T
 import "." as Components
 import "../services" as Services
 import "../theme" as ThemeModule
@@ -89,27 +89,25 @@ Rectangle {
         onClicked: selectMenu.open()
     }
 
-    Controls.Menu {
+    Components.PopupMenu {
         id: selectMenu
 
         x: root.width - width
         y: root.height + ThemeModule.Theme.spacingTiny
         modal: true
         focus: true
-        closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnEscape
+        closePolicy: T.Popup.CloseOnPressOutside | T.Popup.CloseOnEscape
 
         Instantiator {
             model: root.options
 
-            delegate: Controls.MenuItem {
+            delegate: Components.PopupMenuItem {
                 required property var modelData
                 focusPolicy: Qt.ClickFocus
 
                 text: String(modelData.label)
-                font.family: ThemeModule.Theme.fontFamily
-                font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                checkable: true
-                checked: modelData.value === root.currentValue
+                selectable: true
+                selected: modelData.value === root.currentValue
                 enabled: root.enabled
                 onTriggered: {
                     if (modelData.value !== root.currentValue)

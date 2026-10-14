@@ -1,4 +1,5 @@
 pragma Singleton
+pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
@@ -81,6 +82,17 @@ Singleton {
     Connections {
         target: Mpris.players // qmllint disable incompatible-type
         function onValuesChanged() { root.refreshPlayer(); }
+    }
+
+    // A player starting or pausing can change which one to show.
+    Instantiator {
+        model: Mpris.players
+        delegate: Connections {
+            id: playerWatch
+            required property var modelData
+            target: playerWatch.modelData
+            function onPlaybackStateChanged() { root.refreshPlayer(); }
+        }
     }
 
     Component.onCompleted: root.refreshPlayer()

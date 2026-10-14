@@ -26,23 +26,23 @@ WALL_A=${WALL_A:-$SAMPLES/a.jpg}
 WALL_B=${WALL_B:-$SAMPLES/b.jpg}
 # Speshell itself, from this checkout by default.
 SPESHELL_DIR=${SPESHELL_DIR:-$(cd "$LAB/../.." && pwd)}
+# The palette: the theme of the same name unless THEME_INI names another theme.ini.
+THEME_INI=${THEME_INI:-$LAB/../themes/$EFFECT/theme.ini}
 
 case "$SCENE" in
     launcher) END=$(awk -v c="${CLOSE_AT:-2.2}" -v r="${REOPEN_AT:-0}" -v k="${SPEED:-1}" 'BEGIN { k = k > 0 ? k : 1; print (r > c ? r + 1.6 / k : c + 1.2 / k) }'); CROP="crop=1100:760:410:20," ;;
     wallpaper) END=$(awk -v s="${SWITCH_AT:-0.3}" -v k="${SPEED:-1}" 'BEGIN { k = k > 0 ? k : 1; print s + 2.8 / k }'); CROP="scale=1280:720," ;;
     dashboard) END=$(awk -v k="${SPEED:-1}" 'BEGIN { k = k > 0 ? k : 1; print 1.6 / k }'); CROP="crop=640:1080:0:0,"
-        # The theme of the same name: its palette, and its wallpaper behind the panel.
-        THEME_INI="$LAB/../themes/$EFFECT/theme.ini"
+        # The theme's wallpaper behind the panel.
         [ -n "$USER_WALL_A" ] || WALL_A=$(ls "$LAB/../themes/$EFFECT/"*.jpg 2>/dev/null | head -1) ;;
-    controls) END=$(awk -v k="${SPEED:-1}" 'BEGIN { k = k > 0 ? k : 1; print 4.4 + 0.6 / k }'); CROP="crop=452:452:0:0,scale=904:904,"
-        THEME_INI="$LAB/../themes/$EFFECT/theme.ini" ;;
+    controls) END=$(awk -v k="${SPEED:-1}" 'BEGIN { k = k > 0 ? k : 1; print 4.4 + 0.6 / k }'); CROP="crop=452:452:0:0,scale=904:904," ;;
     *) echo "unknown scene: $SCENE" >&2; exit 2 ;;
 esac
 
 rm -rf "$OUT" && mkdir -p "$OUT"
 LOG="$LAB/out/$NAME.log"
 EFFECTS_DIR="$LAB/../effects/$EFFECT" SCENE="$LAB/$(echo "$SCENE" | sed 's/./\U&/')Scene.qml" \
-    DURATION="$END" OUT="$OUT" EVERY_FRAME="${EVERY_FRAME:-}" THEME_INI="${THEME_INI:-}" SPEED="${SPEED:-1}" WALL_A="$WALL_A" WALL_B="$WALL_B" SPESHELL_DIR="$SPESHELL_DIR" \
+    DURATION="$END" OUT="$OUT" EVERY_FRAME="${EVERY_FRAME:-}" THEME_INI="$THEME_INI" SPEED="${SPEED:-1}" WALL_A="$WALL_A" WALL_B="$WALL_B" SPESHELL_DIR="$SPESHELL_DIR" \
     QT_FORCE_STDERR_LOGGING=1 timeout 90 quickshell --no-color -p "$LAB/shell.qml" >"$LOG" 2>&1 || true
 grep -E "closingFinished|transition|ERROR|rror:|WARN" "$LOG" | grep -v "window masks" || true
 

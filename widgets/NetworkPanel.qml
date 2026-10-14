@@ -159,6 +159,8 @@ Components.Card {
                             text: root.network.passwordText
                             echoMode: TextInput.Password
                             color: ThemeModule.Theme.text
+                            selectionColor: ThemeModule.Theme.accent
+                            selectedTextColor: ThemeModule.Theme.bg
                             font.pixelSize: ThemeModule.Theme.fontSizeSmall
                             font.family: ThemeModule.Theme.fontFamily
                             clip: true

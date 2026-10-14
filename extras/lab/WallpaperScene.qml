@@ -19,6 +19,11 @@ Item {
         return component.createObject(root);
     }
 
+    // Theme.qml's color names, from THEME_INI's [Colors].
+    ThemePalette {
+        id: swatch
+    }
+
     property var view: {
         const component = Qt.createComponent("file://" + Quickshell.env("SPESHELL_DIR") + "/core/WallpaperView.qml");
         if (component.status !== Component.Ready) {
@@ -26,7 +31,7 @@ Item {
             return null;
         }
         return component.createObject(root, { width: root.width, height: root.height, path: Quickshell.env("WALL_A"),
-                                              timeScale: Number(Quickshell.env("SPEED") || 1) });
+                                              timeScale: Number(Quickshell.env("SPEED") || 1), theme: swatch });
     }
 
     onLabTimeChanged: {

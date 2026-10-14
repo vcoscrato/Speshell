@@ -5,14 +5,16 @@ import Quickshell
 import Quickshell.Io
 import "." as Services
 
-// Detects wf-recorder and the dictate-toggle workflow. Polling only runs when
-// one of those tools is installed, and slows down while nothing is active.
+// Detects wf-recorder and the dictation tool (tools/dictate). Polling only runs
+// when one of them is installed, and slows down while nothing is active.
+// `speshell activity refresh` probes right away, so scripts needn't wait for a tick.
 Scope {
     id: root
 
     property bool toolsAvailable: false
     property string lastSignature: ""
     property bool anyActive: false
+    property bool refreshQueued: false
     readonly property var shellNames: ["sh", "bash", "dash", "zsh"]
 
     function commandName(value) {
@@ -32,13 +34,13 @@ Scope {
         for (var i = 0; i < lines.length; i++) {
             var args = lines[i].trim().split(/\s+/);
             var name = root.commandName(args[0]);
-            if (root.shellNames.indexOf(name) >= 0 && root.commandName(args[1]) === "dictate-toggle")
-                name = "dictate-toggle";
+            if (root.shellNames.indexOf(name) >= 0 && /(^|\/)tools\/dictate$/.test(args[1] || ""))
+                name = "dictate";
             var dictationFile = lines[i].indexOf("dictate.wav") >= 0;
 
             if (name === "wf-recorder")
                 recording = true;
-            else if (name === "dictate-toggle")
+            else if (name === "dictate")
                 dictationToggle = true;
             else if (name === "pw-record" && dictationFile)
                 dictationRecording = true;
@@ -81,7 +83,10 @@ Scope {
                 tone: "info",
                 priority: 10,
                 sortOrder: 1,
-                actions: [{ id: "finish", label: "Finish", iconName: "check", tone: "info" }]
+                actions: [
+                    { id: "cancel", label: "Discard", iconName: "close", tone: "neutral" },
+                    { id: "finish", label: "Finish", iconName: "check", tone: "info" }
+                ]
             });
         }
         return entries;
@@ -97,8 +102,14 @@ Scope {
         Services.ActivityService.replaceProvider("process", entries);
     }
 
+    // A request during a probe runs another one after it, since that probe may
+    // have listed processes before the change the caller is reporting.
     function refresh() {
-        if (root.toolsAvailable && !probeProc.running)
+        if (!root.toolsAvailable)
+            return;
+        if (probeProc.running)
+            root.refreshQueued = true;
+        else
             probeProc.running = true;
     }
 
@@ -108,7 +119,7 @@ Scope {
         running: true
         command: [
             "sh", "-c",
-            "command -v wf-recorder >/dev/null 2>&1 || command -v dictate-toggle >/dev/null 2>&1"
+            "command -v wf-recorder >/dev/null 2>&1 || command -v whisper-cli >/dev/null 2>&1"
         ]
         onExited: function(exitCode) {
             root.toolsAvailable = exitCode === 0;
@@ -129,7 +140,13 @@ Scope {
         running: false
         command: ["ps", "-e", "-o", "args="]
         stdout: StdioCollector { id: probeOutput }
-        onExited: root.applyProbeOutput(probeOutput.text)
+        onExited: {
+            root.applyProbeOutput(probeOutput.text);
+            if (root.refreshQueued) {
+                root.refreshQueued = false;
+                Qt.callLater(root.refresh);
+            }
+        }
     }
 
     Connections {
@@ -141,7 +158,9 @@ Scope {
             if (activityId === "screen-recording" && actionId === "stop")
                 Quickshell.execDetached(["pkill", "-SIGINT", "-x", "wf-recorder"]);
             else if (activityId === "dictation" && actionId === "finish")
-                Quickshell.execDetached(["dictate-toggle"]);
+                Services.ToolsService.run("dictate", "");
+            else if (activityId === "dictation" && actionId === "cancel")
+                Services.ToolsService.run("dictate", "cancel");
         }
     }
 }

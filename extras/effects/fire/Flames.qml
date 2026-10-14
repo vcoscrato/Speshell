@@ -1,4 +1,5 @@
 import QtQuick
+import "Flame.js" as Flame
 
 // Cel-shaded flames from a quarter-resolution fluid simulation. Fuel comes from a
 // simmering rim around `panelRect` and from the burn front at `burnR` around `origin`.
@@ -17,10 +18,11 @@ Item {
     property real fieldScale: 1
     property bool clearBehind: true   // keep flames off the panel once the front has passed
 
-    property color core: "#fff6c8"
-    property color mid: "#ffb02e"
-    property color outer: "#f2541b"
-    property color edge: "#a8160f"
+    property var theme: null
+    property color core: Flame.core(theme)
+    property color mid: Flame.mid(theme)
+    property color outer: Flame.outer(theme)
+    property color edge: Flame.edge(theme)
 
     property real steppedTime: 0
     property bool stepping: false

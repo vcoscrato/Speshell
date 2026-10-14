@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 // qmllint disable signal-handler-parameters
 
 import QtQuick
-import QtQuick.Controls as Controls
 import QtQml.Models
 import "../components" as Components
 import "../theme" as ThemeModule
@@ -514,24 +513,30 @@ Components.Card {
                     value: root.layoutLabel(Services.DisplayService.draftLayoutMode)
                     onActivated: layoutMenu.open()
 
-                    Controls.Menu {
+                    Components.PopupMenu {
                         id: layoutMenu
                         y: layoutRow.height
 
-                        Controls.MenuItem {
+                        Components.PopupMenuItem {
                             focusPolicy: Qt.ClickFocus
                             text: "Single"
+                            selectable: true
+                            selected: Services.DisplayService.draftLayoutMode === "single"
                             onTriggered: Services.DisplayService.setDraftLayoutMode("single")
                         }
-                        Controls.MenuItem {
+                        Components.PopupMenuItem {
                             focusPolicy: Qt.ClickFocus
                             text: "Mirror"
+                            selectable: true
+                            selected: Services.DisplayService.draftLayoutMode === "mirror"
                             enabled: Services.DisplayService.draftMonitors.length > 1
                             onTriggered: Services.DisplayService.setDraftLayoutMode("mirror")
                         }
-                        Controls.MenuItem {
+                        Components.PopupMenuItem {
                             focusPolicy: Qt.ClickFocus
                             text: "Extend"
+                            selectable: true
+                            selected: Services.DisplayService.draftLayoutMode === "extend"
                             enabled: Services.DisplayService.draftMonitors.length > 1
                             onTriggered: Services.DisplayService.setDraftLayoutMode("extend")
                         }
@@ -546,26 +551,26 @@ Components.Card {
                     value: root.positionLabel()
                     onActivated: positionMenu.open()
 
-                    Controls.Menu {
+                    Components.PopupMenu {
                         id: positionMenu
                         y: positionRow.height
 
-                        Controls.MenuItem {
+                        Components.PopupMenuItem {
                             focusPolicy: Qt.ClickFocus
                             text: "Left"
                             onTriggered: Services.DisplayService.arrangeSelected("left")
                         }
-                        Controls.MenuItem {
+                        Components.PopupMenuItem {
                             focusPolicy: Qt.ClickFocus
                             text: "Right"
                             onTriggered: Services.DisplayService.arrangeSelected("right")
                         }
-                        Controls.MenuItem {
+                        Components.PopupMenuItem {
                             focusPolicy: Qt.ClickFocus
                             text: "Above"
                             onTriggered: Services.DisplayService.arrangeSelected("above")
                         }
-                        Controls.MenuItem {
+                        Components.PopupMenuItem {
                             focusPolicy: Qt.ClickFocus
                             text: "Below"
                             onTriggered: Services.DisplayService.arrangeSelected("below")
@@ -580,20 +585,20 @@ Components.Card {
                     value: root.selectedMonitor ? root.modeText(root.selectedMonitor) : ""
                     onActivated: modeMenu.open()
 
-                    Controls.Menu {
+                    Components.PopupMenu {
                         id: modeMenu
                         y: modeRow.height
 
                         Instantiator {
                             model: root.selectedModeOptions
 
-                            delegate: Controls.MenuItem {
+                            delegate: Components.PopupMenuItem {
                                 required property var modelData
                                 focusPolicy: Qt.ClickFocus
 
                                 text: Services.DisplayService.modeLabel(modelData)
-                                checkable: true
-                                checked: root.selectedMonitor !== null
+                                selectable: true
+                                selected: root.selectedMonitor !== null
                                     && Services.DisplayService.modesEquivalent(
                                         modelData,
                                         Services.DisplayService.monitorModeString(root.selectedMonitor)

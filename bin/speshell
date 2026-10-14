@@ -117,9 +117,42 @@ if [[ "${1:-}" == "activity" ]]; then
       fi
       ipc_call activity list
       ;;
+    refresh)
+      if [[ $# -ne 0 ]]; then
+        printf 'usage: speshell activity refresh\n' >&2
+        exit 2
+      fi
+      # Hotkey scripts call this on every state change: never start Speshell for it.
+      ipc_try activity refresh >/dev/null || true
+      ;;
     *)
       printf 'speshell: unknown activity action: %s\n' "$action" >&2
-      printf 'usage: speshell activity [set|clear|list] ...\n' >&2
+      printf 'usage: speshell activity [set|clear|list|refresh] ...\n' >&2
+      exit 2
+      ;;
+  esac
+  exit 0
+fi
+
+if [[ "${1:-}" == "tool" ]]; then
+  shift
+  case "${1:-}" in
+    ""|list)
+      ipc_call tool list
+      ;;
+    dictate|ocr|screenshot|record|qr|color)
+      if [[ $# -gt 2 ]]; then
+        printf 'usage: speshell tool NAME [MODE]\n' >&2
+        exit 2
+      fi
+      if [[ "$(ipc_call tool run "$1" "${2:-}")" != "true" ]]; then
+        printf 'speshell: %s is not installed (see speshell tool list)\n' "$1" >&2
+        exit 1
+      fi
+      ;;
+    *)
+      printf 'speshell: unknown tool: %s\n' "$1" >&2
+      printf 'usage: speshell tool [list | dictate [cancel] | ocr | screenshot [region|screen] | record [region|screen] | qr | color]\n' >&2
       exit 2
       ;;
   esac

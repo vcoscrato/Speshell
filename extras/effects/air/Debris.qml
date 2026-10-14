@@ -1,4 +1,5 @@
 import QtQuick
+import "common/Colors.js" as Colors
 
 // Leaves and dust carried around a center by the wind. See shaders/debris.frag.
 // Covers only the ring the debris can reach, centered on `center`.
@@ -21,9 +22,10 @@ ShaderEffect {
     property real turbulence: 12
     property rect mask
     property real maskRadius: 10
-    property color cLeaf: "#f0a03c"
-    property color cLeafBack: "#c9711f"
-    property color cOutline: "#5a3417"
-    property color cDust: "#e9f2fa"
+    property var theme: null
+    property color cLeaf: theme ? theme.accent : "#f0a03c"
+    property color cLeafBack: theme ? Colors.mix(theme.accent, theme.crust, 0.25) : "#c9711f"
+    property color cOutline: theme ? Colors.mix(theme.crust, theme.accent, 0.3) : "#5a3417"
+    property color cDust: theme ? theme.rosewater : "#e9f2fa"
     fragmentShader: Qt.resolvedUrl("shaders/debris.frag.qsb")
 }

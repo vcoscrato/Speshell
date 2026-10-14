@@ -42,8 +42,17 @@ TestCase {
             { tag: "insecure URL", text: "[Launcher]\nsearchUrl = http://example.com/?q={query}", message: "must use HTTPS" },
             { tag: "missing placeholder", text: "[Launcher]\nsearchUrl = https://example.com/", message: "exactly one {query}" },
             { tag: "reserved bang", text: "[Launcher.Bangs]\naudio = https://example.com/?q={query}", message: "is reserved" },
+            { tag: "not a language", text: "[Tools]\ndictationLanguages = english", message: "is not a language code" },
             { tag: "malformed line", text: "[Appearance]\npanelWidth 400", message: "Expected 'key = value'" }
         ];
+    }
+
+    // The tools take Tesseract's "eng+por" and a list of Whisper codes, however they're separated.
+    function test_toolLanguagesAcceptAnySeparator() {
+        var result = Config.parseAndValidate("[Tools]\nocrLanguages = eng, por\ndictationLanguages = en pt\n");
+        verify(result.ok, messages(result));
+        compare(result.config.tools.ocrLanguages, "eng+por");
+        compare(result.config.tools.dictationLanguages, "en,pt");
     }
 
     function test_rejectsInvalidValues(data) {

@@ -1,4 +1,5 @@
 import QtQuick
+import "Flame.js" as Flame
 import "common"
 
 // Fire dashboard entrance: the Speshell mark catches and a burning front spreads down
@@ -16,7 +17,7 @@ Item {
     readonly property real sweepTime: 0.32
     readonly property real tailTime: 0.15     // the last flames dying once the panel is whole
 
-    readonly property color core: "#fff6c8"
+    readonly property color core: Flame.core(root.theme)
 
     property real sweep: 0
     property real tail: 0
@@ -72,13 +73,16 @@ Item {
         property real refill: 0
         property real fade: 1
         property real fieldScale: 1
-        property color cGlow: "#ff8a1f"
+        property color cGlow: Flame.glow(root.theme)
         property color cHot: root.core
-        property color cChar: "#3a120c"
+        property color cChar: Flame.charred(root.theme, false)
+        property color cScorch: Flame.scorch(root.theme)
         fragmentShader: Qt.resolvedUrl("shaders/burn.frag.qsb")
     }
 
     Flames {
+
+        theme: root.theme
         anchors.fill: parent
         // Gone by the last frame, so the panel underneath is all that shows.
         opacity: 1 - root.tail / root.tailTime

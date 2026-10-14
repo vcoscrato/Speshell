@@ -1,7 +1,9 @@
 module core
 ActivityOsdWindow 1.0 ActivityOsdWindow.qml
+Bar 1.0 Bar.qml
 Dashboard 1.0 Dashboard.qml
 DashboardPanel 1.0 DashboardPanel.qml
+InteractionsLayer 1.0 InteractionsLayer.qml
 ConfigErrorWindow 1.0 ConfigErrorWindow.qml
 LauncherOverlay 1.0 LauncherOverlay.qml
 NotificationToastWindow 1.0 NotificationToastWindow.qml
@@ -10,3 +12,4 @@ WallpaperView 1.0 WallpaperView.qml
 WallpaperWindow 1.0 WallpaperWindow.qml
 Runtime 1.0 Runtime.qml
 SpecialWorkspaceTracker 1.0 SpecialWorkspaceTracker.qml
+WidgetLoader 1.0 WidgetLoader.qml

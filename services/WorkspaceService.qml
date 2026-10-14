@@ -5,18 +5,22 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 
-// Hyprland's regular workspaces on the focused monitor and the apps on each, for the
-// dashboard's overview, and the dispatch that shows one. State comes from
-// hyprctl and refreshes on Hyprland's events while the dashboard is visible.
+// Hyprland's regular workspaces and the apps on each, for the dashboard's overview and
+// the bar, and the dispatch that shows one. State comes from hyprctl and refreshes on
+// Hyprland's events while the dashboard or the bar shows.
 Singleton {
     id: root
 
     readonly property bool watching: DashboardService.workspaceVisible
-    // overview()'s list, by id.
+        || !!(ConfigService.config && ConfigService.config.bar.position !== "off")
+    // overview()'s list for every monitor, by id.
+    property var all: []
+    // The focused monitor's part of `all`.
     property var workspaces: []
-    // What `workspaces` was read from, so an unchanged read leaves the model, and the
-    // tiles drawn from it, alone.
+    // What `all` and `workspaces` were read from, so an unchanged read leaves the
+    // models, and the tiles drawn from them, alone.
     property string lastRead: ""
+    property string lastFocused: ""
     property bool refreshQueued: false
 
     // Events after which the overview may have changed.
@@ -37,9 +41,9 @@ Singleton {
 
     // The regular workspaces on `monitorName` (all monitors when empty) from hyprctl's
     // -j monitors, workspaces, and clients, in id order. The monitor's active workspace
-    // is listed even when empty. Each workspace is { id, name, active, apps, title }:
+    // is listed even when empty. Each workspace is { id, name, monitor, active, apps, title }:
     // apps are its window classes, each once, tiled before floating and in reading
-    // order, and title is that of its last focused window.
+    // order, and title is that of its last focused window. Each also names its monitor.
     function overview(monitors, workspaces, clients, monitorName) {
         var activeIds = ({});
         (monitors || []).forEach(function(monitor) {
@@ -53,7 +57,8 @@ Singleton {
         var add = function(id, name, monitor) {
             if (byId[id] || id <= 0 || (target !== "" && monitor !== target))
                 return;
-            byId[id] = { id: id, name: String(name || id), active: activeIds[monitor] === id,
+            byId[id] = { id: id, name: String(name || id), monitor: String(monitor || ""),
+                         active: activeIds[monitor] === id,
                          apps: [], title: "", focus: Infinity };
             result.push(byId[id]);
         };
@@ -96,11 +101,17 @@ Singleton {
         var monitorName = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : "";
         try {
             const list = root.overview(JSON.parse(parts[0]), JSON.parse(parts[1]),
-                                       JSON.parse(parts[2]), monitorName);
+                                       JSON.parse(parts[2]), "");
             const read = JSON.stringify(list);
             if (read !== root.lastRead) {
                 root.lastRead = read;
-                root.workspaces = list;
+                root.all = list;
+            }
+            const focused = list.filter(function(ws) { return ws.monitor === monitorName; });
+            const focusedRead = JSON.stringify(focused);
+            if (focusedRead !== root.lastFocused) {
+                root.lastFocused = focusedRead;
+                root.workspaces = focused;
             }
         } catch (error) {
             console.warn("[Speshell] Failed to read Hyprland workspaces:", error);
@@ -133,7 +144,7 @@ Singleton {
         Quickshell.execDetached(["hyprctl", "dispatch", argument]);
     }
 
-    // Shows the workspace under the dashboard. Hyprland keeps a special workspace open
+    // Shows the workspace, under the dashboard if it is open. Hyprland keeps a special workspace open
     // across this, but closes it when a window outside it takes focus, so the overview
     // never focuses windows.
     function focusWorkspace(id) {

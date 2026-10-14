@@ -12,6 +12,34 @@ for the areas a change touches on a real Hyprland session, after `just lint test
 - Move the special workspace to another monitor and change fractional scale:
   everything still lines up.
 
+## Bar
+
+With `[Bar] position = top`, then `bottom`, each with `margin = 0` and `16`, on
+every monitor:
+
+- Tiled windows and the dashboard stay clear of the bar; fullscreen windows cover it.
+- The bar is framed on every side that doesn't touch the screen's edge: docked at
+  full width only toward the windows, at 50 % on three sides, floating at 50 % on all
+  four. At full width it spans the whole screen. With `outline = full`, the frame
+  runs along the screen's edges too, as thick as elsewhere.
+- Workspaces show this monitor's; clicking one shows it. The mark opens and
+  closes the dashboard.
+- Each panel icon, the clock, the track's cover, and a running timer open the same
+  panel the dashboard shows, toward
+  the screen's middle, with the theme's knobs and control effects. A click outside,
+  Escape, or the same icon closes it; opening the dashboard closes it too. Typing a
+  Wi-Fi password works.
+- Play/pause and the track's cover sit left of the clock and a running timer right
+  of it; the clock doesn't move when either appears. Play/pause toggles without
+  opening anything, the cover dims while paused, and hovering it names the track.
+  Switching players, or pausing one while another plays, shows the playing one. At
+  `width = 20` with music and a timer, the bar grows to fit and nothing overlaps.
+  Whatever `[Audio] panelMode` says, the speaker icon opens only the speaker and
+  the mic icon only the mic.
+- Scrolling over the speaker, mic, or (with a backlight) brightness icon changes it.
+  Tray menus and hover labels open toward the screen's middle.
+- Turning it off in Settings removes it and the reserved space at once.
+
 ## Launcher
 
 - `speshell launcher open|close|toggle` works on each monitor.
@@ -29,6 +57,9 @@ for the areas a change touches on a real Hyprland session, after `just lint test
   including a theme without effects. Colors, wallpaper and transitions follow,
   and the old launcher exit finishes.
 - After a relaunch, the chosen theme's colors are there from the first frame.
+- Tooltips, dropdown menus (Settings, Displays), a tray app's right-click menu
+  with its submenus, scrollbars, and selected text all draw in the theme's
+  colors, and so do the effects of a theme that borrows another theme's effects.
 - A wallpaper added under `~/.config/speshell/themes/<shipped theme>/` joins
   that theme.
 - A bad color in `theme.ini` or a broken `Effects.qml` raises a notification, and
@@ -89,6 +120,23 @@ for the areas a change touches on a real Hyprland session, after `just lint test
 - `speshell activity set test active Test` shows the activity OSD, and
   `speshell activity clear test` hides it. Running `wf-recorder` shows the
   recording activity, and **Stop** ends it.
+- `speshell tool dictate` shows Listening… and, run again, Transcribing…
+  without delay, then types the text into the focused window. **Discard** and
+  `speshell tool dictate cancel` drop it without typing.
+
+## Tools
+
+- The Tools button (bar) and rail icon (dashboard) show only with a tool
+  installed, and list only installed tools; one installed while Speshell runs
+  appears the next time the panel opens.
+- Each tool closes the dashboard or dropdown before it selects or captures, so
+  neither shows in the result. The selection uses the theme's accent.
+- Copy text, Scan code, Screenshot (area and screen) and Pick color copy their
+  result and toast it; cancelling the selection does nothing. Screenshot's
+  Annotate opens Swappy, and a link's Open opens the browser.
+- Record shows in the panel with its time and in the bar's icon; a click, the
+  OSD's **Stop**, or `speshell tool record` saves it and toasts Open.
+- `speshell tool ocr` without tesseract toasts what to install.
 
 ## Home chips and power
 

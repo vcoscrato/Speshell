@@ -1,4 +1,5 @@
 import QtQuick
+import "Flame.js" as Flame
 import "common"
 
 // Fire's knob for the dashboard's sliders and switches: an ember whose cracks roll as
@@ -41,10 +42,10 @@ Item {
         property real dim: root.checked ? 0 : 1
         property real lean: Math.max(-1, Math.min(1, (root.trail - root.travel) / 12))
         property real time: flicker.item ? flicker.item.clock : 0
-        property color cCore: "#fff6c8"
-        property color cMid: "#ffb02e"
-        property color cOuter: "#f2541b"
-        property color cEdge: "#a8160f"
+        property color cCore: Flame.core(root.theme)
+        property color cMid: Flame.mid(root.theme)
+        property color cOuter: Flame.outer(root.theme)
+        property color cEdge: Flame.edge(root.theme)
         property color cCoal: root.theme ? root.theme.crust : "#11080a"
         property color cAsh: root.theme ? root.theme.subtext : "#b99a89"
         fragmentShader: Qt.resolvedUrl("shaders/knob.frag.qsb")

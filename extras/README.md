@@ -17,7 +17,7 @@ The themes and effects Speshell ships, the paintings behind their wallpapers, an
 | `themes/<theme>/` | `theme.ini` (name, palette, `effects = <name>`) and the rendered wallpaper `<painting>.jpg` | yes | designers: palettes; artists: commit the wallpaper they render |
 | `paintings/` | `<painting>.frag`, one shader per wallpaper, and `landscape.glsl`, the helpers they share | no | artists |
 | `effects/<name>/` | Launcher, wallpaper, and dashboard transitions, the dashboard backdrop, and the effects on the dashboard's controls. See [effects/README.md](effects/README.md) | yes | effects developers |
-| `lib/` | `common.glsl` (noise, signed distances, banding, Voronoi), `EffectClock.qml`, and `Particles.qml`, shared by every effect | yes | effects developers; a change here touches every effect |
+| `lib/` | `common.glsl` (noise, signed distances, banding, Voronoi), `EffectClock.qml`, `Particles.qml`, and `Colors.js`, shared by every effect | yes | effects developers; a change here touches every effect |
 | `lab/` | The offscreen harness, scenes, and scripts behind the `just` recipes; output goes to the git-ignored `lab/out/` | no | anyone improving the tooling |
 
 The package installs `themes/`, `effects/`, and `lib/` to `/usr/share/speshell/extras`. Nothing else in this directory ships. Keep sources and tools out of those three directories.
@@ -61,10 +61,11 @@ just check                               # every effect and scene
 just perf fire launcher                  # GPU time per frame at 1080p
 ```
 
-Scenes drive `EffectClock` with virtual time, 1/60 s per frame, so captures match real playback. The wallpaper scene hosts this checkout's `core/WallpaperView.qml`. The dashboard scene fills a mock dashboard the way `core/Dashboard.qml` does, in the colors of the theme named like the effect. The controls scene plays a script on mock controls in those colors: a slider dragged and let go twice, another stepped by the wheel, an audio device and a segment picked, a switch turned on and off, and a sidebar panel picked. Env knobs:
+Scenes drive `EffectClock` with virtual time, 1/60 s per frame, so captures match real playback, and every scene draws in the colors of the theme named like the effect. The wallpaper scene hosts this checkout's `core/WallpaperView.qml`. The dashboard scene fills a mock dashboard the way `core/Dashboard.qml` does. The controls scene plays a script on mock controls in those colors: a slider dragged and let go twice, another stepped by the wheel, an audio device and a segment picked, a switch turned on and off, and a sidebar panel picked. Env knobs:
 
 - `WALL_A` and `WALL_B`: your own wallpapers.
 - `CLOSE_AT`, `REOPEN_AT`, `SWITCH_AT`, and `SPEED` for the scenes.
+- `THEME_INI`: another theme's `theme.ini`, to see the effect in its colors.
 - `KEEP_FRAMES=1` keeps the frames, about 700 MB per run; `EVERY_FRAME=1` captures at 60 fps instead of 30.
 - For perf, `PERF_FROM` and `DURATION`. For example, `CLOSE_AT=30 PERF_FROM=1.5 DURATION=4.5 just perf air` measures only the open launcher.
 

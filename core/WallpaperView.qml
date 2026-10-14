@@ -12,6 +12,8 @@ Item {
     property string path: ""
     // The current effects' wallpaper transition; read when a change starts.
     property Component transition: null
+    // The palette the transition draws in, as Theme.qml names it.
+    property var theme: ThemeModule.Theme
     property real timeScale: 1
     // Frames per second of the effects transition.
     property int frameRate: 60
@@ -130,6 +132,12 @@ Item {
         target: transitionLoader.item
         property: "outgoing"
         value: root.outgoing
+    }
+
+    Binding {
+        target: transitionLoader.item
+        property: "theme"
+        value: root.theme
     }
 
     // Optional for effects; the new image cannot change while a transition runs.

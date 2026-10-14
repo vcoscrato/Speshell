@@ -12,6 +12,8 @@ Item {
     property Item panel: null
     property rect panelRect
     property bool active: false
+    // The active palette, as Theme.qml names it.
+    property var theme: null
     signal closingFinished()
 
     // ── Choreography (seconds) ──────────────────────────────
@@ -61,6 +63,7 @@ Item {
 
     // ── Arriving wind: a whirlpool of air drawing in from far out to the launcher ──
     Wind {
+        theme: root.theme
         anchors.fill: parent
         opacity: root.span(root.enter, 0, 0.15) * (1 - root.span(root.enter, 0.7, 1))
         visible: opacity > 0 && root.leave === 0
@@ -85,6 +88,7 @@ Item {
     // ── Breeze while open: wind parting around the launcher and circling it,
     //    slowly veering and gusting ──
     Wind {
+        theme: root.theme
         readonly property size ext: Qt.size(axes.width * outer + 20, axes.height * outer + 20)
         x: root.center.x - ext.width
         y: root.center.y - ext.height
@@ -116,6 +120,7 @@ Item {
     // ── Leaves and dust: whirled in with the wind, carried around while open,
     //    and flung off as the launcher closes ──
     Debris {
+        theme: root.theme
         opacity: root.span(root.enter, 0, 0.15) * (1 - root.span(root.leave, 0.5, 1))
         visible: opacity > 0
         time: clock.simTime
@@ -132,6 +137,7 @@ Item {
 
     // ── Departing wind: the whirlpool turns outward and blows away ──
     Wind {
+        theme: root.theme
         anchors.fill: parent
         opacity: root.span(root.leave, 0, 0.15) * (1 - root.span(root.leave, 0.6, 1))
         visible: opacity > 0
@@ -173,7 +179,7 @@ Item {
         property real wind: root.wind
         property real spin: root.spin
         property real reach: root.reach
-        property color cRing: "#eef5fb"
+        property color cRing: root.theme ? root.theme.rosewater : "#eef5fb"
         fragmentShader: Qt.resolvedUrl("shaders/unwind.frag.qsb")
     }
 }

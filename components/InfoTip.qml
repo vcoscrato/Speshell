@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls as Controls
 import "../theme" as ThemeModule
 import "." as Components
 
@@ -27,10 +26,9 @@ Item {
         iconColor: hover.hovered ? ThemeModule.Theme.text : ThemeModule.Theme.overlay
     }
 
-    Controls.ToolTip {
+    Components.Tooltip {
         visible: hover.hovered && root.text !== ""
         delay: 150
         text: root.text
-        width: Math.min(implicitWidth, 260)
     }
 }

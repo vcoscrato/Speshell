@@ -354,6 +354,8 @@ Components.Card {
                     verticalAlignment: TextInput.AlignVCenter
                     visible: root.creatingNote
                     color: ThemeModule.Theme.text
+                    selectionColor: ThemeModule.Theme.accent
+                    selectedTextColor: ThemeModule.Theme.bg
                     font.family: ThemeModule.Theme.fontFamily
                     font.pixelSize: ThemeModule.Theme.fontSizeSmall
                     clip: true
@@ -497,7 +499,7 @@ Components.Card {
             interactive: needsVerticalScroll
             clip: true
 
-            ScrollBar.vertical: ScrollBar {
+            ScrollBar.vertical: Components.StyledScrollBar {
                 policy: notesFlickable.needsVerticalScroll ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
             }
 
@@ -515,6 +517,9 @@ Components.Card {
                 rightPadding: 0
                 placeholderText: "Keep notes, prompts, commands, or text you want nearby.\nEnter to finish · Shift+Enter for a new line"
                 color: ThemeModule.Theme.text
+                selectionColor: ThemeModule.Theme.accent
+                selectedTextColor: ThemeModule.Theme.bg
+                placeholderTextColor: ThemeModule.Theme.subtext
                 font.pixelSize: ThemeModule.Theme.fontSizeSmall
                 font.family: ThemeModule.Theme.fontFamily
                 enabled: Services.NotesService.managementEnabled

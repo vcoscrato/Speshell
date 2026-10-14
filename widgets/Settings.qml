@@ -1,6 +1,5 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import QtQuick.Controls as Controls
 import "../components" as Components
 import "../services" as Services
 import "../theme" as ThemeModule
@@ -15,12 +14,14 @@ Components.Card {
 
     readonly property var settingsConfig: Services.ConfigService.config || ({})
     readonly property var launcherConfig: root.settingsConfig.launcher || ({})
+    readonly property var barConfig: root.settingsConfig.bar || ({})
     readonly property string savedWeatherLocation: String(root.settingsConfig.weatherLocation || "")
     readonly property bool weatherEnabled: root.settingsConfig.weatherEnabled || false
 
     readonly property var pages: [
         { id: "general", label: "General", icon: "dashboard" },
         { id: "themes", label: "Themes", icon: "palette" },
+        { id: "bar", label: "Bar", icon: "bar" },
         { id: "launcher", label: "Launcher", icon: "search" },
         { id: "weather", label: "Weather", icon: "cloud" }
     ]
@@ -42,6 +43,24 @@ Components.Card {
         { value: 2, label: "2%" },
         { value: 5, label: "5%" },
         { value: 10, label: "10%" }
+    ]
+    readonly property var barPositionOptions: [
+        { value: "off", label: "Off" },
+        { value: "top", label: "Top" },
+        { value: "bottom", label: "Bottom" }
+    ]
+    // The bar's sizes, each a list of the values offered and its default.
+    readonly property var barSizes: [
+        { key: "height", label: "Height", fallback: 40,
+          options: [24, 28, 32, 36, 40, 44, 48, 56, 64].map(function(px) { return { value: px, label: px + " px" }; }) },
+        { key: "width", label: "Width", fallback: 100,
+          options: [25, 33, 50, 66, 75, 90, 100].map(function(percent) {
+              return { value: percent, label: percent >= 100 ? "Full" : percent + "%" };
+          }) },
+        { key: "margin", label: "Margin", fallback: 0,
+          options: [0, 2, 4, 8, 12, 16, 24, 32].map(function(px) { return { value: px, label: px === 0 ? "Docked" : px + " px" }; }) },
+        { key: "gap", label: "Gap", fallback: 0,
+          options: [0, 1, 2, 4, 6, 8, 12, 16].map(function(px) { return { value: px, label: px + " px" }; }) }
     ]
     readonly property var launcherRowOptions: [
         { value: 3, label: "3" },
@@ -330,9 +349,10 @@ Components.Card {
                     onClicked: root.activePage = tab.modelData.id
                 }
 
-                Controls.ToolTip.visible: !tab.current && tabMouse.containsMouse
-                Controls.ToolTip.text: tab.modelData.label
-                Controls.ToolTip.delay: 300
+                Components.Tooltip {
+                    visible: !tab.current && tabMouse.containsMouse
+                    text: tab.modelData.label
+                }
             }
         }
     }
@@ -501,6 +521,76 @@ Components.Card {
                             format: root.speedLabel
                             onCommitted: function(value) { Services.ConfigService.setTransitionSpeed(speedSlider.modelData.surface, value); }
                         }
+                    }
+                }
+            }
+
+            Column {
+                width: parent.width
+                spacing: ThemeModule.Theme.spacingSmall
+                visible: root.activePage === "bar"
+
+                Components.SettingRow {
+                    label: "Position"
+                    info: "Experimental. A bar on every screen; its icons open the dashboard's panels. Margin is its distance from the screen's edge, and gap the space between it and the windows."
+
+                    Components.SegmentedControl {
+                        options: root.barPositionOptions
+                        currentValue: root.configValue(root.barConfig, "position", "off")
+                        onValueSelected: function(value) { Services.ConfigService.setBar("position", value); }
+                    }
+                }
+
+                Grid {
+                    id: barSizeGrid
+                    readonly property real columnWidth: (width - columnSpacing) / 2
+
+                    enabled: root.barConfig.position !== "off"
+                    opacity: enabled ? 1 : ThemeModule.Theme.disabledOpacity
+                    width: parent.width
+                    columns: 2
+                    columnSpacing: ThemeModule.Theme.spacingMedium
+                    rowSpacing: ThemeModule.Theme.spacingSmall
+
+                    Repeater {
+                        model: root.barSizes
+
+                        Column {
+                            id: barSize
+                            required property var modelData
+                            readonly property var current: root.configValue(root.barConfig, barSize.modelData.key,
+                                barSize.modelData.fallback)
+
+                            width: barSizeGrid.columnWidth
+                            spacing: ThemeModule.Theme.spacingTiny
+
+                            Text {
+                                text: barSize.modelData.label
+                                font.pixelSize: ThemeModule.Theme.fontSizeCaption
+                                font.family: ThemeModule.Theme.fontFamily
+                                color: ThemeModule.Theme.subtext
+                            }
+
+                            Components.SelectMenu {
+                                width: parent.width
+                                options: barSize.modelData.options
+                                currentValue: barSize.current
+                                fallbackLabel: barSize.current + (barSize.modelData.key === "width" ? "%" : " px")
+                                onValueSelected: function(value) { Services.ConfigService.setBar(barSize.modelData.key, value); }
+                            }
+                        }
+                    }
+                }
+
+                Components.SettingRow {
+                    enabled: root.barConfig.position !== "off"
+                    label: "Full outline"
+                    info: "Frame the bar along the screen's edges too, not only on the sides away from them."
+
+                    Components.ToggleSwitch {
+                        checked: root.barConfig.outline === "full"
+                        tooltipText: "Full outline"
+                        onToggled: function(newState) { Services.ConfigService.setBar("outline", newState ? "full" : "edges"); }
                     }
                 }
             }

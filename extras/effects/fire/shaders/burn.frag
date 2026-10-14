@@ -21,6 +21,7 @@ layout(std140, binding = 0) uniform buf {
     vec4 cGlow;
     vec4 cHot;
     vec4 cChar;
+    vec4 cScorch;       // what the consume front is about to take
 } u;
 layout(binding = 1) uniform sampler2D source;
 #include "../../../lib/common.glsl"
@@ -50,7 +51,7 @@ void main() {
     vec3 col = content.rgb;
     // Scorch toward brown ahead of the consume front, keeping some light and dark.
     float luma = dot(col, vec3(0.299, 0.587, 0.114)) / max(content.a, 0.001);
-    col = mix(col, vec3(0.36, 0.2, 0.1) * (0.55 + 0.9 * luma) * content.a, under(c, 70.0 * w, ac) * 0.8 * marks);
+    col = mix(col, u.cScorch.rgb * (0.55 + 0.9 * luma) * content.a, under(c, 70.0 * w, ac) * 0.8 * marks);
     float charred = max(under(r, 22.0, ar) * 0.85 * front, under(c, 22.0 * w, ac) * 0.9 * marks);
     col = mix(col, u.cChar.rgb * content.a, charred);
     col = mix(col, u.cGlow.rgb * content.a, max(under(r, 13.0, ar) * front, under(c, 9.0 * w, ac) * marks));

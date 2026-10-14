@@ -1,5 +1,6 @@
 import QtQuick
 import "common"
+import "common/Colors.js" as Colors
 
 // Water wallpaper transition: a drop lands in the middle of the screen and its
 // ripple spreads out, carrying the new wallpaper in behind it.
@@ -8,6 +9,8 @@ Item {
 
     // ── Speshell effects API v1 ────────────────────────────────
     property Item outgoing: null
+    // The active palette, as Theme.qml names it.
+    property var theme: null
     property Item incoming: null
     signal finished()
 
@@ -59,8 +62,8 @@ Item {
         property real ring: (1 - Math.pow(1 - root.sweep, 1.6)) * root.reach
         property real strength: 16 * (1 - 0.5 * root.sweep)
         property real calm: Math.max(root.calm, root.sweep > 0.85 ? (root.sweep - 0.85) / 0.6 : 0)
-        property color cLight: "#e8f6fd"
-        property color cDark: "#123a55"
+        property color cLight: root.theme ? root.theme.text : "#e8f6fd"
+        property color cDark: root.theme ? Colors.mix(root.theme.crust, root.theme.accent, 0.3) : "#123a55"
         fragmentShader: Qt.resolvedUrl("shaders/ripple.frag.qsb")
     }
 }

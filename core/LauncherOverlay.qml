@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 // qmllint disable uncreatable-type
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Templates as T
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
@@ -236,6 +236,8 @@ PanelWindow {
                     text: Services.LauncherService.query
                     selectByMouse: true
                     color: ThemeModule.Theme.text
+                    selectionColor: ThemeModule.Theme.accent
+                    selectedTextColor: ThemeModule.Theme.bg
                     font.family: ThemeModule.Theme.fontFamily
                     font.pixelSize: ThemeModule.Theme.fontSizeLarge
                     verticalAlignment: TextInput.AlignVCenter
@@ -295,14 +297,8 @@ PanelWindow {
                 boundsBehavior: Flickable.StopAtBounds
                 flickDeceleration: 3000
 
-                ScrollBar.vertical: ScrollBar {
-                    policy: resultsList.scrollable ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
-                    contentItem: Rectangle {
-                        implicitWidth: 4
-                        radius: 2
-                        color: ThemeModule.Theme.overlay
-                        opacity: 0.5
-                    }
+                T.ScrollBar.vertical: Components.StyledScrollBar {
+                    policy: resultsList.scrollable ? T.ScrollBar.AsNeeded : T.ScrollBar.AlwaysOff
                 }
 
                 delegate: Rectangle {
@@ -488,6 +484,12 @@ PanelWindow {
         target: transitionLoader.item
         property: "active"
         value: root.opened
+    }
+
+    Binding {
+        target: transitionLoader.item
+        property: "theme"
+        value: ThemeModule.Theme
     }
 
     Connections {

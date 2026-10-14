@@ -14,8 +14,9 @@ Every effect here has the same files:
 ├── Interactions.qml          the effects on the dashboard's controls
 ├── Knob.qml                  the thumb of the dashboard's sliders and switches
 ├── <Part>.qml                pieces the transitions use (Flames, Wind, Whip, ...)
+├── <Name>.js                 color recipes several parts share (Flame, Water, Stone)
 ├── shaders/*.frag            GLSL sources; `just shaders` compiles them to git-ignored .qsb files
-└── common -> ../../lib       symlink that gives QML `import "common"` (EffectClock, Particles)
+└── common -> ../../lib       symlink that gives QML `import "common"` (EffectClock, Particles) and `common/Colors.js`
 ```
 
 Shaders include the shared library by relative path: `#include "../../../lib/common.glsl"`.
@@ -40,6 +41,8 @@ QtObject {
 
 The dashboard parts arrived after the first two, still under version 1; an older Speshell ignores them.
 
+**Colors.** Every part receives `theme`, the active palette as `Theme.qml` names it (`bg`, `crust`, `text`, `accent`, `peach`, `sky`, ...). Any theme may use any effects, so take every color from it, picking slots by meaning: fire from the warm colors, water from the blues, stone from the neutrals. Blend with `mix` and `alpha` from `common/Colors.js`, and brighten with `Qt.lighter` where light burns brighter than any theme color (a flame's core, foam). `theme` is null for a moment after creation, so each color falls back to a literal until it arrives: `root.theme ? root.theme.accent : "#fe8019"`. An older Speshell passes no `theme` to the launcher and wallpaper transitions, so they keep those fallbacks there.
+
 **Launcher transition.** Created when the launcher opens and destroyed after it hides. It fills the launcher's full-screen surface above the panel and receives:
 
 | Property | Meaning |
@@ -47,6 +50,7 @@ The dashboard parts arrived after the first two, still under version 1; an older
 | `panel` | The launcher panel. Capture it with a `ShaderEffectSource` (`hideSource: true`) to draw it yourself. |
 | `panelRect` | The panel's geometry. It changes as the result list grows or shrinks. |
 | `active` | `false` once the launcher closes; `true` again if it reopens during the exit. |
+| `theme` | The active palette. |
 
 Emit `closingFinished()` when the exit is done; Speshell hides the launcher anyway after 2.5 s. Input is ignored during the exit.
 
@@ -56,6 +60,7 @@ Emit `closingFinished()` when the exit is done; Speshell hides the launcher anyw
 |---|---|
 | `outgoing` | The old image, on top. Hide it (`hideSource: true`) and draw it going away. |
 | `incoming` | The new image, already showing beneath. |
+| `theme` | The active palette, already the new wallpaper's theme. |
 
 Emit `finished()` when done; Speshell removes it after 5 s otherwise. Without a wallpaper transition the old image fades out.
 
@@ -65,7 +70,7 @@ Emit `finished()` when done; Speshell removes it after 5 s otherwise. Without a 
 |---|---|
 | `panel` | The dashboard panel. Capture it with a `ShaderEffectSource` (`hideSource: true`) to draw it yourself. |
 | `panelRect` | The panel's geometry, at the origin of the surface. |
-| `theme` | The active palette, as `Theme.qml` names it (`bg`, `crust`, `text`, `accent`, `peach`, `sky`, ...). Any theme may use any effects, so take colors from here. |
+| `theme` | The active palette. |
 
 Emit `finished()` when done; Speshell removes it after 2.5 s otherwise. People open the dashboard to glance at the clock, so the entrance must not keep them waiting: show the top of the panel within a tenth of a second and all of it within about a third, and finish soon after. Speshell shows the panel itself once the entrance goes, so the entrance's last frame must show the panel exactly as it is, or the panel jumps: ease every distortion, tint, and overlay to nothing, let that frame draw, and emit `finished()` on the next tick. `just check` compares the two. Before removing the entrance, Speshell sets `panel` to null, so a `ShaderEffectSource` bound to it lets the panel show in the same frame; bind `sourceItem` to `panel` rather than keeping your own reference.
 

@@ -20,8 +20,10 @@ A personal setup first, largely built with AI. Borrow whatever is useful.
 - Network, Bluetooth, battery, power, tray
 - Notifications with history and Do Not Disturb
 - Launcher: apps, calculator, panels, web bangs
+- Tools: dictation, copy text from the screen (OCR), screenshots, screen recording, QR codes, color picker
 - Activity indicator for screen recording, dictation, and anything that publishes over IPC
 - Themes with wallpapers and animated effects
+- Experimental bar (`[Bar] position = top` or `bottom`): workspaces, clock, playing track, timer, tray, and icons that open the dashboard's own panels
 
 Widgets for missing hardware or tools hide themselves.
 
@@ -29,7 +31,31 @@ Widgets for missing hardware or tools hide themselves.
 
 QuickShell ≥ 0.3, Hyprland, PipeWire/WirePlumber, NetworkManager, BlueZ, libnotify.
 
-Optional: `brightnessctl`, `curl` (weather), `hyprlock`, `cliphist`, `wl-clipboard`, `wf-recorder`, `whisper.cpp`, `xdg-utils`.
+Optional: `brightnessctl`, `curl` (weather), `hyprlock`, `cliphist`, `wl-clipboard`, `xdg-utils`, and the tools' programs below.
+
+## Tools
+
+The **Tools** panel, in the bar and the dashboard, runs each tool whose programs are installed; the others don't show. Areas are picked with a selection in the theme's colors, and results arrive as toasts.
+
+| Tool | Does | Needs |
+|---|---|---|
+| Dictation | Records until run again, then types and copies what you said | `pipewire`, `whisper.cpp`, `wtype`, `wl-clipboard`, `curl` (model download) |
+| Copy text | Copies the text in an area | `grim`, `slurp`, `tesseract` and a `tesseract-data-*` per language, `wl-clipboard` |
+| Screenshot | Saves an area or the screen to Pictures/Screenshots and copies it; Annotate opens it in Swappy | `grim`, `slurp`, `wl-clipboard`, optionally `swappy` |
+| Record | Records an area or the screen, with sound, to Videos/Recordings until run again | `wf-recorder`, `slurp` |
+| Scan code | Copies a QR code or barcode, offering to open links | `grim`, `slurp`, `zbar`, `wl-clipboard` |
+| Pick color | Copies a pixel's hex color | `hyprpicker`, `wl-clipboard` |
+
+`[Tools]` in the config sets the OCR and dictation languages, dictation vocabulary, and Whisper model. Bind them in Hyprland with `speshell tool`:
+
+```lua
+hl.bind("SUPER + D", hl.dsp.exec_cmd("speshell tool dictate"))
+hl.bind("SUPER + SHIFT + D", hl.dsp.exec_cmd("speshell tool dictate cancel"))
+hl.bind("Print", hl.dsp.exec_cmd("speshell tool screenshot"))
+hl.bind("SHIFT + Print", hl.dsp.exec_cmd("speshell tool ocr"))
+hl.bind("SUPER + R", hl.dsp.exec_cmd("speshell tool record"))
+hl.bind("SUPER + SHIFT + R", hl.dsp.exec_cmd("speshell tool record screen"))
+```
 
 ## Install
 
@@ -52,18 +78,18 @@ local ws = "dash"
 hl.bind("SUPER + GRAVE", hl.dsp.workspace.toggle_special(ws))
 hl.bind("SUPER + SPACE", hl.dsp.exec_cmd("speshell launcher"))
 
--- Leave room for the panel: panelMargin + panelWidth + 12.
 hl.workspace_rule({
     workspace = "special:" .. ws,
     persistent = true,
     gaps_in = 8,
-    gaps_out = { top = 16, right = 16, bottom = 16, left = 448 },
 })
 
 hl.on("hyprland.start", function()
     hl.exec_cmd("speshell --no-duplicate --daemonize")
 end)
 ```
+
+Speshell sets the workspace's `gaps_out` so its windows tile beside the panel, and updates them when `panelWidth` or `panelMargin` changes.
 
 ## Configuration
 
@@ -112,8 +138,9 @@ Colors use the keys of [`extras/themes/cosmos/theme.ini`](extras/themes/cosmos/t
 ```bash
 speshell theme list | get | set ID | shuffle [ID] | rescan
 speshell wallpaper get | set PATH
+speshell tool list | dictate [cancel] | ocr | screenshot [region|screen] | record [region|screen] | qr | color
 speshell activity set ID STATE LABEL [DETAIL] [ICON] [TONE]
-speshell activity list | clear ID
+speshell activity list | clear ID | refresh
 ```
 
 ## Development

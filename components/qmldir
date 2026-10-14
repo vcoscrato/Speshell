@@ -9,6 +9,9 @@ HoverLabel 1.0 HoverLabel.qml
 IconButton 1.0 IconButton.qml
 InfoTip 1.0 InfoTip.qml
 InlineActionChip 1.0 InlineActionChip.qml
+PopupMenu 1.0 PopupMenu.qml
+PopupMenuItem 1.0 PopupMenuItem.qml
+PopupMenuSeparator 1.0 PopupMenuSeparator.qml
 RefreshButton 1.0 RefreshButton.qml
 SegmentedControl 1.0 SegmentedControl.qml
 SelectMenu 1.0 SelectMenu.qml
@@ -19,5 +22,9 @@ SpeshellMark 1.0 SpeshellMark.qml
 SpeshellMarkButton 1.0 SpeshellMarkButton.qml
 StatusBadge 1.0 StatusBadge.qml
 StepSlider 1.0 StepSlider.qml
+StyledScrollBar 1.0 StyledScrollBar.qml
 StyledSlider 1.0 StyledSlider.qml
 ToggleSwitch 1.0 ToggleSwitch.qml
+Tooltip 1.0 Tooltip.qml
+TrayItem 1.0 TrayItem.qml
+TrayMenu 1.0 TrayMenu.qml

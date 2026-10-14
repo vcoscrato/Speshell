@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 // qmllint disable uncreatable-type
 
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Templates as T
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
@@ -19,7 +19,7 @@ PanelWindow {
 
     visible: root.active && root.targetScreen !== null
     screen: root.targetScreen
-    color: "#111418"
+    color: ThemeModule.Theme.crust
     focusable: true
     aboveWindows: true
     exclusionMode: ExclusionMode.Ignore
@@ -46,160 +46,161 @@ PanelWindow {
             reportArea.forceActiveFocus();
     }
 
-    Rectangle {
-        anchors.fill: parent
-        color: "#111418"
+    // The palette of the last theme applied, or Cosmos's before any.
+    Components.Surface {
+        anchors.centerIn: parent
+        width: Math.min(720, parent.width - ThemeModule.Theme.spacingXL * 2)
+        height: Math.min(620, parent.height - ThemeModule.Theme.spacingXL * 2)
+        cutTopRight: true
+        cutBottomLeft: true
+        edge: "left"
+        edgeColor: ThemeModule.Theme.error
 
-        Rectangle {
-            anchors.centerIn: parent
-            width: Math.min(720, parent.width - 48)
-            height: Math.min(620, parent.height - 48)
-            radius: 12
-            color: "#1b2026"
-            border.width: 1
-            border.color: "#3a424c"
+        Column {
+            anchors.fill: parent
+            anchors.margins: ThemeModule.Theme.spacingXL
+            spacing: ThemeModule.Theme.spacingLarge
 
-            Column {
-                anchors.fill: parent
-                anchors.margins: 24
-                spacing: 16
+            Row {
+                width: parent.width
+                spacing: ThemeModule.Theme.spacingMedium
 
-                Row {
-                    width: parent.width
-                    spacing: 12
-
-                    Components.AppIcon {
-                        name: "alert"
-                        size: 26
-                        iconColor: "#ffb86c"
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    Column {
-                        width: parent.width - 38
-                        spacing: 3
-
-                        Text {
-                            text: "Configuration invalid"
-                            color: "#f4f7fa"
-                            font.family: ThemeModule.Theme.fontFamily
-                            font.pixelSize: ThemeModule.Theme.fontSizeTitle
-                            font.bold: true
-                        }
-
-                        Text {
-                            width: parent.width
-                            text: "Speshell is stopped until the configuration is corrected."
-                            color: "#aeb8c4"
-                            font.family: ThemeModule.Theme.fontFamily
-                            font.pixelSize: ThemeModule.Theme.fontSizeSupporting
-                            wrapMode: Text.WordWrap
-                        }
-                    }
+                Components.AppIcon {
+                    id: alertIcon
+                    name: "alert"
+                    size: ThemeModule.Theme.iconSizeLarge
+                    iconColor: ThemeModule.Theme.error
+                    anchors.verticalCenter: parent.verticalCenter
                 }
 
-                Rectangle {
-                    width: parent.width
-                    height: 36
-                    radius: 6
-                    color: "#15191e"
-                    border.width: 1
-                    border.color: "#303740"
+                Column {
+                    width: parent.width - alertIcon.width - parent.spacing
+                    spacing: ThemeModule.Theme.spacingMicro
 
                     Text {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        text: Services.ConfigService.configPath || "~/.config/speshell/config.ini"
-                        color: "#c6d0dc"
-                        font.family: "monospace"
-                        font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                        elide: Text.ElideMiddle
-                        verticalAlignment: Text.AlignVCenter
+                        text: "Configuration invalid"
+                        color: ThemeModule.Theme.text
+                        font.family: ThemeModule.Theme.fontFamily
+                        font.pixelSize: ThemeModule.Theme.fontSizeTitle
+                        font.bold: true
+                    }
+
+                    Text {
+                        width: parent.width
+                        text: "Speshell is stopped until the configuration is corrected."
+                        color: ThemeModule.Theme.subtext
+                        font.family: ThemeModule.Theme.fontFamily
+                        font.pixelSize: ThemeModule.Theme.fontSizeSupporting
+                        wrapMode: Text.WordWrap
                     }
                 }
+            }
 
-                ScrollView {
+            Rectangle {
+                width: parent.width
+                height: ThemeModule.Theme.controlHeight
+                radius: ThemeModule.Theme.borderRadius
+                color: ThemeModule.Theme.mantle
+                border.width: ThemeModule.Theme.borderWidth
+                border.color: ThemeModule.Theme.controlBorder
+
+                Text {
+                    anchors.fill: parent
+                    anchors.leftMargin: ThemeModule.Theme.spacingMedium
+                    anchors.rightMargin: ThemeModule.Theme.spacingMedium
+                    text: Services.ConfigService.configPath || "~/.config/speshell/config.ini"
+                    color: ThemeModule.Theme.subtextBright
+                    font.family: "monospace"
+                    font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                    elide: Text.ElideMiddle
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
+
+            Rectangle {
+                width: parent.width
+                height: Math.max(160, parent.height - 196)
+                radius: ThemeModule.Theme.borderRadius
+                color: ThemeModule.Theme.mantle
+                border.width: ThemeModule.Theme.borderWidth
+                border.color: ThemeModule.Theme.controlBorder
+
+                Flickable {
                     id: reportScroll
-                    width: parent.width
-                    height: Math.max(160, parent.height - 196)
+                    anchors.fill: parent
+                    anchors.margins: ThemeModule.Theme.borderWidth
+                    contentHeight: reportArea.implicitHeight
+                    boundsBehavior: Flickable.StopAtBounds
                     clip: true
 
-                    background: Rectangle {
-                        radius: 8
-                        color: "#12161a"
-                        border.width: 1
-                        border.color: "#303740"
+                    T.ScrollBar.vertical: Components.StyledScrollBar {
+                        policy: reportScroll.contentHeight > reportScroll.height ? T.ScrollBar.AsNeeded : T.ScrollBar.AlwaysOff
                     }
 
-                    TextArea {
+                    TextEdit {
                         id: reportArea
-                        focusPolicy: Qt.ClickFocus
-                        width: reportScroll.availableWidth
+                        width: reportScroll.width
+                        padding: ThemeModule.Theme.spacingMedium
                         text: Services.ConfigService.errorReport
                         readOnly: true
                         selectByMouse: true
-                        textFormat: Text.PlainText
+                        textFormat: TextEdit.PlainText
                         wrapMode: TextEdit.Wrap
-                        color: "#dde4ec"
-                        selectionColor: "#4978a8"
-                        selectedTextColor: "#ffffff"
+                        color: ThemeModule.Theme.text
+                        selectionColor: ThemeModule.Theme.accent
+                        selectedTextColor: ThemeModule.Theme.bg
                         font.family: "monospace"
                         font.pixelSize: ThemeModule.Theme.fontSizeSupporting
-                        leftPadding: 14
-                        rightPadding: 14
-                        topPadding: 12
-                        bottomPadding: 12
-                        background: null
                     }
                 }
+            }
 
-                Item {
-                    width: parent.width
-                    height: 34
+            Item {
+                width: parent.width
+                height: ThemeModule.Theme.controlHeight
 
-                    Text {
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: Math.max(0, parent.width - actionRow.width - 12)
-                        text: Services.ConfigService.operationMessage
-                        color: Services.ConfigService.operationFailed ? "#ff8080" : "#7bd9a5"
-                        font.family: ThemeModule.Theme.fontFamily
-                        font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                        elide: Text.ElideRight
+                Text {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Math.max(0, parent.width - actionRow.width - ThemeModule.Theme.spacingMedium)
+                    text: Services.ConfigService.operationMessage
+                    color: Services.ConfigService.operationFailed ? ThemeModule.Theme.error : ThemeModule.Theme.success
+                    font.family: ThemeModule.Theme.fontFamily
+                    font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                    elide: Text.ElideRight
+                }
+
+                Row {
+                    id: actionRow
+                    anchors.right: parent.right
+                    spacing: ThemeModule.Theme.spacingSmall
+
+                    Components.ActionButton {
+                        label: "Quit"
+                        iconName: "close"
+                        toneColor: ThemeModule.Theme.subtext
+                        onActivated: Qt.quit()
                     }
 
-                    Row {
-                        id: actionRow
-                        anchors.right: parent.right
-                        spacing: 8
+                    Components.ActionButton {
+                        label: "Open config"
+                        iconName: "folder-open"
+                        toneColor: ThemeModule.Theme.toneColor("info")
+                        onActivated: Services.ConfigService.openConfig()
+                    }
 
-                        Components.ActionButton {
-                            label: "Quit"
-                            iconName: "close"
-                            toneColor: "#aeb8c4"
-                            onActivated: Qt.quit()
-                        }
+                    Components.ActionButton {
+                        label: "Copy report"
+                        iconName: "copy"
+                        toneColor: ThemeModule.Theme.toneColor("info")
+                        onActivated: Services.ConfigService.copyErrorReport()
+                    }
 
-                        Components.ActionButton {
-                            label: "Open config"
-                            iconName: "folder-open"
-                            toneColor: "#7eb6e8"
-                            onActivated: Services.ConfigService.openConfig()
-                        }
-
-                        Components.ActionButton {
-                            label: "Copy report"
-                            iconName: "copy"
-                            toneColor: "#7eb6e8"
-                            onActivated: Services.ConfigService.copyErrorReport()
-                        }
-
-                        Components.ActionButton {
-                            label: "Retry"
-                            iconName: "refresh"
-                            toneColor: "#7bd9a5"
-                            onActivated: Services.ConfigService.load()
-                        }
+                    Components.ActionButton {
+                        label: "Retry"
+                        iconName: "refresh"
+                        toneColor: ThemeModule.Theme.success
+                        onActivated: Services.ConfigService.load()
                     }
                 }
             }

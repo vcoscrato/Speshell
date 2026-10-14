@@ -1,4 +1,5 @@
 import QtQuick
+import "Flame.js" as Flame
 import "common"
 
 // Fire's effects on the dashboard's controls. A knob dragged along a slider sets the
@@ -100,10 +101,10 @@ Item {
                 property real seed: 0
                 property real kind: 0
                 property real size: width
-                property color cCore: "#fff6c8"
-                property color cMid: "#ffb02e"
-                property color cOuter: "#f2541b"
-                property color cEdge: "#a8160f"
+                property color cCore: Flame.core(root.theme)
+                property color cMid: Flame.mid(root.theme)
+                property color cOuter: Flame.outer(root.theme)
+                property color cEdge: Flame.edge(root.theme)
                 property color cSmoke: root.theme ? root.theme.overlay : "#8a5048"
                 fragmentShader: Qt.resolvedUrl("shaders/bits.frag.qsb")
             }

@@ -23,13 +23,21 @@ depends=(
 )
 makedepends=('git' 'just' 'qt6-shadertools')
 optdepends=(
-  'curl: weather lookup'
+  'curl: weather lookup and downloading the dictation model'
   'brightnessctl: brightness controls'
   'cliphist: clipboard history'
   'hyprlock: default screen locker for power actions'
-  'wf-recorder: screen recording activity integration'
-  'whisper-cpp: dictation transcription activity integration'
-  'wl-clipboard: clipboard capture and copy actions'
+  'grim: screenshot, copy text, and scan code tools'
+  'hyprpicker: pick color tool'
+  'slurp: area selection for the screenshot, copy text, record, and scan code tools'
+  'swappy: annotating screenshots'
+  'tesseract: copy text tool (with a tesseract-data package per language)'
+  'wf-recorder: record tool'
+  'pipewire-audio: dictation tool, recording the microphone'
+  'whisper-cpp: dictation tool'
+  'wl-clipboard: clipboard capture, copy actions, and the tools'
+  'wtype: dictation tool, typing the text'
+  'zbar: scan code tool'
   'xdg-utils: opening the config when VISUAL and EDITOR are unset or no terminal is found'
 )
 provides=('speshell')
@@ -56,7 +64,7 @@ package() {
 
   install -d "$pkgdir/usr/share/speshell"
   install -m644 shell.qml config.example.ini "$pkgdir/usr/share/speshell/"
-  cp -r assets components core services theme widgets "$pkgdir/usr/share/speshell/"
+  cp -r assets components core services theme tools widgets "$pkgdir/usr/share/speshell/"
   # Shipped themes and effects; each effect reaches lib/ through a relative symlink.
   install -d "$pkgdir/usr/share/speshell/extras"
   cp -r extras/effects extras/lib extras/themes "$pkgdir/usr/share/speshell/extras/"

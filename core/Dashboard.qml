@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 // qmllint disable missing-type unresolved-type
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Templates as T
 import Quickshell
 import Quickshell.Services.SystemTray
 import "../theme" as ThemeModule
@@ -89,26 +89,6 @@ Item {
         return WidgetRegistry.icon(name);
     }
 
-    function getStatusText(widget) {
-        if (widget === "audioControl") return "Volume: " + Services.AudioService.outputVolumePercent + "%";
-        if (widget === "audioInputControl") return "Mic: " + Services.AudioService.inputVolumePercent + "%";
-        if (widget === "networkPanel") {
-            var wifi = Services.NetworkService.connectedWifi;
-            if (wifi)
-                return "WiFi: " + wifi.name;
-            return Services.NetworkService.wifiOn ? "Disconnected" : "WiFi Off";
-        }
-        if (widget === "bluetoothPanel")
-            return Services.BluetoothService.enabled ? "Bluetooth On" : "Bluetooth Off";
-        if (widget === "clipboardManager") {
-            var clipCount = Services.ClipboardService.history.length;
-            return clipCount > 0 ? "Clipboard (" + clipCount + " item" + (clipCount === 1 ? "" : "s") + ")" : "Clipboard";
-        }
-        if (widget === "themes")
-            return "Theme: " + Services.ThemeService.theme.name;
-        return WidgetRegistry.label(widget);
-    }
-
     function isSidebarItemCurrent(widgetName) {
         if (WidgetRegistry.isReservedBottomPanel(widgetName))
             return dashboard.activeBottomPanel === widgetName;
@@ -131,45 +111,6 @@ Item {
         if (WidgetRegistry.isReservedBottomPanel(panelName)
                 && dashboard.isWidgetAvailable(panelName))
             dashboard.selectedBottomPanel = panelName;
-    }
-
-    function setupLoadedWidget(item, widgetName) {
-        if (!item)
-            return;
-        if ("presented" in item)
-            item.presented = Qt.binding(function() { return dashboard.presented; });
-        if ("collapsible" in item) {
-            item.collapsible = false;
-            item.collapsed = false;
-        }
-        dashboard.configureLoadedWidget(item, widgetName);
-    }
-
-    function configureLoadedWidget(item, widgetName) {
-        if (!item)
-            return;
-
-        var cfg = dashboard.config || ({});
-        if (widgetName === "audioControl") {
-            if ("quickSwitchDevices" in item)
-                item.quickSwitchDevices = cfg.audioQuickSwitch || [];
-            if ("deviceDisplayNames" in item)
-                item.deviceDisplayNames = cfg.audioDeviceNames || ({});
-            if ("inputQuickSwitchDevices" in item)
-                item.inputQuickSwitchDevices = cfg.audioInputQuickSwitch || [];
-            if ("inputDeviceDisplayNames" in item)
-                item.inputDeviceDisplayNames = cfg.audioInputDeviceNames || ({});
-        } else if (widgetName === "audioInputControl") {
-            if ("quickSwitchDevices" in item)
-                item.quickSwitchDevices = cfg.audioInputQuickSwitch || [];
-            if ("deviceDisplayNames" in item)
-                item.deviceDisplayNames = cfg.audioInputDeviceNames || ({});
-        }
-    }
-
-    onConfigChanged: {
-        dashboard.configureLoadedWidget(activePanelLoader.item, dashboard.activePanel);
-        dashboard.configureLoadedWidget(reservedBottomPanelLoader.item, dashboard.activeBottomPanel);
     }
 
     Connections {
@@ -226,9 +167,9 @@ Item {
                         widgetName: wName
                         iconName: dashboard.sidebarIcon(wName)
                         active: dashboard.isSidebarItemCurrent(wName)
-                        statusText: dashboard.getStatusText(wName)
+                        statusText: Services.DashboardService.statusText(wName)
                         secondaryIconName: audioSplit ? dashboard.sidebarIcon("audioInputControl") : ""
-                        secondaryStatusText: audioSplit ? dashboard.getStatusText("audioInputControl") : ""
+                        secondaryStatusText: audioSplit ? Services.DashboardService.statusText("audioInputControl") : ""
 
                         onActivated: function(name) {
                             dashboard.activateSidebarItem(name);
@@ -261,7 +202,7 @@ Item {
                         widgetName: wName
                         iconName: dashboard.sidebarIcon(wName)
                         active: dashboard.isSidebarItemCurrent(wName)
-                        statusText: dashboard.getStatusText(wName)
+                        statusText: Services.DashboardService.statusText(wName)
 
                         onActivated: function(name) {
                             dashboard.activateSidebarItem(name);
@@ -270,137 +211,34 @@ Item {
                 }
             }
 
-            // ── System Tray: other apps' icons, in a well of their own above the
-            // bottom group, so they don't read as Speshell's panels ──
-            Rectangle {
+            // ── System Tray: other apps' icons, in a well of their own centered in
+            // the gap between the panel groups, so they don't read as Speshell's panels ──
+            Item {
+                anchors.top: sidebarTopCol.bottom
                 anchors.bottom: sidebarBottomCol.top
+                anchors.topMargin: ThemeModule.Theme.spacingLarge
                 anchors.bottomMargin: ThemeModule.Theme.spacingLarge
-                anchors.horizontalCenter: parent.horizontalCenter
-                visible: sidebarTrayRepeater.count > 0
-                width: ThemeModule.Theme.controlHeight + ThemeModule.Theme.spacingTiny * 2
-                height: trayColumn.implicitHeight + ThemeModule.Theme.spacingTiny * 2
-                radius: ThemeModule.Theme.borderRadius
-                color: ThemeModule.Theme.controlFill
-                border.width: ThemeModule.Theme.borderWidth
-                border.color: ThemeModule.Theme.controlBorder
+                width: parent.width
 
-                Column {
-                    id: trayColumn
+                Rectangle {
                     anchors.centerIn: parent
-                    spacing: ThemeModule.Theme.spacingTiny
+                    visible: sidebarTrayRepeater.count > 0
+                    width: ThemeModule.Theme.controlHeight + ThemeModule.Theme.spacingTiny * 2
+                    height: trayColumn.implicitHeight + ThemeModule.Theme.spacingTiny * 2
+                    radius: ThemeModule.Theme.borderRadius
+                    color: ThemeModule.Theme.controlFill
+                    border.width: ThemeModule.Theme.borderWidth
+                    border.color: ThemeModule.Theme.controlBorder
 
-                    Repeater {
-                        id: sidebarTrayRepeater
-                        model: SystemTray.items
-                        delegate: Item {
-                            id: sidebarTrayDelegate
-                            required property var modelData
-                            property bool pointerInside: false
-                            readonly property bool containingWindowVisible: !!(sidebarTrayDelegate.Window
-                                && sidebarTrayDelegate.Window.window
-                                && sidebarTrayDelegate.Window.window.visible)
-                            readonly property string labelText: modelData.tooltipTitle
-                                || modelData.title
-                                || modelData.id
-                                || "System tray icon"
-                            width: ThemeModule.Theme.controlHeight
-                            height: ThemeModule.Theme.controlHeight
+                    Column {
+                        id: trayColumn
+                        anchors.centerIn: parent
+                        spacing: ThemeModule.Theme.spacingTiny
 
-                            Connections {
-                                target: sidebarTrayDelegate.Window
-                                    ? sidebarTrayDelegate.Window.window
-                                    : null
-
-                                function onVisibleChanged() {
-                                    if (!sidebarTrayDelegate.containingWindowVisible)
-                                        sidebarTrayDelegate.pointerInside = false;
-                                }
-                            }
-
-                            Accessible.role: Accessible.Button
-                            Accessible.name: sidebarTrayDelegate.labelText
-                            Accessible.onPressAction: {
-                                if (sidebarTrayDelegate.modelData.onlyMenu && sidebarTrayDelegate.modelData.hasMenu)
-                                    sidebarTrayMenu.open();
-                                else
-                                    sidebarTrayDelegate.modelData.activate();
-                            }
-
-                            Rectangle {
-                                id: trayIconRect
-                                anchors.fill: parent
-                                color: sidebarTrayDelegate.pointerInside
-                                    ? ThemeModule.Theme.cardHover
-                                    : "transparent"
-                                radius: ThemeModule.Theme.borderRadiusSmall
-
-                                Image {
-                                    id: sidebarTrayImg
-                                    anchors.centerIn: parent
-                                    width: ThemeModule.Theme.iconSizeMedium
-                                    height: ThemeModule.Theme.iconSizeMedium
-                                    property string iconPath: {
-                                        var icon = sidebarTrayDelegate.modelData.icon;
-                                        if (!icon) return "";
-                                        var s = icon.toString();
-                                        var pi = s.indexOf("?path=");
-                                        return pi !== -1 ? s.substring(0, pi) : s;
-                                    }
-                                    visible: iconPath !== ""
-                                    source: iconPath
-                                    sourceSize: Qt.size(ThemeModule.Theme.iconSizeMedium, ThemeModule.Theme.iconSizeMedium)
-                                    fillMode: Image.PreserveAspectFit
-                                }
-
-                                Components.AppIcon {
-                                    anchors.centerIn: parent
-                                    name: "tray-fallback"
-                                    size: ThemeModule.Theme.iconSizeMedium
-                                    iconColor: ThemeModule.Theme.subtext
-                                    visible: !sidebarTrayImg.visible
-                                }
-
-                                Components.HoverLabel {
-                                    visible: sidebarTrayDelegate.containingWindowVisible
-                                        && sidebarTrayDelegate.pointerInside
-                                        && sidebarTrayDelegate.labelText !== ""
-                                    text: sidebarTrayDelegate.labelText
-                                }
-
-                                QsMenuAnchor {
-                                    id: sidebarTrayMenu
-                                    menu: sidebarTrayDelegate.modelData.menu
-                                    anchor.item: trayIconRect
-                                    // Quickshell's type info declares Edges as an enum, not flags.
-                                    // qmllint disable incompatible-type
-                                    anchor.edges: Edges.Right
-                                    anchor.gravity: Edges.Right
-                                    // qmllint enable incompatible-type
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
-                                    onEntered: sidebarTrayDelegate.pointerInside = true
-                                    onExited: sidebarTrayDelegate.pointerInside = false
-                                    onCanceled: sidebarTrayDelegate.pointerInside = false
-                                    onClicked: function(mouse) {
-                                        if (mouse.button === Qt.LeftButton) {
-                                            if (sidebarTrayDelegate.modelData.onlyMenu && sidebarTrayDelegate.modelData.hasMenu) {
-                                                sidebarTrayMenu.open();
-                                            } else {
-                                                sidebarTrayDelegate.modelData.activate();
-                                            }
-                                        } else if (mouse.button === Qt.RightButton) {
-                                            if (sidebarTrayDelegate.modelData.hasMenu) {
-                                                sidebarTrayMenu.open();
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                        Repeater {
+                            id: sidebarTrayRepeater
+                            model: SystemTray.items
+                            delegate: Components.TrayItem {}
                         }
                     }
                 }
@@ -465,16 +303,15 @@ Item {
                         color: ThemeModule.Theme.separator
                     }
 
-                    Loader {
+                    WidgetLoader {
                         id: reservedBottomPanelLoader
 
                         anchors.top: reservedAreaDivider.bottom
                         anchors.topMargin: ThemeModule.Theme.spacingLarge
                         width: parent.width
-                        active: dashboard.activeBottomPanel !== ""
-                        source: active ? dashboard.widgetSource(dashboard.activeBottomPanel) : ""
-
-                        onLoaded: dashboard.setupLoadedWidget(item, dashboard.activeBottomPanel)
+                        name: dashboard.activeBottomPanel
+                        config: dashboard.config
+                        presented: dashboard.presented
                     }
                 }
             }
@@ -492,14 +329,8 @@ Item {
                 readonly property bool needsVerticalScroll: contentHeight > height + 1
                 readonly property int scrollbarInset: ThemeModule.Theme.panelPadding
 
-                ScrollBar.vertical: ScrollBar {
-                    policy: middleFlickable.needsVerticalScroll ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
-                    contentItem: Rectangle {
-                        implicitWidth: 4
-                        radius: 2
-                        color: ThemeModule.Theme.overlay
-                        opacity: 0.5
-                    }
+                T.ScrollBar.vertical: Components.StyledScrollBar {
+                    policy: middleFlickable.needsVerticalScroll ? T.ScrollBar.AsNeeded : T.ScrollBar.AlwaysOff
                 }
 
                 Item {
@@ -514,79 +345,23 @@ Item {
                     Behavior on x { NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing } }
                     Behavior on opacity { NumberAnimation { duration: ThemeModule.Theme.animDuration } }
 
-                    Loader {
+                    WidgetLoader {
                         id: activePanelLoader
                         width: parent.width
-                        active: dashboard.isWidgetAvailable(dashboard.activePanel)
-                        source: active ? dashboard.widgetSource(dashboard.activePanel) : ""
-
-                        onLoaded: dashboard.setupLoadedWidget(item, dashboard.activePanel)
+                        name: dashboard.isWidgetAvailable(dashboard.activePanel) ? dashboard.activePanel : ""
+                        config: dashboard.config
+                        presented: dashboard.presented
                     }
                 }
             }
         }
     }
 
-    // The theme effects' interactions: small effects over the panel where the user
-    // drags a slider, flips a switch, or picks something. They take no input.
-    Loader {
-        id: interactionsLoader
-
-        // EffectClock runs at this speed and frame rate.
-        property real timeScale: Services.EffectsService.dashboardSpeed
-        property int frameRate: Services.EffectsService.frameRate
-
+    // The theme effects' interactions over the panel.
+    InteractionsLayer {
         z: 200
         anchors.fill: parent
-        enabled: false
-        active: dashboard.presented && Services.EffectsService.dashboardInteractions !== null
-        sourceComponent: Services.EffectsService.dashboardInteractions
-    }
-
-    // Untyped, so the effects' functions can be called on it.
-    readonly property var interactions: interactionsLoader.item
-
-    Binding {
-        target: interactionsLoader.item
-        property: "theme"
-        value: ThemeModule.Theme
-    }
-
-    // Whether `item` is part of this dashboard; popups and other windows are not.
-    function holds(item) {
-        for (var parentItem = item; parentItem; parentItem = parentItem.parent) {
-            if (parentItem === dashboard)
-                return true;
-        }
-        return false;
-    }
-
-    function areaOf(item) {
-        return item.mapToItem(interactionsLoader, 0, 0, item.width, item.height);
-    }
-
-    Connections {
-        target: Services.EffectsService
-        enabled: interactionsLoader.status === Loader.Ready
-
-        function onKnobMoved(knob, dx) {
-            if (dashboard.holds(knob))
-                dashboard.interactions.slide(knob.mapToItem(interactionsLoader, knob.width / 2, knob.height / 2), dx);
-        }
-
-        function onKnobReleased(knob) {
-            if (dashboard.holds(knob))
-                dashboard.interactions.release(knob.mapToItem(interactionsLoader, knob.width / 2, knob.height / 2));
-        }
-
-        function onPicked(target) {
-            if (dashboard.holds(target))
-                dashboard.interactions.pick(dashboard.areaOf(target));
-        }
-
-        function onSwitched(control, on) {
-            if (dashboard.holds(control))
-                dashboard.interactions.toggle(dashboard.areaOf(control), on);
-        }
+        host: dashboard
+        presented: dashboard.presented
     }
 }

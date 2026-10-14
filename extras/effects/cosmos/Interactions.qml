@@ -1,5 +1,6 @@
 import QtQuick
 import "common"
+import "common/Colors.js" as Colors
 
 // Cosmos's effects on the dashboard's controls. A knob dragged along a slider leaves a
 // trail of star dust that twinkles out, with now and then a glint; let go, a star
@@ -91,7 +92,7 @@ Item {
                 property real kind: 0
                 property real size: width
                 property color cStar: root.theme ? root.theme.text : "#ebdbb2"
-                property color cHot: "#fbf1c7"
+                property color cHot: root.theme ? Qt.lighter(Colors.mix(root.theme.text, root.theme.yellow, 0.15), 1.2) : "#fbf1c7"
                 property color cGlow: root.theme ? root.theme.accent : "#fe8019"
                 property color cHaze: root.theme ? root.theme.pink : "#d3869b"
                 fragmentShader: Qt.resolvedUrl("shaders/bits.frag.qsb")

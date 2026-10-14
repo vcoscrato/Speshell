@@ -1,4 +1,5 @@
 import QtQuick
+import "Flame.js" as Flame
 import "common"
 
 // Fire launcher transition: an ember flares, a burning edge sweeps the panel into
@@ -14,6 +15,8 @@ Item {
     property Item panel: null
     property rect panelRect
     property bool active: false
+    // The active palette, as Theme.qml names it.
+    property var theme: null
     signal closingFinished()
 
     // ── Choreography (seconds) ──────────────────────────────
@@ -23,7 +26,7 @@ Item {
     readonly property real tailTime: 0.35     // flames left burning after the panel is gone
     readonly property real simmer: 0.55       // rim flame strength while open
 
-    readonly property color core: "#fff6c8"
+    readonly property color core: Flame.core(root.theme)
 
     property real phaseStart: 0
     property bool sparkPending: true
@@ -93,6 +96,8 @@ Item {
     }
 
     Flames {
+
+        theme: root.theme
         anchors.fill: parent
         readonly property bool exiting: root.burn > 0 && !root.refill
         readonly property real kindled: exiting ? 0 : root.sweep
@@ -129,9 +134,10 @@ Item {
         // The hole's burning edge dies down as the front sets out.
         property real fade: root.refill ? Math.min(1, root.sweep * 3) : 0
         property real fieldScale: 1
-        property color cGlow: "#ff8a1f"
+        property color cGlow: Flame.glow(root.theme)
         property color cHot: root.core
-        property color cChar: "#3a120c"
+        property color cChar: Flame.charred(root.theme, false)
+        property color cScorch: Flame.scorch(root.theme)
         fragmentShader: Qt.resolvedUrl("shaders/burn.frag.qsb")
     }
 
@@ -145,7 +151,7 @@ Item {
         height: width
         radius: width / 2
         color: root.core
-        border.color: "#ff8a1f"
+        border.color: Flame.glow(root.theme)
         border.width: 3
     }
 }

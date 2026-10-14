@@ -294,6 +294,8 @@ Components.Card {
                     bottomPadding: 0
                     verticalAlignment: TextInput.AlignVCenter
                     color: ThemeModule.Theme.text
+                    selectionColor: ThemeModule.Theme.accent
+                    selectedTextColor: ThemeModule.Theme.bg
                     placeholderTextColor: ThemeModule.Theme.subtext
                     font.pixelSize: ThemeModule.Theme.fontSizeSmall
                     font.family: ThemeModule.Theme.fontFamily
@@ -402,9 +404,11 @@ Components.Card {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: chip.activated()
-            ToolTip.visible: containsMouse && chip.tooltipText !== ""
-            ToolTip.text: chip.tooltipText
-            ToolTip.delay: 300
+        }
+
+        Components.Tooltip {
+            visible: chipMouse.containsMouse && chip.tooltipText !== ""
+            text: chip.tooltipText
         }
     }
 }

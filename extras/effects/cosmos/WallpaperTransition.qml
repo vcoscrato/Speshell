@@ -1,5 +1,6 @@
 import QtQuick
 import "common"
+import "common/Colors.js" as Colors
 
 // Cosmos wallpaper transition: a star flares in the middle of the screen and goes
 // supernova, its shock front sweeping the old wallpaper away to the new one.
@@ -8,16 +9,20 @@ Item {
 
     // ── Speshell effects API v1 ────────────────────────────────
     property Item outgoing: null
+    // The active palette, as Theme.qml names it.
+    property var theme: null
     signal finished()
 
     // ── Choreography (seconds) ──────────────────────────────
     readonly property real flareTime: 0.3
     readonly property real sweepTime: 1.3
 
-    readonly property color hot: "#fbf1c7"
-    readonly property color warm: "#fe8019"
-    readonly property color gold: "#fabd2f"
-    readonly property color violet: "#d3869b"
+    // Palette, from the theme; Gruvbox until it arrives.
+    // The star's white-hot core, brighter than any theme color.
+    readonly property color hot: root.theme ? Qt.lighter(Colors.mix(root.theme.text, root.theme.yellow, 0.15), 1.2) : "#fbf1c7"
+    readonly property color warm: root.theme ? root.theme.accent : "#fe8019"
+    readonly property color gold: root.theme ? root.theme.yellow : "#fabd2f"
+    readonly property color violet: root.theme ? root.theme.pink : "#d3869b"
 
     property real flare: 0
     property real sweep: 0

@@ -1,5 +1,6 @@
 import QtQuick
 import "common"
+import "common/Colors.js" as Colors
 
 // Air wallpaper transition: a whirlwind eye opens in the middle of the screen and
 // widens until the old wallpaper is gone, wringing it into the spin as the wind
@@ -9,6 +10,8 @@ Item {
 
     // ── Speshell effects API v1 ────────────────────────────────
     property Item outgoing: null
+    // The active palette, as Theme.qml names it.
+    property var theme: null
     signal finished()
 
     readonly property real spreadTime: 1.3
@@ -53,13 +56,14 @@ Item {
         property real eye: root.eye
         property real twist: 1.1 * Math.sin(Math.PI * Math.min(1, root.sweep * 1.4))
         property real spin: root.spin
-        property color cRim: "#cfe3f3"
-        property color cHaze: "#e9f2fa"
+        property color cRim: root.theme ? Colors.mix(root.theme.rosewater, root.theme.sky, 0.25) : "#cfe3f3"
+        property color cHaze: root.theme ? root.theme.rosewater : "#e9f2fa"
         fragmentShader: Qt.resolvedUrl("shaders/whirl.frag.qsb")
     }
 
     // Wind whirling outward ahead of the eye.
     Wind {
+        theme: root.theme
         anchors.fill: parent
         opacity: Math.min(root.sweep / 0.08, 1 - Math.max(0, (root.sweep - 0.75) / 0.25))
         visible: opacity > 0
@@ -83,6 +87,7 @@ Item {
 
     // Leaves and dust flung outward with the wind.
     Debris {
+        theme: root.theme
         opacity: Math.min(root.sweep / 0.1, 1 - Math.max(0, (root.sweep - 0.7) / 0.3))
         visible: opacity > 0
         time: clock.simTime

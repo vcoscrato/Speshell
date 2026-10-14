@@ -1,4 +1,5 @@
 import QtQuick
+import "Stone.js" as Stone
 import "common"
 
 // Earth wallpaper transition: cracks race out from the middle of the screen, then
@@ -8,6 +9,8 @@ Item {
 
     // ── Speshell effects API v1 ────────────────────────────────
     property Item outgoing: null
+    // The active palette, as Theme.qml names it.
+    property var theme: null
     signal finished()
 
     readonly property real crackTime: 0.35
@@ -45,8 +48,8 @@ Item {
         property real crackR: Math.min(1, root.elapsed / root.crackTime) * root.reach
         // The last shards need 260 px of wave past them to finish falling.
         property real wave: Math.max(0, root.elapsed - root.crackTime * 0.6) / root.crumbleTime * (root.reach + 320)
-        property color cCrack: "#2a2219"
-        property color cLip: "#d8c8a8"
+        property color cCrack: Stone.tone(root.theme, "crust", 0.15, "#2a2219")
+        property color cLip: Stone.tone(root.theme, "text", 0.35, "#d8c8a8")
         fragmentShader: Qt.resolvedUrl("shaders/crumble.frag.qsb")
     }
 }

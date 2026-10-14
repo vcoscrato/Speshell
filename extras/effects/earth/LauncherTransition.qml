@@ -1,4 +1,5 @@
 import QtQuick
+import "Stone.js" as Stone
 import "common"
 
 // Earth launcher transition: the ground cracks open below the launcher and the
@@ -13,6 +14,8 @@ Item {
     property Item panel: null
     property rect panelRect
     property bool active: false
+    // The active palette, as Theme.qml names it.
+    property var theme: null
     signal closingFinished()
 
     // ── Choreography (seconds) ──────────────────────────────
@@ -96,9 +99,9 @@ Item {
         property real ground: root.ground
         property point offset: Qt.point(root.jolt, root.rise)
         property real stone: root.stone
-        property color cLight: "#a8977a"
-        property color cMid: "#7d6c55"
-        property color cDark: "#4d4133"
+        property color cLight: Stone.tone(root.theme, "subtext", 0.25, "#a8977a")
+        property color cMid: Stone.tone(root.theme, "overlay", 0.15, "#7d6c55")
+        property color cDark: Stone.tone(root.theme, "card", 0.25, "#4d4133")
         fragmentShader: Qt.resolvedUrl("shaders/slab.frag.qsb")
     }
 
@@ -117,10 +120,10 @@ Item {
         property real burst: root.leave > 0 ? -1 : root.burst
         property real dust: root.dust
         property real spread: root.panelRect.width / 2
-        property color cDust: "#cdbb9a"
-        property color cDustShade: "#9c8a6c"
-        property color cRock: "#8a7a62"
-        property color cDark: "#2e261d"
+        property color cDust: Stone.tone(root.theme, "subtextBright", 0.25, "#cdbb9a")
+        property color cDustShade: Stone.tone(root.theme, "overlay", 0.5, "#9c8a6c")
+        property color cRock: Stone.tone(root.theme, "overlay", 0.3, "#8a7a62")
+        property color cDark: Stone.tone(root.theme, "bg", 0.1, "#2e261d")
         fragmentShader: Qt.resolvedUrl("shaders/ground.frag.qsb")
     }
 
@@ -137,10 +140,10 @@ Item {
         property real ground: root.ground
         property real lift: root.lift
         property real fall: root.fall
-        property color cLight: "#b9a888"
-        property color cMid: "#8a7a62"
-        property color cDark: "#5a4c3b"
-        property color cEdge: "#2e261d"
+        property color cLight: Stone.tone(root.theme, "subtext", 0.2, "#b9a888")
+        property color cMid: Stone.tone(root.theme, "overlay", 0.3, "#8a7a62")
+        property color cDark: Stone.tone(root.theme, "surface2", 0.15, "#5a4c3b")
+        property color cEdge: Stone.tone(root.theme, "bg", 0.1, "#2e261d")
         fragmentShader: Qt.resolvedUrl("shaders/boulders.frag.qsb")
     }
 }

@@ -1,4 +1,5 @@
 import QtQuick
+import "common/Colors.js" as Colors
 
 // Wind streaks along the streamlines of a breeze, vortex, and source. See
 // shaders/wind.frag.
@@ -26,7 +27,8 @@ ShaderEffect {
     property real turbulence: 14
     property rect mask
     property real maskRadius: 10
-    property color cBody: "#f6f9fc"
-    property color cRim: "#7fa6c8"
+    property var theme: null
+    property color cBody: theme ? Qt.lighter(Colors.mix(theme.rosewater, theme.text, 0.15), 1.05) : "#f6f9fc"
+    property color cRim: theme ? Colors.mix(theme.blue, theme.accent, 0.15) : "#7fa6c8"
     fragmentShader: Qt.resolvedUrl("shaders/wind.frag.qsb")
 }

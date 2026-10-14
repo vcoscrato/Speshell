@@ -1,5 +1,6 @@
 import QtQuick
 import "common"
+import "common/Colors.js" as Colors
 
 // Cosmos dashboard entrance: a star flares on the Speshell mark and the panel opens
 // out of it through a lens-edged portal that sweeps to the far corner, top first.
@@ -59,7 +60,7 @@ Item {
         property real lens: 14 * (1 - root.eased)
         property real ringWidth: 1
         property real ring: root.open < 1 ? 1 : 0
-        property color cHot: "#fbf1c7"
+        property color cHot: root.theme ? Qt.lighter(Colors.mix(root.theme.text, root.theme.yellow, 0.15), 1.2) : "#fbf1c7"
         property color cGlow: root.theme ? root.theme.accent : "#fe8019"
         property color cHaze: root.theme ? root.theme.pink : "#d3869b"
         fragmentShader: Qt.resolvedUrl("shaders/portal.frag.qsb")
@@ -70,6 +71,7 @@ Item {
         cy: root.origin.y
         size: 150
         spin: 0.2 + root.open * 0.8
+        cHot: root.theme ? Qt.lighter(Colors.mix(root.theme.text, root.theme.yellow, 0.15), 1.2) : "#fbf1c7"
         cGlow: root.theme ? root.theme.accent : "#fabd2f"
         k: root.open < 0.12 ? root.open / 0.12 : Math.max(0, 1 - (root.open - 0.12) / 0.4)
     }

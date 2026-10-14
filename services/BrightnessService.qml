@@ -37,6 +37,12 @@ Singleton {
         writeDebounce.restart();
     }
 
+    // Moves brightness by one wheel step; direction is positive or negative.
+    function stepPercent(direction) {
+        if (direction)
+            root.setPercent(root.percent + (direction > 0 ? 5 : -5));
+    }
+
     // Flushes a debounced write, e.g. when a slider is released.
     function commit() {
         if (!writeDebounce.running)

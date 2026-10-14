@@ -1,4 +1,5 @@
 import QtQuick
+import "Water.js" as Water
 import "common"
 
 // Water launcher transition: a whip of water spirals in to the middle of the
@@ -13,6 +14,8 @@ Item {
     property Item panel: null
     property rect panelRect
     property bool active: false
+    // The active palette, as Theme.qml names it.
+    property var theme: null
     signal closingFinished()
 
     // ── Choreography (seconds) ──────────────────────────────
@@ -64,6 +67,7 @@ Item {
 
     // ── Arriving whip: spirals in to the middle, then its tail drains in after it ──
     Whip {
+        theme: root.theme
         readonly property real k0: 0.2
         readonly property real startR: root.reach * 3.4
         readonly property real arrive: Math.log(startR / 22) / k0
@@ -83,6 +87,7 @@ Item {
 
     // ── Departing whip: unwinds out of the orb ──
     Whip {
+        theme: root.theme
         anchors.fill: parent
         visible: root.leave > 0.55
         time: clock.simTime
@@ -118,10 +123,10 @@ Item {
         property real radius: 10
         property real grow: root.grow
         property real settle: root.settle
-        property color cDeep: "#1d5f8c"
-        property color cMid: "#2f8fc4"
-        property color cLight: "#7cc9ea"
-        property color cFoam: "#f2fbff"
+        property color cDeep: Water.deep(root.theme)
+        property color cMid: Water.mid(root.theme)
+        property color cLight: Water.light(root.theme)
+        property color cFoam: Water.foam(root.theme)
         fragmentShader: Qt.resolvedUrl("shaders/sheet.frag.qsb")
     }
 
@@ -138,10 +143,10 @@ Item {
         property rect panel: root.panelRect
         property real radius: 10
         property real flow: root.flow
-        property color cDeep: "#1d5f8c"
-        property color cMid: "#2f8fc4"
-        property color cLight: "#7cc9ea"
-        property color cFoam: "#f2fbff"
+        property color cDeep: Water.deep(root.theme)
+        property color cMid: Water.mid(root.theme)
+        property color cLight: Water.light(root.theme)
+        property color cFoam: Water.foam(root.theme)
         fragmentShader: Qt.resolvedUrl("shaders/held.frag.qsb")
     }
 
@@ -160,10 +165,10 @@ Item {
         property real flow: root.flow
         property real speed: 170
         property real tubeWidth: 10
-        property color cDeep: "#1d5f8c"
-        property color cMid: "#2f8fc4"
-        property color cLight: "#7cc9ea"
-        property color cFoam: "#f2fbff"
+        property color cDeep: Water.deep(root.theme)
+        property color cMid: Water.mid(root.theme)
+        property color cLight: Water.light(root.theme)
+        property color cFoam: Water.foam(root.theme)
         fragmentShader: Qt.resolvedUrl("shaders/stream.frag.qsb")
     }
 }

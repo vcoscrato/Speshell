@@ -1,9 +1,7 @@
 import QtQuick
 import "." as Widgets
-import "../services" as Services
 
+// Speaker and microphone together; the host's WidgetLoader sets the mode.
 Widgets.AudioSliderCard {
-    mode: (Services.ConfigService.config && Services.ConfigService.config.audioPanelMode === "separate")
-        ? "output"
-        : "combined"
+    mode: "combined"
 }

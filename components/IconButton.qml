@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import "../theme" as ThemeModule
 import "." as Components
 
@@ -78,7 +77,9 @@ Rectangle {
         onClicked: root.clicked()
     }
 
-    ToolTip.visible: root.tooltipText !== "" && mouseArea.containsMouse
-    ToolTip.text: root.tooltipText
-    ToolTip.delay: root.tooltipDelay
+    Components.Tooltip {
+        visible: root.tooltipText !== "" && mouseArea.containsMouse
+        text: root.tooltipText
+        delay: root.tooltipDelay
+    }
 }

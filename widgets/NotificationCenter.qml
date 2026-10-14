@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Templates as T
 import Quickshell
 import "../components" as Components
 import "../services" as Services
@@ -123,10 +123,10 @@ Components.Card {
                 NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing }
             }
 
-            ScrollBar.vertical: ScrollBar {
+            T.ScrollBar.vertical: Components.StyledScrollBar {
                 policy: root.maxVisibleNotifications !== -1 && root.notifList.length > root.maxVisibleNotifications
-                    ? ScrollBar.AsNeeded
-                    : ScrollBar.AlwaysOff
+                    ? T.ScrollBar.AsNeeded
+                    : T.ScrollBar.AlwaysOff
             }
 
             delegate: Rectangle {

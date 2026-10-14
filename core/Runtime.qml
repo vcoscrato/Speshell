@@ -56,12 +56,6 @@ Scope {
 
     Binding {
         target: Services.DashboardService
-        property: "workspaceName"
-        value: root.config ? root.config.panelWorkspace : "special:term"
-    }
-
-    Binding {
-        target: Services.DashboardService
         property: "workspaceVisible"
         value: specialWorkspace.active
     }
@@ -102,6 +96,16 @@ Scope {
 
         function clear(id: string): void { Services.ActivityService.clear("ipc", id); }
         function list(): string { return Services.ActivityService.listJson(); }
+        function refresh(): void { processActivities.refresh(); }
+    }
+
+    IpcHandler {
+        target: "tool"
+
+        function run(name: string, mode: string): bool { return Services.ToolsService.run(name, mode); }
+        function list(): string {
+            return Services.ToolsService.tools.map(function(tool) { return tool.id + "\t" + tool.label; }).join("\n");
+        }
     }
 
     IpcHandler {
@@ -123,12 +127,22 @@ Scope {
         function get(): string { return Services.ThemeService.wallpaper; }
     }
 
-    Services.ActivityProcessAdapter {}
+    Services.ActivityProcessAdapter {
+        id: processActivities
+    }
 
     Variants {
         model: Services.ThemeService.wallpaperEnabled ? Quickshell.screens : []
 
         WallpaperWindow {}
+    }
+
+    Variants {
+        model: root.config && root.config.bar.position !== "off" ? Quickshell.screens : []
+
+        Bar {
+            config: root.config
+        }
     }
 
     LauncherOverlay {

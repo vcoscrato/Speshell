@@ -26,6 +26,13 @@ ShellRoot {
         Services.FeatureSupport.configuredBacklightDevice = configValue.backlightDevice;
         Services.PowerService.lockCommand = configValue.powerMenu.lockCommand;
         Services.NotificationService.maxVisible = configValue.maxVisibleNotification;
+        Services.ToolsService.ocrLanguages = configValue.tools.ocrLanguages;
+        Services.ToolsService.dictationLanguages = configValue.tools.dictationLanguages;
+        Services.ToolsService.dictationVocabulary = configValue.tools.dictationVocabulary;
+        Services.ToolsService.dictationModel = configValue.tools.dictationModel;
+        Services.DashboardService.workspaceName = configValue.panelWorkspace;
+        Services.DashboardService.panelWidth = configValue.panelWidth;
+        Services.DashboardService.panelMargin = configValue.panelMargin;
     }
 
     Connections {

@@ -12,6 +12,11 @@ Singleton {
 
     property string workspaceName: "special:term"
     property bool workspaceVisible: false
+    // Set from the config; until then Speshell leaves the workspace's gaps alone.
+    property int panelWidth: 0
+    property int panelMargin: 0
+    // Space between the panel and the windows beside it.
+    readonly property int panelGap: 12
     property string errorMessage: ""
     // A Settings page to show, for when Settings next loads or is showing; it clears this.
     property string settingsPage: ""
@@ -21,7 +26,11 @@ Singleton {
         FeatureSupport.supportsBluetooth,
         FeatureSupport.supportsDisplayControl
     )
+    // Bar dropdowns open across the screens.
+    property int openDropdowns: 0
     signal panelRequested(string panelName)
+    // The bars close their dropdowns.
+    signal dismissRequested()
 
     function panelSupported(panelName, batterySupported, bluetoothSupported, displaySupported) {
         if (panelName === "batteryStatus")
@@ -30,6 +39,8 @@ Singleton {
             return bluetoothSupported;
         if (panelName === "displayControl")
             return displaySupported;
+        if (panelName === "tools")
+            return ToolsService.available;
         return true;
     }
 
@@ -81,6 +92,61 @@ Singleton {
         return "\"" + String(value).replace(/\\/g, "\\\\").replace(/\"/g, "\\\"") + "\"";
     }
 
+    // A panel's state in a few words, for its rail or bar button's tooltip.
+    function statusText(panelName) {
+        if (panelName === "audioControl") return "Volume: " + AudioService.outputVolumePercent + "%";
+        if (panelName === "audioInputControl") return "Mic: " + AudioService.inputVolumePercent + "%";
+        if (panelName === "displayControl" && BrightnessService.available)
+            return "Brightness: " + BrightnessService.percent + "%";
+        if (panelName === "networkPanel") {
+            if (NetworkService.wiredDevice)
+                return "Ethernet";
+            var wifi = NetworkService.connectedWifi;
+            if (wifi)
+                return "WiFi: " + wifi.name;
+            return NetworkService.wifiOn ? "Disconnected" : "WiFi Off";
+        }
+        if (panelName === "bluetoothPanel")
+            return BluetoothService.enabled ? "Bluetooth On" : "Bluetooth Off";
+        if (panelName === "clipboardManager") {
+            var clipCount = ClipboardService.history.length;
+            return clipCount > 0 ? "Clipboard (" + clipCount + " item" + (clipCount === 1 ? "" : "s") + ")" : "Clipboard";
+        }
+        if (panelName === "themes")
+            return "Theme: " + ThemeService.theme.name;
+        if (panelName === "tools")
+            return ToolsService.statusText;
+        return WidgetRegistry.label(panelName);
+    }
+
+    // Shows or hides the dashboard's workspace on the focused monitor.
+    function toggleWorkspace() {
+        if (openWorkspaceProc.running)
+            return;
+        var workspace = root.workspaceArgument();
+        var luaDispatcher = "hl.dsp.workspace.toggle_special(" + root.luaQuote(workspace) + ")";
+        openWorkspaceProc.command = [
+            "sh", "-c",
+            "if hyprctl status 2>/dev/null | grep -q '^configProvider: lua$'; then "
+                + "exec hyprctl dispatch \"$1\"; "
+                + "else exec hyprctl dispatch togglespecialworkspace \"$2\"; fi",
+            "speshell-open-workspace",
+            luaDispatcher,
+            workspace
+        ];
+        openWorkspaceProc.running = true;
+    }
+
+    // Hides the dashboard and the bars' dropdowns, for a tool that captures or types
+    // into what's under them. Returns whether any was showing.
+    function dismissSurfaces() {
+        var shown = root.workspaceVisible || root.openDropdowns > 0;
+        root.dismissRequested();
+        if (root.workspaceVisible)
+            root.toggleWorkspace();
+        return shown;
+    }
+
     function openPanel(panelName) {
         var supplied = String(panelName || "");
         var requested = WidgetRegistry.canonicalName(supplied);
@@ -94,21 +160,71 @@ Singleton {
         }
         root.errorMessage = "";
         root.panelRequested(requested);
-        if (!root.workspaceVisible && !openWorkspaceProc.running) {
-            var workspace = root.workspaceArgument();
-            var luaDispatcher = "hl.dsp.workspace.toggle_special(" + root.luaQuote(workspace) + ")";
-            openWorkspaceProc.command = [
-                "sh", "-c",
-                "if hyprctl status 2>/dev/null | grep -q '^configProvider: lua$'; then "
-                    + "exec hyprctl dispatch \"$1\"; "
-                    + "else exec hyprctl dispatch togglespecialworkspace \"$2\"; fi",
-                "speshell-open-workspace",
-                luaDispatcher,
-                workspace
-            ];
-            openWorkspaceProc.running = true;
-        }
+        if (!root.workspaceVisible)
+            root.toggleWorkspace();
         return true;
+    }
+
+    onWorkspaceNameChanged: root.reserveWorkspaceSpace()
+    onPanelWidthChanged: root.reserveWorkspaceSpace()
+    onPanelMarginChanged: root.reserveWorkspaceSpace()
+
+    // Sets the workspace's outer gaps so its windows tile beside the panel. Hyprland
+    // relayouts the workspace when it is showing, and otherwise when it next shows.
+    function reserveWorkspaceSpace() {
+        Qt.callLater(root.applyWorkspaceSpace);
+    }
+
+    function applyWorkspaceSpace() {
+        if (root.panelWidth <= 0)
+            return;
+        if (reserveSpaceProc.running) {
+            reserveSpaceProc.pending = true;
+            return;
+        }
+        var margin = root.panelMargin;
+        var left = margin + root.panelWidth + root.panelGap;
+        var workspace = "special:" + root.workspaceArgument();
+        var luaRule = "hl.workspace_rule({ workspace = " + root.luaQuote(workspace)
+            + ", gaps_out = { top = " + margin + ", right = " + margin
+            + ", bottom = " + margin + ", left = " + left + " } })";
+        var legacyRule = workspace + ", gapsout:" + [margin, margin, margin, left].join(" ");
+        reserveSpaceProc.command = [
+            "sh", "-c",
+            "if hyprctl status 2>/dev/null | grep -q '^configProvider: lua$'; then "
+                + "exec hyprctl eval \"$1\"; "
+                + "else exec hyprctl keyword workspace \"$2\"; fi",
+            "speshell-reserve-space",
+            luaRule,
+            legacyRule
+        ];
+        reserveSpaceProc.running = true;
+    }
+
+    // A config reload restores the workspace rule from the Hyprland config.
+    Connections {
+        target: Hyprland
+
+        function onRawEvent(event) {
+            if (event.name === "configreloaded")
+                root.reserveWorkspaceSpace();
+        }
+    }
+
+    Process {
+        id: reserveSpaceProc
+        property bool pending: false
+        running: false
+        stdout: StdioCollector { id: reserveSpaceOutput }
+        onExited: function(exitCode) {
+            if (exitCode !== 0)
+                console.warn("[Speshell] Could not reserve dashboard space in Hyprland:",
+                    String(reserveSpaceOutput.text || "").trim());
+            if (reserveSpaceProc.pending) {
+                reserveSpaceProc.pending = false;
+                root.applyWorkspaceSpace();
+            }
+        }
     }
 
     Process {

@@ -5,7 +5,7 @@ QtObject {
     id: root
 
     // The Cosmos theme's colors (Gruvbox). Every theme starts from these, and
-    // they stand in when no theme loads, such as in the config error window.
+    // they stand in until a theme loads.
     readonly property var defaultPalette: ({
         base:     "#282828",
         mantle:   "#1d2021",
@@ -17,8 +17,6 @@ QtObject {
         text:     "#ebdbb2",
         subtext0: "#bdae93",
         subtext1: "#d5c4a1",
-        lavender: "#d3869b",
-        mauve:    "#d3869b",
         pink:     "#d3869b",
         red:      "#fb4934",
         peach:    "#fe8019",

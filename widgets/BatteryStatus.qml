@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell.Services.UPower
 import "../components" as Components
+import "../components/Icons.js" as Icons
 import "../theme" as ThemeModule
 
 Components.Card {
@@ -17,15 +18,6 @@ Components.Card {
         || root.battery.state === UPowerDeviceState.PendingCharge
     )
 
-    function getBatteryIcon(percentage, charging) {
-        if (charging) return "battery-charging";
-        if (percentage > 90) return "battery-full";
-        if (percentage > 65) return "battery-high";
-        if (percentage > 35) return "battery-medium";
-        if (percentage > 10) return "battery-low";
-        return "battery-empty";
-    }
-
     function formatTimeRemaining(seconds) {
         if (!seconds || seconds <= 0) return "";
         var hours = Math.floor(seconds / 3600);
@@ -39,7 +31,7 @@ Components.Card {
         spacing: ThemeModule.Theme.spacingSmall
 
         Components.AppIcon {
-            name: root.batteryReady ? root.getBatteryIcon(root.batteryPercent, root.isCharging) : "battery"
+            name: root.batteryReady ? Icons.batteryFor(root.batteryPercent, root.isCharging) : "battery"
             size: ThemeModule.Theme.iconSizeMedium
             iconColor: root.isCharging ? ThemeModule.Theme.success : ThemeModule.Theme.accent
             anchors.verticalCenter: parent.verticalCenter

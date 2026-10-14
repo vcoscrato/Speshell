@@ -13,8 +13,10 @@ var fallbackTheme = { id: defaultTheme, name: "Cosmos", effects: "", effectsDir:
 var colorKeys = [
     "base", "mantle", "crust", "surface0", "surface1", "surface2", "overlay0",
     "text", "subtext0", "subtext1", "red", "peach", "yellow", "green", "teal", "sky",
-    "blue", "lavender", "mauve", "pink", "rosewater", "accent"
+    "blue", "pink", "rosewater", "accent"
 ];
+// Colors Speshell no longer uses; older theme.ini files may still set them.
+var retiredColorKeys = ["lavender", "mauve"];
 
 function fileUrl(path) {
     return path ? "file://" + String(path).split("/").map(encodeURIComponent).join("/") : "";
@@ -81,6 +83,8 @@ function parseTheme(id, text, effects) {
     var keys = colors ? colors.keys : [];
     for (var i = 0; i < keys.length; i++) {
         var color = colors.values[keys[i]];
+        if (retiredColorKeys.indexOf(keys[i]) >= 0)
+            continue;
         if (colorKeys.indexOf(keys[i]) < 0)
             errors.push("line " + color.line + ": unknown color '" + keys[i] + "'");
         else if (!/^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(color.value))

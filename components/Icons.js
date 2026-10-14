@@ -12,6 +12,7 @@ var files = ({
     "audio-output-high": "volume",
     "audio-output-low": "volume-2",
     "audio-output-muted": "volume-off",
+    "bar": "layout-navbar",
     "back": "arrow-back-up",
     "battery": "battery",
     "battery-charging": "battery-charging",
@@ -36,9 +37,12 @@ var files = ({
     "cloud": "cloud",
     "config": "adjustments-horizontal",
     "config-file": "file-settings",
+    "color-picker": "color-picker",
     "copy": "copy",
     "dashboard": "layout-dashboard",
+    "brightness": "sun",
     "display": "device-desktop",
+    "dictation": "microphone",
     "device-gamepad": "device-gamepad-2",
     "device-headphones": "headphones",
     "device-keyboard": "keyboard",
@@ -64,14 +68,20 @@ var files = ({
     "photo": "photo",
     "network-wired": "network",
     "plus": "plus",
+    "qrcode": "qrcode",
+    "record": "player-record",
+    "record-stop": "player-stop",
     "power": "power",
     "refresh": "refresh",
     "restart": "reload",
     "search": "search",
     "shuffle": "arrows-shuffle",
-    "screen-recording": "device-desktop",
+    "screen-recording": "video",
+    "screenshot": "screenshot",
     "sleep": "moon",
+    "text-scan": "text-scan-2",
     "timer": "clock",
+    "tools": "tool",
     "tray-fallback": "circle-dashed",
     "trash": "trash",
     "weather-clear": "sun",
@@ -92,4 +102,14 @@ var files = ({
 function fileFor(name) {
     var requested = String(name || "");
     return Object.prototype.hasOwnProperty.call(files, requested) ? files[requested] : files.missing;
+}
+
+// The battery icon for a charge in percent.
+function batteryFor(percentage, charging) {
+    if (charging) return "battery-charging";
+    if (percentage > 90) return "battery-full";
+    if (percentage > 65) return "battery-high";
+    if (percentage > 35) return "battery-medium";
+    if (percentage > 10) return "battery-low";
+    return "battery-empty";
 }

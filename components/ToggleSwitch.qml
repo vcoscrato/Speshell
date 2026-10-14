@@ -1,7 +1,7 @@
 import QtQuick
-import QtQuick.Controls as Controls
 import "../services" as Services
 import "../theme" as ThemeModule
+import "." as Components
 
 Rectangle {
     id: root
@@ -115,7 +115,9 @@ Rectangle {
         onClicked: root.flip()
     }
 
-    Controls.ToolTip.visible: root.tooltipText !== "" && switchMouse.containsMouse
-    Controls.ToolTip.text: root.tooltipText
-    Controls.ToolTip.delay: root.tooltipDelay
+    Components.Tooltip {
+        visible: root.tooltipText !== "" && switchMouse.containsMouse
+        text: root.tooltipText
+        delay: root.tooltipDelay
+    }
 }

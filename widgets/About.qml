@@ -22,18 +22,10 @@ Components.Card {
         return home !== "" && path.indexOf(home) === 0 ? "~" + path.substring(home.length) : path;
     }
 
-    // Panels this machine can't use, which the sidebar leaves out.
-    readonly property var hiddenPanels: [
-        { label: "Battery", shown: Services.FeatureSupport.supportsBattery },
-        { label: "Bluetooth", shown: Services.FeatureSupport.supportsBluetooth },
-        { label: "Displays", shown: Services.FeatureSupport.supportsDisplayControl }
-    ].filter(function(panel) { return !panel.shown; }).map(function(panel) { return panel.label; })
-
     readonly property real labelWidth: Math.ceil(Math.max(
         labelMetrics.advanceWidth("QuickShell"),
         labelMetrics.advanceWidth("Hyprland"),
-        labelMetrics.advanceWidth("Config"),
-        root.hiddenPanels.length > 0 ? labelMetrics.advanceWidth("Not found") : 0))
+        labelMetrics.advanceWidth("Config")))
 
     FontMetrics {
         id: labelMetrics
@@ -41,7 +33,7 @@ Components.Card {
         font.family: ThemeModule.Theme.fontFamily
     }
 
-    // A label and its value; extra items sit at the right end.
+    // A label and its value.
     component Detail: Item {
         id: detail
 
@@ -49,7 +41,6 @@ Components.Card {
         property string value: ""
         property string info: ""
         property real labelWidth: 0
-        default property alias trailing: trailingRow.data
 
         width: parent ? parent.width : 0
         height: Math.max(ThemeModule.Theme.controlHeightSmall, valueText.implicitHeight)
@@ -69,8 +60,8 @@ Components.Card {
             anchors.left: parent.left
             anchors.leftMargin: detail.labelWidth + ThemeModule.Theme.spacingLarge
             anchors.verticalCenter: parent.verticalCenter
-            width: Math.min(implicitWidth, trailingRow.x - x
-                - (detailInfo.visible ? detailInfo.width : 0) - ThemeModule.Theme.spacingSmall)
+            width: Math.min(implicitWidth, detail.width - x
+                - (detailInfo.visible ? detailInfo.width + ThemeModule.Theme.spacingSmall : 0))
             text: detail.value
             font.pixelSize: ThemeModule.Theme.fontSizeSmall
             font.family: ThemeModule.Theme.fontFamily
@@ -85,35 +76,16 @@ Components.Card {
             visible: detail.info !== ""
             text: detail.info
         }
-
-        Row {
-            id: trailingRow
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: ThemeModule.Theme.spacingTiny
-        }
     }
 
-    headerActions: Row {
-        spacing: ThemeModule.Theme.spacingSmall
-
-        Components.InlineActionChip {
-            anchors.verticalCenter: parent.verticalCenter
-            text: Services.SystemState.relaunching ? "Starting" : "Relaunch"
-            iconName: "restart"
-            enabled: Services.SystemState.canRelaunch
-            onActivated: Services.SystemState.relaunch()
-        }
-
-        Components.IconButton {
-            anchors.verticalCenter: parent.verticalCenter
-            size: ThemeModule.Theme.controlHeightSmall
-            iconSize: ThemeModule.Theme.iconSizeSmall
-            iconName: "github"
-            iconColor: containsMouse ? ThemeModule.Theme.accent : ThemeModule.Theme.subtext
-            tooltipText: "View Speshell on GitHub"
-            onClicked: Qt.openUrlExternally("https://github.com/vcoscrato/speshell")
-        }
+    headerActions: Components.IconButton {
+        anchors.verticalCenter: parent.verticalCenter
+        size: ThemeModule.Theme.controlHeightSmall
+        iconSize: ThemeModule.Theme.iconSizeSmall
+        iconName: "github"
+        iconColor: containsMouse ? ThemeModule.Theme.accent : ThemeModule.Theme.subtext
+        tooltipText: "View Speshell on GitHub"
+        onClicked: Qt.openUrlExternally("https://github.com/vcoscrato/speshell")
     }
 
     Column {
@@ -168,9 +140,14 @@ Components.Card {
                 value: root.configDisplayPath
                 info: "A few options, like custom ! shortcuts and device names, are only in this file. "
                     + "Saved changes apply right away."
+            }
+
+            // Under the path, aligned with the values.
+            Row {
+                x: root.labelWidth + ThemeModule.Theme.spacingLarge
+                spacing: ThemeModule.Theme.spacingTiny
 
                 Components.InlineActionChip {
-                    anchors.verticalCenter: parent.verticalCenter
                     text: "Edit"
                     iconName: "notes"
                     enabled: !Services.ConfigService.savingConfig
@@ -178,20 +155,18 @@ Components.Card {
                 }
 
                 Components.InlineActionChip {
-                    anchors.verticalCenter: parent.verticalCenter
                     text: Services.ConfigService.loading ? "Loading" : "Reload"
                     iconName: "refresh"
                     enabled: !Services.ConfigService.loading && !Services.ConfigService.savingConfig
                     onActivated: Services.ConfigService.load()
                 }
-            }
 
-            Detail {
-                visible: root.hiddenPanels.length > 0
-                labelWidth: root.labelWidth
-                label: "Not found"
-                value: root.hiddenPanels.join(" · ")
-                info: "This machine can't use these panels, so the sidebar leaves them out."
+                Components.InlineActionChip {
+                    text: Services.SystemState.relaunching ? "Starting" : "Relaunch"
+                    iconName: "restart"
+                    enabled: Services.SystemState.canRelaunch
+                    onActivated: Services.SystemState.relaunch()
+                }
             }
         }
 
