@@ -95,7 +95,92 @@ function parseTheme(id, text, effects) {
     return theme;
 }
 
-// Scanner output lines: "theme<TAB>folder" starts a theme folder, "ini<TAB>line"
+// ── App palette ─────────────────────────────────────────────
+
+function rgbOf(hex) {
+    var value = parseInt(String(hex).substring(1, 7), 16);
+    return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+}
+
+function hexOf(rgb) {
+    return "#" + rgb.map(function(channel) {
+        return ("0" + Math.round(channel).toString(16)).slice(-2);
+    }).join("");
+}
+
+// `from` moved `amount` (0–1) of the way to `to`.
+function mix(from, to, amount) {
+    var a = rgbOf(from);
+    var b = rgbOf(to);
+    return hexOf(a.map(function(channel, i) { return channel + (b[i] - channel) * amount; }));
+}
+
+function luminance(hex) {
+    var rgb = rgbOf(hex).map(function(channel) {
+        var c = channel / 255;
+        return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+}
+
+// Of `light` and `dark`, the one that reads better on `fill`.
+function readableOn(fill, light, dark) {
+    var l = luminance(fill);
+    return (luminance(light) + 0.05) / (l + 0.05) >= (l + 0.05) / (luminance(dark) + 0.05) ? light : dark;
+}
+
+// A full palette (every colorKeys entry) as matugen's JSON, which `matugen json`
+// renders app templates from: Speshell's own names, the Material roles matugen
+// templates use, and base16. Themes have one look, so each color's dark, light,
+// and default are the same. Each hue also comes as tints over base (green_15,
+// green_30, green_50, by percent) for apps without transparency, since matugen
+// cannot mix two colors.
+function appPalette(p) {
+    var dark = luminance(p.base) < 0.5;
+    // The palette's ends, for text on filled colors.
+    var deep = dark ? p.crust : p.text;
+    var bright = dark ? p.text : p.base;
+    var colors = ({});
+    var roles = {
+        source_color: p.accent, surface_tint: p.accent,
+        primary: p.accent, secondary: p.blue, tertiary: p.pink, error: p.red,
+        background: p.base, surface: p.base, surface_dim: p.base, surface_bright: p.surface1,
+        surface_container_lowest: p.crust, surface_container_low: p.mantle, surface_container: p.surface0,
+        surface_container_high: p.surface1, surface_container_highest: p.surface2, surface_variant: p.surface0,
+        on_background: p.text, on_surface: p.text, on_surface_variant: p.subtext0,
+        outline: p.overlay0, outline_variant: p.surface1,
+        inverse_surface: p.text, inverse_on_surface: p.base, inverse_primary: mix(p.accent, deep, 0.4),
+        shadow: "#000000", scrim: "#000000"
+    };
+    ["primary", "secondary", "tertiary", "error"].forEach(function(role) {
+        roles["on_" + role] = readableOn(roles[role], bright, deep);
+        roles[role + "_container"] = mix(p.base, roles[role], 0.3);
+        roles["on_" + role + "_container"] = p.text;
+        if (role !== "error") {
+            roles[role + "_fixed"] = mix(roles[role], p.text, 0.6);
+            roles[role + "_fixed_dim"] = mix(roles[role], p.text, 0.3);
+            roles["on_" + role + "_fixed"] = deep;
+            roles["on_" + role + "_fixed_variant"] = mix(deep, roles[role], 0.4);
+        }
+    });
+    function add(name, hex) {
+        colors[name] = { default: { color: hex }, dark: { color: hex }, light: { color: hex } };
+    }
+    colorKeys.forEach(function(key) { add(key, p[key]); });
+    ["red", "peach", "yellow", "green", "teal", "sky", "blue", "pink", "accent"].forEach(function(hue) {
+        [15, 30, 50].forEach(function(percent) { add(hue + "_" + percent, mix(p.base, p[hue], percent / 100)); });
+    });
+    Object.keys(roles).forEach(function(role) { add(role, roles[role]); });
+    var base16 = ({});
+    [p.base, p.mantle, p.surface0, p.surface1, p.surface2, p.text, p.rosewater, p.subtext1,
+     p.red, p.peach, p.yellow, p.green, p.teal, p.blue, p.pink, p.accent].forEach(function(hex, i) {
+        base16["base0" + i.toString(16)] = { default: { color: hex }, dark: { color: hex }, light: { color: hex } };
+    });
+    var mode = dark ? "dark" : "light";
+    return { mode: mode, is_dark_mode: dark, colors: colors, base16: base16 };
+}
+
+// Scanner output lines:"theme<TAB>folder" starts a theme folder, "ini<TAB>line"
 // adds a line of its theme.ini, "wall<TAB>path" lists a wallpaper, and
 // "effects<TAB>dir" lists installed effects. Directories come in `themesDirs`
 // order. A later theme.ini or effects directory replaces an earlier one of the

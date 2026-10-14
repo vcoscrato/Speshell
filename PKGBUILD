@@ -27,6 +27,7 @@ optdepends=(
   'brightnessctl: brightness controls'
   'cliphist: clipboard history'
   'hyprlock: default screen locker for power actions'
+  'matugen: theming other apps from the Speshell palette'
   'grim: screenshot, copy text, and scan code tools'
   'hyprpicker: pick color tool'
   'slurp: area selection for the screenshot, copy text, record, and scan code tools'

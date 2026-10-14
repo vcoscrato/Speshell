@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "." as AppServices
+import "../theme" as ThemeModule
 import "ThemeProvider.js" as ThemeProvider
 
 // The active theme and its wallpaper. Themes are folders holding a theme.ini and
@@ -68,6 +69,14 @@ Singleton {
     // The wallpaper to draw: held back until the launch pick, so startup does not
     // show the saved one only to replace it.
     readonly property string shownWallpaper: root.launched ? root.wallpaper : ""
+    // The active palette for other apps, which matugen renders into their themes.
+    // See README "App themes".
+    readonly property string palettePath: AppServices.ConfigService.dataDir !== ""
+        ? AppServices.ConfigService.dataDir + "/palette.json"
+        : ""
+    readonly property var appPalette: root.launched
+        ? ThemeProvider.appPalette(ThemeModule.Theme.mergePalette(root.colors))
+        : null
 
     // The wallpaper theme `id` comes with: its last one, otherwise its first.
     function wallpaperFor(id) {
@@ -233,6 +242,31 @@ Singleton {
         root.report();
     }
 
+    // Writes palette.json and has matugen render it into the app themes, when the
+    // palette changed. Startup with the same theme leaves the apps alone.
+    function exportPalette() {
+        if (root.palettePath === "" || !root.appPalette)
+            return;
+        if (paletteProc.running) {
+            paletteProc.queued = true;
+            return;
+        }
+        paletteProc.command = [
+            "sh", "-c",
+            "path=$1; text=$2; mode=$3; [ \"$(cat \"$path\" 2>/dev/null)\" = \"$text\" ] && exit 0; "
+                + "mkdir -p \"${path%/*}\" && printf '%s\\n' \"$text\" > \"$path.next\" || exit 1; "
+                + "command -v gsettings >/dev/null && gsettings set org.gnome.desktop.interface color-scheme \"prefer-$mode\"; "
+                + "if [ -f \"${XDG_CONFIG_HOME:-$HOME/.config}/matugen/config.toml\" ] && command -v matugen >/dev/null; then "
+                + "matugen json \"$path.next\" -m \"$mode\" -q || { rm -f \"$path.next\"; exit 1; }; fi; "
+                + "mv \"$path.next\" \"$path\"",
+            "speshell-app-themes",
+            root.palettePath,
+            JSON.stringify(root.appPalette, null, 2),
+            root.appPalette.mode
+        ];
+        paletteProc.running = true;
+    }
+
     // Tell the user once about problems in the active theme's theme.ini.
     function report() {
         var theme = root.theme;
@@ -260,6 +294,23 @@ Singleton {
         }
     }
 
+    Process {
+        id: paletteProc
+        property bool queued: false
+        stderr: StdioCollector {
+            id: paletteErrors
+        }
+        onExited: exitCode => {
+            if (exitCode !== 0)
+                AppServices.NotificationService.addInternalNotification("app-themes", "Apps did not take the theme",
+                    paletteErrors.text.replace(/\x1b\[[0-9;]*m/g, "").trim() || "matugen exited with " + exitCode);
+            if (paletteProc.queued) {
+                paletteProc.queued = false;
+                root.exportPalette();
+            }
+        }
+    }
+
     FileView {
         id: stateFile
         path: root.statePath
@@ -273,6 +324,7 @@ Singleton {
     }
 
     onThemeIdChanged: root.report()
+    onAppPaletteChanged: root.exportPalette()
     onLaunchShuffleChanged: root.reconcile()
     onThemesDirChanged: root.scan()
     onUserEffectsDirChanged: root.scan()

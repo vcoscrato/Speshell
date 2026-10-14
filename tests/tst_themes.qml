@@ -99,4 +99,26 @@ TestCase {
         compare(ThemeProvider.fileUrl("/a b/c#1.jpg"), "file:///a%20b/c%231.jpg");
         compare(ThemeProvider.fileUrl(""), "");
     }
+
+    function test_appPaletteFollowsTheBackground() {
+        var palette = ({});
+        ThemeProvider.colorKeys.forEach(function(key) { palette[key] = "#808080"; });
+        palette.base = "#1d1416";
+        palette.crust = "#120c0d";
+        palette.text = "#f3e3d3";
+        palette.accent = "#e8b04a";
+        var dark = ThemeProvider.appPalette(palette);
+        compare(dark.mode, "dark");
+        compare(dark.colors.primary.default.color, "#e8b04a");
+        compare(dark.colors.on_primary.default.color, "#120c0d");
+        compare(Object.keys(dark.base16).length, 16);
+
+        palette.base = "#eff1f5";
+        palette.crust = "#dce0e8";
+        palette.text = "#4c4f69";
+        palette.accent = "#1e66f5";
+        var light = ThemeProvider.appPalette(palette);
+        compare(light.mode, "light");
+        compare(light.colors.on_primary.default.color, "#eff1f5");
+    }
 }
