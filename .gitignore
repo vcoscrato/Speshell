@@ -10,3 +10,4 @@ src/
 /speshell/
 *.qsb
 /extras/lab/out/
+.claude
