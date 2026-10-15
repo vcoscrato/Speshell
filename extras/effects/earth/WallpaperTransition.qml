@@ -50,6 +50,6 @@ Item {
         property real wave: Math.max(0, root.elapsed - root.crackTime * 0.6) / root.crumbleTime * (root.reach + 320)
         property color cCrack: Stone.tone(root.theme, "crust", 0.15, "#2a2219")
         property color cLip: Stone.tone(root.theme, "text", 0.35, "#d8c8a8")
-        fragmentShader: Qt.resolvedUrl("shaders/crumble.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/WallpaperTransition.qsb")
     }
 }

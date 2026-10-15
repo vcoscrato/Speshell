@@ -5,7 +5,7 @@ set -e
 LAB=$(cd "$(dirname "$0")" && pwd)
 FRAMES=$(mktemp -d)
 trap 'rm -rf "$FRAMES"' EXIT
-SCENE="$LAB/PaintingScene.qml" PAINTING="$LAB/../paintings/$1.frag.qsb" DURATION=0.05 OUT="$FRAMES" \
+SCENE="$LAB/PaintingScene.qml" PAINTING="$LAB/../paintings/qsb/$1.qsb" DURATION=0.05 OUT="$FRAMES" \
     QT_FORCE_STDERR_LOGGING=1 timeout 60 quickshell --no-color -p "$LAB/shell.qml" 2>&1 \
     | grep -E "rror|WARN" | grep -v "window masks" >&2 || true
 [ -f "$FRAMES/0001.bmp" ] || { echo "paint.sh: $1 did not render" >&2; exit 1; }

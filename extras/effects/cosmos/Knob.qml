@@ -31,6 +31,6 @@ Item {
         property color cLight: root.theme ? root.theme.text : "#ebdbb2"
         property color cShade: root.theme ? root.theme.crust : "#1b1b1b"
         property color cRing: root.theme ? root.theme.subtextBright : "#d5c4a1"
-        fragmentShader: Qt.resolvedUrl("shaders/knob.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/Knob.qsb")
     }
 }

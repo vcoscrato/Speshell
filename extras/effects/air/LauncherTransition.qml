@@ -180,6 +180,6 @@ Item {
         property real spin: root.spin
         property real reach: root.reach
         property color cRing: root.theme ? root.theme.rosewater : "#eef5fb"
-        fragmentShader: Qt.resolvedUrl("shaders/unwind.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/LauncherTransition.qsb")
     }
 }

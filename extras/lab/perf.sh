@@ -4,10 +4,11 @@
 # doubling COPIES until the frame time clearly rises above vsync. Env: PERF_FROM
 # measures from that many seconds in, DURATION ends the run (default 2.5).
 LAB=$(cd "$(dirname "$0")" && pwd)
+LAB_OUT=${LAB_OUT:-${XDG_CACHE_HOME:-$HOME/.cache}/speshell-lab}
 EFFECT=$1
 SCENE=${2:-launcher}
 COPIES=${COPIES:-24}
-SAMPLES="$LAB/out/samples"
+SAMPLES="$LAB_OUT/samples"
 [ -f "$SAMPLES/a.jpg" ] || { echo "run just preview first to create sample wallpapers" >&2; exit 1; }
 INNER="$LAB/$(echo "$SCENE" | sed 's/./\U&/')Scene.qml"
 measure() {

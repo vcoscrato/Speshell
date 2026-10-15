@@ -45,10 +45,11 @@ Singleton {
 
     // Controls report the user's hand on them here; the dashboard passes these on to
     // the effects' interactions. `knob` is the thumb that moved `dx` px or was let go,
-    // `target` what was picked, and `control` the switch turned on or off.
+    // `target` what was picked, `pointer` the MouseArea clicked to pick it (null from the
+    // keyboard), and `control` the switch turned on or off.
     signal knobMoved(Item knob, real dx)
     signal knobReleased(Item knob)
-    signal picked(Item target)
+    signal picked(Item target, Item pointer)
     signal switched(Item control, bool on)
 
     // The dashboard parts came after API v1's transitions, so effects may omit them.

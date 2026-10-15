@@ -102,7 +102,7 @@ Item {
         property color cLight: Stone.tone(root.theme, "subtext", 0.25, "#a8977a")
         property color cMid: Stone.tone(root.theme, "overlay", 0.15, "#7d6c55")
         property color cDark: Stone.tone(root.theme, "card", 0.25, "#4d4133")
-        fragmentShader: Qt.resolvedUrl("shaders/slab.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/LauncherTransition.qsb")
     }
 
     // Crack, dust, and chips stay in a band around the ground line.
@@ -124,7 +124,7 @@ Item {
         property color cDustShade: Stone.tone(root.theme, "overlay", 0.5, "#9c8a6c")
         property color cRock: Stone.tone(root.theme, "overlay", 0.3, "#8a7a62")
         property color cDark: Stone.tone(root.theme, "bg", 0.1, "#2e261d")
-        fragmentShader: Qt.resolvedUrl("shaders/ground.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/LauncherTransition.ground.qsb")
     }
 
     ShaderEffect {
@@ -144,6 +144,6 @@ Item {
         property color cMid: Stone.tone(root.theme, "overlay", 0.3, "#8a7a62")
         property color cDark: Stone.tone(root.theme, "surface2", 0.15, "#5a4c3b")
         property color cEdge: Stone.tone(root.theme, "bg", 0.1, "#2e261d")
-        fragmentShader: Qt.resolvedUrl("shaders/boulders.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/LauncherTransition.boulders.qsb")
     }
 }

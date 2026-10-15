@@ -2,24 +2,24 @@
 
 An effects directory animates the launcher, wallpaper changes, the dashboard's entrance, and the dashboard's controls, and paints the backdrop of the dashboard and launcher, for any theme that names it with `effects = <name>` in its `theme.ini`. Speshell looks in `extras/effects` and `~/.local/share/speshell/effects`; a user directory replaces a shipped one of the same name. If effects fail to load, Speshell notifies and runs without them.
 
-Every effect here has the same files:
+Every effect here has the same files. Each shader sits beside the QML that draws it, under the same name:
 
 ```
 <name>/
-├── Effects.qml               entry point: API version, the transitions, and the backdrop
-├── LauncherTransition.qml    the launcher opening, staying open, and closing
-├── WallpaperTransition.qml   the change from one wallpaper to the next
-├── DashboardTransition.qml   the dashboard's entrance
-├── DashboardBackdrop.qml     the still painting behind the dashboard
-├── Interactions.qml          the effects on the dashboard's controls
-├── Knob.qml                  the thumb of the dashboard's sliders and switches
-├── <Part>.qml                pieces the transitions use (Flames, Wind, Whip, ...)
-├── <Name>.js                 color recipes several parts share (Flame, Water, Stone)
-├── shaders/*.frag            GLSL sources; `just shaders` compiles them to git-ignored .qsb files
-└── common -> ../../lib       symlink that gives QML `import "common"` (EffectClock, Particles) and `common/Colors.js`
+├── Effects.qml                   entry point: API version, the transitions, and the backdrop
+├── LauncherTransition.qml/.frag  the launcher opening, staying open, and closing
+├── WallpaperTransition.qml/.frag the change from one wallpaper to the next
+├── DashboardTransition.qml/.frag the dashboard's entrance
+├── DashboardBackdrop.qml/.frag   the still painting behind the dashboard
+├── Interactions.qml/.frag        the effects on the dashboard's controls
+├── Knob.qml/.frag                the thumb of the dashboard's sliders and switches
+├── <Part>.qml/.frag              pieces the transitions use (Flames, Wind, Whip, ...)
+├── <Name>.js                     color recipes several parts share (Flame, Water, Stone)
+├── common -> ../../lib           symlink that gives QML `import "common"` (EffectClock, Particles) and `common/Colors.js`
+└── qsb/                          git-ignored: `just shaders` compiles each `<Name>.frag` to `qsb/<Name>.qsb`
 ```
 
-Shaders include the shared library by relative path: `#include "../../../lib/common.glsl"`.
+A QML file that draws more than one shader names the others `<Qml>.<piece>.frag` (`LauncherTransition.ground.frag`); a shader several parts share is named for what it draws (`Portal.frag`, `Burn.frag`). Shaders include the shared library by relative path: `#include "../../lib/common.glsl"`. A part loads its shader as `Qt.resolvedUrl("qsb/<Name>.qsb")`.
 
 ## API
 
@@ -82,7 +82,7 @@ Emit `finished()` when done; Speshell removes it after 2.5 s otherwise. People o
 |---|---|
 | `slide(point at, real dx)` | A slider's knob, centered at `at`, moved `dx` px under the user's drag or wheel. Called for each step of the move. |
 | `release(point at)` | The user let go of a slider's knob. |
-| `pick(rect area)` | The user picked something: an audio device (its radio dot), a segment, a menu choice, a sidebar panel, a workspace. |
+| `pick(rect area, point at)` | The user picked something: an audio device (its radio dot), a segment, a menu choice, a sidebar panel, a workspace, a bar button. `at` is where the pointer clicked, which may lie outside `area` (a device row clicked on its name picks its radio dot), or the middle of `area` for a keyboard pick or a menu choice; start the effect there, since a wide control's middle can be far from the pointer. |
 | `toggle(rect area, bool on)` | The user turned a switch on or off; its thumb ends at the right end of `area` when on and the left when off. |
 
 Keep each effect brief (under a second) and small around the control; the panel stays usable under it. Draw nothing and run nothing while idle: `lib/Particles.qml` is a pool of short-lived particles whose clock runs only while one lives. Its clock follows the dashboard's speed, and with the dashboard's transitions off Speshell does not create interactions.
@@ -106,7 +106,7 @@ Effects draw in flat, anti-aliased color bands for a cel-shaded look, and shape 
 
 On the dashboard, Cosmos reuses its portal, opening from a flare on the Speshell mark; Fire reuses its burn front and flame simulation, spreading down from the mark; Air blows the panel in behind a ragged front of wind streaks, its rows lagging by noise; Water slides a sheet of water down it from the top edge, a foam crest ahead and a waterline behind, the panel bent and lit by caustics between them; Earth raises it as Voronoi blocks, top rows first, each found by testing the nearby blocks shifted back by their own offsets; and Relâmpago strikes a bolt down it and shows each row outward from the bolt once it has passed. The backdrops are a nebula lane, banked flames, cloud banks with curling wind, an underwater view, rock strata with jade, and asphalt with a checkered flag and a forked bolt.
 
-On the dashboard's controls, each effect spawns particles from `lib/Particles.qml`, each a small `ShaderEffect` that draws one kind of bit by its age: star dust, glints, and novas; flames standing on a burning streak, sparks, flame rings, and smoke; wisps, leaves, and curls of wind; drops that drip off or leap in, ripples, and bubbles; rock chips, dust, and jade shards; sparks, arcs, discharges, lightning strikes, and tire smoke. Each knob is one small shader turned by its travel, clockwise as it moves right, as a ball rolls: a planet whose moon orbits, an ember, a ball of wind, a drop that stretches by how far a spring-damped copy of its travel lags behind, a faceted stone that rolls, and a racing wheel that reaches back to the track's start to draw a bolt along the fill.
+On the dashboard's controls, each effect spawns particles from `lib/Particles.qml`, each a small `ShaderEffect` that draws one kind of bit by its age: star dust, glints, and constellations that draw themselves star by star; flames standing on a burning streak, sparks, embers, flashes of ignition, and smoke; streaks of wind that blow a dragged knob along, wisps, leaves, and curls of wind; drops that drip off, leap in, or fly off to land in ripples, and crown splashes with the jet that follows; rock chips, dust, and jade shards; sparks, arcs, discharges, lightning strikes, and tire smoke. Each knob is one small shader turned by its travel, clockwise as it moves right, as a ball rolls: a planet whose moon orbits, an ember, a ball of wind, a drop that stretches by how far a spring-damped copy of its travel lags behind, a faceted stone that rolls, and a racing wheel that reaches back to the track's start to draw a bolt along the fill.
 
 ## Cost
 

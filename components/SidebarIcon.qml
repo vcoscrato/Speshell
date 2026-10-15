@@ -132,7 +132,7 @@ Rectangle {
         onCanceled: root.pointerInside = false
         onClicked: {
             if (!root.active)
-                Services.EffectsService.picked(box);
+                Services.EffectsService.picked(box, mouseArea);
             root.activated(root.widgetName);
         }
         onWheel: function(wheel) {

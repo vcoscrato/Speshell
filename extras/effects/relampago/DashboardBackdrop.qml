@@ -16,5 +16,5 @@ ShaderEffect {
     property color cPaint: Bolt.paint(root.theme)
     property color cGlow: Bolt.glow(root.theme)
     property color cEdge: Bolt.edge(root.theme)
-    fragmentShader: Qt.resolvedUrl("shaders/backdrop.frag.qsb")
+    fragmentShader: Qt.resolvedUrl("qsb/DashboardBackdrop.qsb")
 }

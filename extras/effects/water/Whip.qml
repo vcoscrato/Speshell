@@ -1,7 +1,7 @@
 import QtQuick
 import "Water.js" as Water
 
-// A water whip along a log spiral. See shaders/whip.frag.
+// A water whip along a log spiral. See Whip.frag.
 ShaderEffect {
     property real time: 0
     property size resolution: Qt.size(width, height)
@@ -18,5 +18,5 @@ ShaderEffect {
     property color cMid: Water.mid(theme)
     property color cLight: Water.light(theme)
     property color cFoam: Water.foam(theme)
-    fragmentShader: Qt.resolvedUrl("shaders/whip.frag.qsb")
+    fragmentShader: Qt.resolvedUrl("qsb/Whip.qsb")
 }

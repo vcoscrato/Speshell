@@ -40,6 +40,6 @@ Item {
         property color cWind: root.theme ? root.theme.text : "#f4ead8"
         property color cAccent: root.theme ? root.theme.accent : "#f39a3a"
         property color cOutline: root.theme ? root.theme.crust : "#130f0b"
-        fragmentShader: Qt.resolvedUrl("shaders/knob.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/Knob.qsb")
     }
 }

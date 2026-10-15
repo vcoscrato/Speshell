@@ -21,7 +21,7 @@ ShaderEffect {
     property color cLight: root.theme ? root.theme.subtextBright : "#c6c6ad"
     property color cShade: root.theme ? root.theme.crust : "#0d0f0a"
     property color cJade: root.theme ? root.theme.accent : "#5fa57a"
-    fragmentShader: Qt.resolvedUrl("shaders/knob.frag.qsb")
+    fragmentShader: Qt.resolvedUrl("qsb/Knob.qsb")
 
     Behavior on glow { NumberAnimation { duration: 150 } }
     Behavior on dim { NumberAnimation { duration: 150 } }

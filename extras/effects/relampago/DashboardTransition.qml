@@ -56,6 +56,6 @@ Item {
         property color cCore: Bolt.core(root.theme)
         property color cGlow: Bolt.glow(root.theme)
         property color cEdge: Bolt.edge(root.theme)
-        fragmentShader: Qt.resolvedUrl("shaders/strike.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/DashboardTransition.qsb")
     }
 }

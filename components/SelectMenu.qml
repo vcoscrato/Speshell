@@ -111,7 +111,7 @@ Rectangle {
                 enabled: root.enabled
                 onTriggered: {
                     if (modelData.value !== root.currentValue)
-                        Services.EffectsService.picked(root);
+                        Services.EffectsService.picked(root, null);
                     root.valueSelected(modelData.value);
                 }
             }

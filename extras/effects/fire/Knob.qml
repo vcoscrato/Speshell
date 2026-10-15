@@ -48,6 +48,6 @@ Item {
         property color cEdge: Flame.edge(root.theme)
         property color cCoal: root.theme ? root.theme.crust : "#11080a"
         property color cAsh: root.theme ? root.theme.subtext : "#b99a89"
-        fragmentShader: Qt.resolvedUrl("shaders/knob.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/Knob.qsb")
     }
 }

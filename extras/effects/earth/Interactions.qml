@@ -55,8 +55,8 @@ Item {
         root.chip(at.x, at.y, rnd(-50, 50), -rnd(90, 140), at.y + 9);
     }
 
-    function pick(area) {
-        var cx = area.x + area.width / 2, cy = area.y + area.height / 2;
+    function pick(area, at) {
+        var cx = at.x, cy = at.y;
         var floor = area.y + area.height + 6;
         for (var i = 0; i < 5; i++)
             root.chip(cx + rnd(-area.width, area.width) * 0.3, cy, rnd(-130, 130), -rnd(170, 320), floor);
@@ -92,7 +92,7 @@ Item {
                 property color cShade: root.theme ? root.theme.crust : "#0d0f0a"
                 property color cDust: root.theme ? root.theme.peach : "#d99a5a"
                 property color cJade: root.theme ? root.theme.accent : "#5fa57a"
-                fragmentShader: Qt.resolvedUrl("shaders/bits.frag.qsb")
+                fragmentShader: Qt.resolvedUrl("qsb/Interactions.qsb")
             }
         }
     }

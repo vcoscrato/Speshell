@@ -66,15 +66,21 @@ Item {
         if (bx !== lastBrightnessX)
             fx.slide(brightnessSlider.knobCenter(), bx - lastBrightnessX);
         lastBrightnessX = bx;
-        once("device", 2.3, () => fx.pick(areaOf(deviceDots.itemAt(1))));
-        once("segment", 2.8, () => fx.pick(areaOf(segments.itemAt(2))));
+        once("device", 2.3, () => pickAt(deviceDots.itemAt(1)));
+        once("segment", 2.8, () => pickAt(segments.itemAt(2)));
         once("on", 3.3, () => fx.toggle(areaOf(toggle), true));
         once("off", 3.9, () => fx.toggle(areaOf(toggle), false));
-        once("sidebar", 4.3, () => fx.pick(areaOf(sidebarBox)));
+        once("sidebar", 4.3, () => pickAt(sidebarBox));
     }
 
     function areaOf(item) {
         return item.mapToItem(fxLayer, 0, 0, item.width, item.height);
+    }
+
+    // Picked by a click in the middle of `item`.
+    function pickAt(item) {
+        const area = areaOf(item);
+        fxLayer.item.pick(area, Qt.point(area.x + area.width / 2, area.y + area.height / 2));
     }
 
     component LabSlider: Item {

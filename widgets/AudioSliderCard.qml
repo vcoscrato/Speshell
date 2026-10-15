@@ -265,7 +265,7 @@ Components.Card {
                             hoverEnabled: true
                             onClicked: {
                                 if (Services.AudioService.defaultSink !== outDevDelegate.modelData.node)
-                                    Services.EffectsService.picked(outDevDot);
+                                    Services.EffectsService.picked(outDevDot, outDevMouse);
                                 Services.AudioService.setDefaultSink(outDevDelegate.modelData.node);
                             }
                         }
@@ -387,7 +387,7 @@ Components.Card {
                             hoverEnabled: true
                             onClicked: {
                                 if (Services.AudioService.defaultSource !== inDevDelegate.modelData.node)
-                                    Services.EffectsService.picked(inDevDot);
+                                    Services.EffectsService.picked(inDevDot, inDevMouse);
                                 Services.AudioService.setDefaultSource(inDevDelegate.modelData.node);
                             }
                         }

@@ -16,5 +16,5 @@ ShaderEffect {
     y: cy - size / 2
     width: size
     height: size
-    fragmentShader: Qt.resolvedUrl("shaders/glint.frag.qsb")
+    fragmentShader: Qt.resolvedUrl("qsb/Glint.qsb")
 }

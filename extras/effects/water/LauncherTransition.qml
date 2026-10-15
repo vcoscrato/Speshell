@@ -127,7 +127,7 @@ Item {
         property color cMid: Water.mid(root.theme)
         property color cLight: Water.light(root.theme)
         property color cFoam: Water.foam(root.theme)
-        fragmentShader: Qt.resolvedUrl("shaders/sheet.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/LauncherTransition.qsb")
     }
 
     // Water held in the air around the open launcher, behind the streams.
@@ -147,7 +147,7 @@ Item {
         property color cMid: Water.mid(root.theme)
         property color cLight: Water.light(root.theme)
         property color cFoam: Water.foam(root.theme)
-        fragmentShader: Qt.resolvedUrl("shaders/held.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/LauncherTransition.held.qsb")
     }
 
     ShaderEffect {
@@ -169,6 +169,6 @@ Item {
         property color cMid: Water.mid(root.theme)
         property color cLight: Water.light(root.theme)
         property color cFoam: Water.foam(root.theme)
-        fragmentShader: Qt.resolvedUrl("shaders/stream.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/LauncherTransition.stream.qsb")
     }
 }

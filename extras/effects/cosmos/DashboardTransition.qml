@@ -63,7 +63,7 @@ Item {
         property color cHot: root.theme ? Qt.lighter(Colors.mix(root.theme.text, root.theme.yellow, 0.15), 1.2) : "#fbf1c7"
         property color cGlow: root.theme ? root.theme.accent : "#fe8019"
         property color cHaze: root.theme ? root.theme.pink : "#d3869b"
-        fragmentShader: Qt.resolvedUrl("shaders/portal.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/Portal.qsb")
     }
 
     Glint {

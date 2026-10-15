@@ -42,8 +42,8 @@ Item {
                                     life: bits.rnd(0.25, 0.4), size: 16, orient: true });
     }
 
-    function pick(area) {
-        var cx = area.x + area.width / 2, cy = area.y + area.height / 2;
+    function pick(area, at) {
+        var cx = at.x, cy = at.y;
         var size = Math.max(80, Math.min(150, Math.max(area.width, area.height) * 3));
         bits.emit(bits.strike, { x: cx, y: cy, life: 0.45, size: Math.round(size), angle: bits.rnd(-20, 20) });
         for (var i = 0; i < 4; i++) {

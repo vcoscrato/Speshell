@@ -3,7 +3,7 @@ import "common"
 import "Bolt.js" as Bolt
 
 // Relâmpago's particles: sparks, tire smoke, and lightning in bursts, strikes, and
-// arcs, each a small shader drawn by its age. See shaders/bits.frag.
+// arcs, each a small shader drawn by its age. See Bits.frag.
 Particles {
     id: root
 
@@ -37,7 +37,7 @@ Particles {
             property color cRubber: Bolt.rubber(root.theme)
             property color cSmoke: Bolt.smoke(root.theme)
             property color cSmokeShade: Bolt.smokeShade(root.theme)
-            fragmentShader: Qt.resolvedUrl("shaders/bits.frag.qsb")
+            fragmentShader: Qt.resolvedUrl("qsb/Bits.qsb")
         }
     }
 }

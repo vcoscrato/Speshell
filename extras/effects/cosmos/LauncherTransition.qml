@@ -145,7 +145,7 @@ Item {
         property color cShade: root.theme ? root.theme.mantle : "#1d2021"
         property color cOrbit: root.theme ? Colors.alpha(root.theme.text, 0.34) : Qt.rgba(0.92, 0.86, 0.70, 0.34)
         property color cGlow: Colors.alpha(root.warm, 0.3)
-        fragmentShader: Qt.resolvedUrl("shaders/orbits.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/LauncherTransition.qsb")
     }
 
     // ── The panel inside the portal; otherwise the real panel shows ──
@@ -173,7 +173,7 @@ Item {
         property color cHot: root.hot
         property color cGlow: root.warm
         property color cHaze: root.violet
-        fragmentShader: Qt.resolvedUrl("shaders/portal.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/Portal.qsb")
     }
 
     // ── The star the panel opens from and collapses into ──

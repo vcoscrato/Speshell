@@ -3,12 +3,13 @@
 # that the dashboard entrance's last frame shows the panel exactly as it is, so the
 # panel does not jump when the entrance goes.
 LAB=$(cd "$(dirname "$0")" && pwd)
+LAB_OUT=${LAB_OUT:-${XDG_CACHE_HOME:-$HOME/.cache}/speshell-lab}
 status=0
 # Pixels of the panel that change between the entrance's last frame and the panel once
 # it has gone, if any do.
 jump() {
-    frames="$LAB/out/$1-dashboard"
-    t=$(grep -oE 'finished at [0-9.]+' "$LAB/out/$1-dashboard.log" | grep -oE '[0-9.]+$')
+    frames="$LAB_OUT/$1-dashboard"
+    t=$(grep -oE 'finished at [0-9.]+' "$LAB_OUT/$1-dashboard.log" | grep -oE '[0-9.]+$')
     [ -n "$t" ] || return 0
     last=$(printf '%s/%04d.bmp' "$frames" "$(awk -v t="$t" 'BEGIN { print int(t * 60 + 0.5) - 1 }')")
     final=$(ls "$frames"/*.bmp | tail -1)
@@ -22,7 +23,7 @@ for effect in "$@"; do
         else
             "$LAB/preview.sh" "$effect" "$scene" >/dev/null 2>&1
         fi
-        log="$LAB/out/$effect-$scene.log"
+        log="$LAB_OUT/$effect-$scene.log"
         problems=$(grep -E "rror|WARN" "$log" | grep -v "window masks")
         if [ -n "$problems" ]; then
             printf 'FAIL %s %s:\n%s\n' "$effect" "$scene" "$problems"
@@ -39,7 +40,7 @@ for effect in "$@"; do
             printf 'ok   %s %s, finished at %ss\n' "$effect" "$scene" \
                 "$(grep -oE '(closingFinished|finished) at [0-9.]+' "$log" | tail -1 | grep -oE '[0-9.]+$')"
         fi
-        rm -rf "$LAB/out/$effect-dashboard"
+        rm -rf "$LAB_OUT/$effect-dashboard"
     done
 done
 exit $status

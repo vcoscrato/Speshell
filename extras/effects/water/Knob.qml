@@ -43,6 +43,6 @@ Item {
         property color cLight: root.theme ? root.theme.sky : "#7fd3f0"
         property color cFoam: root.theme ? root.theme.text : "#e3eef4"
         property color cDeep: root.theme ? root.theme.crust : "#081016"
-        fragmentShader: Qt.resolvedUrl("shaders/knob.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/Knob.qsb")
     }
 }

@@ -64,6 +64,6 @@ Item {
         property real calm: Math.max(root.calm, root.sweep > 0.85 ? (root.sweep - 0.85) / 0.6 : 0)
         property color cLight: root.theme ? root.theme.text : "#e8f6fd"
         property color cDark: root.theme ? Colors.mix(root.theme.crust, root.theme.accent, 0.3) : "#123a55"
-        fragmentShader: Qt.resolvedUrl("shaders/ripple.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/WallpaperTransition.qsb")
     }
 }

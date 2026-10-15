@@ -70,7 +70,7 @@ Item {
         property real burnR: root.burnR
         property real fieldScale: root.fieldScale
         property real clearBehind: root.clearBehind ? 1 : 0
-        fragmentShader: Qt.resolvedUrl("shaders/flame_sim.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/Flames.sim.qsb")
     }
 
     ShaderEffect {
@@ -82,6 +82,6 @@ Item {
         property color cMid: root.mid
         property color cOuter: root.outer
         property color cEdge: root.edge
-        fragmentShader: Qt.resolvedUrl("shaders/flame_draw.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/Flames.qsb")
     }
 }

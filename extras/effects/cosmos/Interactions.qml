@@ -4,8 +4,9 @@ import "common/Colors.js" as Colors
 
 // Cosmos's effects on the dashboard's controls. A knob dragged along a slider leaves a
 // trail of star dust that twinkles out, with now and then a glint; let go, a star
-// flares where it stops. Picking something sets off a small nova around it, scattering
-// dust. A switch turned on flares; turned off, a little dust drifts off it.
+// flares where it stops. Picking something draws a constellation out from the pointer,
+// star by star. A switch turned on flares and strings a few stars off it; turned off,
+// a little dust drifts off it.
 Item {
     id: root
 
@@ -30,8 +31,9 @@ Item {
         bits.spawn({ x: x, y: y, life: 0.4, size: size, props: { kind: 1, seed: Math.random(), z: 2 } });
     }
 
-    function nova(x, y, size) {
-        bits.spawn({ x: x, y: y, life: 0.5, size: size, props: { kind: 2, seed: Math.random(), z: 0 } });
+    // Stars strung out from (x, y) one by one; `room` px above it to lean into.
+    function constellation(x, y, size, life, room) {
+        bits.spawn({ x: x, y: y, life: life, size: size, props: { kind: 2, seed: Math.random(), room: room, z: 1 } });
     }
 
     function burst(x, y, count, speed) {
@@ -62,12 +64,8 @@ Item {
         root.burst(at.x, at.y, 4, 70);
     }
 
-    function pick(area) {
-        var cx = area.x + area.width / 2, cy = area.y + area.height / 2;
-        var size = Math.max(40, Math.min(96, Math.max(area.width, area.height) * 2));
-        root.nova(cx, cy, size);
-        root.glint(cx, cy, Math.round(size * 0.6));
-        root.burst(cx, cy, 7, size * 2);
+    function pick(area, at) {
+        root.constellation(at.x, at.y, 130, 1.0, at.y);
     }
 
     function toggle(area, on) {
@@ -75,7 +73,7 @@ Item {
         var cy = area.y + area.height / 2;
         if (on) {
             root.glint(x, cy, 26);
-            root.burst(x, cy, 4, 80);
+            root.constellation(x, cy, 76, 0.8, cy);
         } else {
             root.mote(x - 2, cy - 4, -15, -25);
             root.mote(x + 2, cy - 2, 15, -20);
@@ -95,7 +93,8 @@ Item {
                 property color cHot: root.theme ? Qt.lighter(Colors.mix(root.theme.text, root.theme.yellow, 0.15), 1.2) : "#fbf1c7"
                 property color cGlow: root.theme ? root.theme.accent : "#fe8019"
                 property color cHaze: root.theme ? root.theme.pink : "#d3869b"
-                fragmentShader: Qt.resolvedUrl("shaders/bits.frag.qsb")
+                property real room: 10000
+                fragmentShader: Qt.resolvedUrl("qsb/Interactions.qsb")
             }
         }
     }

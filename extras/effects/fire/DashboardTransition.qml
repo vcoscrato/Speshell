@@ -77,7 +77,7 @@ Item {
         property color cHot: root.core
         property color cChar: Flame.charred(root.theme, false)
         property color cScorch: Flame.scorch(root.theme)
-        fragmentShader: Qt.resolvedUrl("shaders/burn.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/Burn.qsb")
     }
 
     Flames {

@@ -14,5 +14,5 @@ ShaderEffect {
     property color cText: root.theme ? root.theme.text : "#ebdbb2"
     property color cAccent: root.theme ? root.theme.accent : "#fe8019"
     property color cLeafBack: root.theme ? root.theme.peach : "#fe8019"
-    fragmentShader: Qt.resolvedUrl("shaders/backdrop.frag.qsb")
+    fragmentShader: Qt.resolvedUrl("qsb/DashboardBackdrop.qsb")
 }

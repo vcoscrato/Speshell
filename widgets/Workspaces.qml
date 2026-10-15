@@ -65,10 +65,10 @@ Components.Card {
                     + (tile.modelData.title !== "" ? ", " + tile.modelData.title : "")
                 Accessible.onPressAction: tile.show()
 
-                function show() {
+                function show(pointer) {
                     if (tile.active)
                         return;
-                    Services.EffectsService.picked(tile);
+                    Services.EffectsService.picked(tile, pointer || null);
                     Services.WorkspaceService.focusWorkspace(tile.modelData.id);
                 }
 
@@ -160,7 +160,7 @@ Components.Card {
                     hoverEnabled: true
                     cursorShape: tile.active ? Qt.ArrowCursor : Qt.PointingHandCursor
                     onContainsMouseChanged: root.hoveredTitle = tileMouse.containsMouse ? tile.modelData.title : ""
-                    onClicked: tile.show()
+                    onClicked: tile.show(tileMouse)
                 }
             }
         }

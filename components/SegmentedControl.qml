@@ -122,7 +122,7 @@ Rectangle {
                 onClicked: {
                     if (segment.selected)
                         return;
-                    Services.EffectsService.picked(segment);
+                    Services.EffectsService.picked(segment, segmentMouse);
                     root.valueSelected(segment.modelData.value);
                 }
             }

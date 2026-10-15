@@ -558,12 +558,17 @@ Components.Card {
                 width: notesFlickable.contentWidth
                 height: Math.max(markdownText.implicitHeight, notesFlickable.height)
 
-                Text {
+                // A TextEdit, not a Text: under Qt 6.12, scrolling a Text over 10,000
+                // characters that holds a Markdown table segfaults the scene graph
+                // renderer in QSGBatchRenderer::prepareAlphaBatches.
+                TextEdit {
                     id: markdownText
                     width: parent.width
                     text: root.renderedMarkdown !== "" ? root.renderedMarkdown : "*No note content. Click anywhere in box to edit.*"
-                    textFormat: Text.MarkdownText
-                    wrapMode: Text.Wrap
+                    textFormat: TextEdit.MarkdownText
+                    wrapMode: TextEdit.Wrap
+                    readOnly: true
+                    activeFocusOnPress: false
                     color: ThemeModule.Theme.text
                     font.pixelSize: ThemeModule.Theme.fontSizeSmall
                     font.family: ThemeModule.Theme.fontFamily

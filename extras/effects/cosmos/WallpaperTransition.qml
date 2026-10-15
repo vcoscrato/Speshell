@@ -68,7 +68,7 @@ Item {
         property color cHot: root.hot
         property color cGlow: root.warm
         property color cHaze: root.violet
-        fragmentShader: Qt.resolvedUrl("shaders/portal.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/Portal.qsb")
     }
 
     Glint {

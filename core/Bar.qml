@@ -67,12 +67,13 @@ PanelWindow {
     onDropdownOpenChanged: Services.DashboardService.openDropdowns += root.dropdownOpen ? 1 : -1
     Component.onDestruction: if (root.dropdownOpen) Services.DashboardService.openDropdowns -= 1
 
-    function toggleDropdown(panelName, button) {
+    // `pointer`: the MouseArea clicked, or null from the keyboard.
+    function toggleDropdown(panelName, button, pointer) {
         if (root.dropdownButton === button) {
             root.closeDropdown();
             return;
         }
-        Services.EffectsService.picked(button);
+        Services.EffectsService.picked(button, pointer || null);
         root.dropdownButton = button;
         root.dropdown = panelName;
     }
@@ -248,6 +249,7 @@ PanelWindow {
                     }
 
                     MouseArea {
+                        id: markMouse
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
@@ -255,7 +257,7 @@ PanelWindow {
                         onExited: markButton.pointerInside = false
                         onCanceled: markButton.pointerInside = false
                         onClicked: {
-                            Services.EffectsService.picked(markButton);
+                            Services.EffectsService.picked(markButton, markMouse);
                             root.closeDropdown();
                             Services.DashboardService.toggleWorkspace();
                         }
@@ -314,6 +316,7 @@ PanelWindow {
                         }
 
                         MouseArea {
+                            id: workspaceMouse
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
@@ -322,7 +325,7 @@ PanelWindow {
                             onCanceled: workspace.pointerInside = false
                             onClicked: {
                                 if (!workspace.modelData.active)
-                                    Services.EffectsService.picked(workspace);
+                                    Services.EffectsService.picked(workspace, workspaceMouse);
                                 Services.WorkspaceService.focusWorkspace(workspace.modelData.id);
                             }
                         }
@@ -387,7 +390,7 @@ PanelWindow {
                     label: mediaControls.player
                         ? [mediaControls.player.trackTitle || "Unknown track", mediaControls.player.trackArtist].filter(Boolean).join(" · ")
                         : ""
-                    onClicked: root.toggleDropdown("nowPlaying", mediaButton)
+                    onClicked: function(pointer) { root.toggleDropdown("nowPlaying", mediaButton, pointer); }
 
                     Rectangle {
                         anchors.centerIn: parent
@@ -511,7 +514,7 @@ PanelWindow {
                                 open: root.dropdownButton === button
                                 label: Services.DashboardService.statusText(button.modelData)
                                 labelPlacement: root.labelSide + "-end"
-                                onClicked: root.toggleDropdown(button.modelData, button)
+                                onClicked: function(pointer) { root.toggleDropdown(button.modelData, button, pointer); }
                                 onWheeled: function(delta) { root.step(button.modelData, delta); }
 
                                 Components.AppIcon {
@@ -561,10 +564,6 @@ PanelWindow {
             width: root.panelContentWidth + ThemeModule.Theme.panelPadding * 3
             height: Math.min(maxHeight, panelLoader.height + ThemeModule.Theme.panelPadding * 2)
             opacity: 0
-            // Slides in as one texture. Under Qt 6.12, moving the panel's clipped tree while
-            // it lays out (Notes' preview arriving) segfaults the scene graph renderer in
-            // QSGBatchRenderer::prepareAlphaBatches.
-            layer.enabled: entrance.running
 
             onVisibleChanged: if (visible) entrance.restart()
 
@@ -651,7 +650,8 @@ PanelWindow {
         property string labelPlacement: barButton.bar ? barButton.bar.labelSide : "below"
         property bool pointerInside: false
 
-        signal clicked()
+        // `pointer`: the MouseArea clicked, or null from the keyboard.
+        signal clicked(Item pointer)
         signal wheeled(real delta)
 
         anchors.verticalCenter: parent ? parent.verticalCenter : undefined
@@ -660,7 +660,7 @@ PanelWindow {
 
         Accessible.role: Accessible.Button
         Accessible.name: barButton.label
-        Accessible.onPressAction: barButton.clicked()
+        Accessible.onPressAction: barButton.clicked(null)
 
         Rectangle {
             anchors.fill: parent
@@ -679,13 +679,14 @@ PanelWindow {
         }
 
         MouseArea {
+            id: barMouse
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onEntered: barButton.pointerInside = true
             onExited: barButton.pointerInside = false
             onCanceled: barButton.pointerInside = false
-            onClicked: barButton.clicked()
+            onClicked: barButton.clicked(barMouse)
             onWheel: function(wheel) { barButton.wheeled(wheel.angleDelta.y); }
         }
     }
@@ -750,13 +751,14 @@ PanelWindow {
         }
 
         MouseArea {
+            id: textMouse
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onEntered: textButton.pointerInside = true
             onExited: textButton.pointerInside = false
             onCanceled: textButton.pointerInside = false
-            onClicked: textButton.bar.toggleDropdown(textButton.panelName, textButton)
+            onClicked: textButton.bar.toggleDropdown(textButton.panelName, textButton, textMouse)
         }
     }
 }

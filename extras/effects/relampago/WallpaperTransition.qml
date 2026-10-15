@@ -52,6 +52,6 @@ Item {
         property color cGlow: Bolt.glow(root.theme)
         property color cEdge: Bolt.edge(root.theme)
         property color cPaint: Bolt.paint(root.theme)
-        fragmentShader: Qt.resolvedUrl("shaders/split.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/WallpaperTransition.qsb")
     }
 }

@@ -6,6 +6,8 @@ qsb := env("QSB", if qt6_bin != "" { qt6_bin / "qsb" } else { "qsb" })
 
 # The effects lab hosts this checkout's WallpaperView.
 export SPESHELL_DIR := justfile_directory()
+# Where the lab writes its renders.
+export LAB_OUT := env("LAB_OUT", env("XDG_CACHE_HOME", env("HOME") / ".cache") / "speshell-lab")
 
 [private]
 default:
@@ -29,8 +31,9 @@ test:
 shaders:
     #!/bin/sh
     set -e
-    for frag in effects/*/shaders/*.frag paintings/*.frag; do
-        out="$frag.qsb"
+    for frag in effects/*/*.frag paintings/*.frag; do
+        out="$(dirname "$frag")/qsb/$(basename "$frag" .frag).qsb"
+        mkdir -p "$(dirname "$out")"
         if [ ! -f "$out" ] || [ "$frag" -nt "$out" ] || [ lib/common.glsl -nt "$out" ] \
                 || [ paintings/landscape.glsl -nt "$out" ]; then
             echo "qsb $frag"
@@ -38,7 +41,7 @@ shaders:
         fi
     done
 
-# Render paintings/<name>.frag over each themes/*/<name>.jpg (else extras/lab/out/); no name: all (needs Wayland).
+# Render paintings/<name>.frag over each themes/*/<name>.jpg (else ~/.cache/speshell-lab/); no name: all (needs Wayland).
 [working-directory: 'extras']
 paint name="": shaders
     #!/bin/sh
@@ -48,14 +51,14 @@ paint name="": shaders
         [ -f "$frag" ] || { echo "no painting $frag" >&2; exit 1; }
         painting=$(basename "$frag" .frag)
         targets=$(ls themes/*/"$painting.jpg" 2>/dev/null || true)
-        [ -n "$targets" ] || [ -z "$name" ] || targets="lab/out/$painting.jpg"
+        [ -n "$targets" ] || [ -z "$name" ] || targets="$LAB_OUT/$painting.jpg"
         for out in $targets; do
             echo "paint $painting -> $out"
             lab/paint.sh "$painting" "$out"
         done
     done
 
-# Render an effect's scene offscreen into extras/lab/out/<effect>-<scene>.mp4 (needs a Wayland session).
+# Render an effect's scene offscreen into ~/.cache/speshell-lab/<effect>-<scene>.mp4 (needs a Wayland session).
 [working-directory: 'extras']
 preview effect="cosmos" scene="launcher": shaders
     lab/preview.sh "{{ effect }}" "{{ scene }}"
@@ -73,8 +76,7 @@ perf effect="cosmos" scene="launcher": shaders
 # Remove compiled shaders and lab output.
 [working-directory: 'extras']
 clean:
-    rm -f effects/*/shaders/*.qsb paintings/*.qsb
-    rm -rf lab/out
+    rm -rf effects/*/qsb paintings/qsb "$LAB_OUT"
 
 # Build and install a package from this checkout, uncommitted changes included.
 local-package-install:
@@ -85,7 +87,7 @@ local-package-install:
     mkdir -p "$builddir/src/speshell"
     cp PKGBUILD "$builddir/"
     tar --exclude='./src' --exclude='./pkg' --exclude='./speshell' --exclude='./*.pkg.tar.*' \
-        --exclude='./extras/lab/out' \
+        --exclude='qsb' \
         -cf - . | tar -C "$builddir/src/speshell" -xf -
     (cd "$builddir" && makepkg -efsi)
     echo "Installed. Restart Speshell to load new shaders."

@@ -210,7 +210,7 @@ Item {
         property color cEdge: Bolt.edge(root.theme)
         property color cPaint: Bolt.paint(root.theme)
         property color cRubber: Bolt.rubber(root.theme)
-        fragmentShader: Qt.resolvedUrl("shaders/track.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/LauncherTransition.track.qsb")
     }
 
     // ── The panel, racing; otherwise the real panel shows ──
@@ -240,7 +240,7 @@ Item {
         property color cGlow: Bolt.glow(root.theme)
         property color cEdge: Bolt.edge(root.theme)
         property color cCore: Bolt.core(root.theme)
-        fragmentShader: Qt.resolvedUrl("shaders/drive.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/LauncherTransition.qsb")
     }
 
     Bits {

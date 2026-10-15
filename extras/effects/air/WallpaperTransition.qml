@@ -58,7 +58,7 @@ Item {
         property real spin: root.spin
         property color cRim: root.theme ? Colors.mix(root.theme.rosewater, root.theme.sky, 0.25) : "#cfe3f3"
         property color cHaze: root.theme ? root.theme.rosewater : "#e9f2fa"
-        fragmentShader: Qt.resolvedUrl("shaders/whirl.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/WallpaperTransition.qsb")
     }
 
     // Wind whirling outward ahead of the eye.

@@ -50,6 +50,6 @@ Item {
         property color cHub: Bolt.glow(root.theme)
         property color cCore: Bolt.core(root.theme)
         property color cEdge: Bolt.edge(root.theme)
-        fragmentShader: Qt.resolvedUrl("shaders/knob.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/Knob.qsb")
     }
 }

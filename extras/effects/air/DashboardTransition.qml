@@ -63,6 +63,6 @@ Item {
         property color cLeaf: root.theme ? root.theme.accent : "#f39a3a"
         property color cLeafBack: root.theme ? root.theme.peach : "#f0a03c"
         property color cOutline: root.theme ? root.theme.crust : "#130f0b"
-        fragmentShader: Qt.resolvedUrl("shaders/gust.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("qsb/DashboardTransition.qsb")
     }
 }

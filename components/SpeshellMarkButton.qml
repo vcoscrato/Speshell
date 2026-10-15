@@ -55,6 +55,7 @@ Item {
     }
 
     MouseArea {
+        id: markMouse
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
@@ -63,7 +64,7 @@ Item {
         onCanceled: root.pointerInside = false
         onClicked: {
             if (!root.active)
-                Services.EffectsService.picked(root);
+                Services.EffectsService.picked(root, markMouse);
             root.activated();
         }
     }
