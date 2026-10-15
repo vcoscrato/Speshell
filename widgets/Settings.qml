@@ -87,9 +87,11 @@ Components.Card {
         { value: 10, label: "10" },
         { value: -1, label: "All" }
     ]
-    readonly property var frameRateOptions: [30, 60, 75, 90, 120, 144, 165, 240, 300].map(function(rate) {
-        return { value: rate, label: rate + " fps" };
-    })
+    readonly property var powerModeOptions: [
+        { value: "maximum", label: "Maximum" },
+        { value: "balanced", label: "Balanced" },
+        { value: "saver", label: "Saver" }
+    ]
     readonly property var launchShuffleOptions: [
         { value: "off", label: "Off" },
         { value: "wallpaper", label: "Wallpaper" },
@@ -483,15 +485,15 @@ Components.Card {
                 }
 
                 Components.SettingRow {
-                    label: "Effects"
-                    info: "How smooth the theme's animations are. The sliders below set how fast each one plays, or turn it off."
+                    label: "Power use"
+                    info: "Maximum animates the theme's effects at your display's refresh rate, Balanced at 60 fps. "
+                        + "Saver turns them off along with the interface's motion. Saving modes also look less often "
+                        + "for recordings started outside Speshell. The sliders set how fast each surface's effects play."
 
                     Components.SelectMenu {
-                        enabled: Services.EffectsService.transitionsEnabled
-                        options: root.frameRateOptions
-                        currentValue: Services.EffectsService.frameRate
-                        fallbackLabel: Services.EffectsService.frameRate + " fps"
-                        onValueSelected: function(value) { Services.ConfigService.setTransitionFrameRate(value); }
+                        options: root.powerModeOptions
+                        currentValue: Services.PowerService.mode
+                        onValueSelected: function(value) { Services.ConfigService.setPowerMode(value); }
                     }
                 }
 
@@ -499,6 +501,8 @@ Components.Card {
                     id: speedRow
                     readonly property real columnWidth: (width - spacing * 2) / 3
 
+                    enabled: Services.EffectsService.enabled
+                    opacity: enabled ? 1 : ThemeModule.Theme.disabledOpacity
                     width: parent.width
                     spacing: ThemeModule.Theme.spacingMedium
 

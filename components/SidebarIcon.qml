@@ -14,7 +14,7 @@ Rectangle {
     property string statusText: ""
     property string tooltipText: ""
     // A secondary icon splits the button: both halves open the panel, and the
-    // wheel reports which half it turned over.
+    // wheel and right click report which half they came over.
     property string secondaryIconName: ""
     property string secondaryStatusText: ""
     property bool pointerInside: false
@@ -34,6 +34,7 @@ Rectangle {
 
     signal activated(string name)
     signal wheelDelta(int angleDelta, bool secondary)
+    signal rightClicked(bool secondary)
 
     Connections {
         target: root.Window ? root.Window.window : null
@@ -126,11 +127,16 @@ Rectangle {
         id: mouseArea
         anchors.fill: parent
         hoverEnabled: true
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: Qt.PointingHandCursor
         onEntered: root.pointerInside = true
         onExited: root.pointerInside = false
         onCanceled: root.pointerInside = false
-        onClicked: {
+        onClicked: function(mouse) {
+            if (mouse.button === Qt.RightButton) {
+                root.rightClicked(root.pointerSecondary);
+                return;
+            }
             if (!root.active)
                 Services.EffectsService.picked(box, mouseArea);
             root.activated(root.widgetName);

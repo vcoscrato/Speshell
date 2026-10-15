@@ -94,6 +94,9 @@ Rectangle {
         Loader {
             id: knob
             anchors.centerIn: parent
+            // EffectClock runs at this speed and frame rate.
+            property real timeScale: 1
+            property int frameRate: Services.EffectsService.frameRate
             width: parent.height
             height: parent.height
             sourceComponent: Services.EffectsService.knob

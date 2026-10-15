@@ -8,6 +8,14 @@ import Quickshell.Io
 Singleton {
     id: root
 
+    // How much power Speshell itself may use, from [Power] mode:
+    // - "maximum": theme effects tick with every frame the display shows; recordings
+    //   started outside Speshell are noticed within 2 s.
+    // - "balanced": theme effects tick at 60 fps, and that check runs every 10 s.
+    // - "saver": no theme effects, no interface motion, and that check every minute.
+    // Speshell's own tools report their recordings at once in every mode.
+    property string mode: "balanced"
+
     property var lockCommand: ["hyprlock"]
     property bool lockerAvailable: false
     property bool lockerChecking: true

@@ -94,8 +94,10 @@ Singleton {
 
     // A panel's state in a few words, for its rail or bar button's tooltip.
     function statusText(panelName) {
-        if (panelName === "audioControl") return "Volume: " + AudioService.outputVolumePercent + "%";
-        if (panelName === "audioInputControl") return "Mic: " + AudioService.inputVolumePercent + "%";
+        if (panelName === "audioControl")
+            return (AudioService.outputDeviceLabel || "Volume") + ": " + AudioService.outputVolumePercent + "%";
+        if (panelName === "audioInputControl")
+            return (AudioService.inputDeviceLabel || "Mic") + ": " + AudioService.inputVolumePercent + "%";
         if (panelName === "displayControl" && BrightnessService.available)
             return "Brightness: " + BrightnessService.percent + "%";
         if (panelName === "networkPanel") {

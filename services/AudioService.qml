@@ -22,6 +22,15 @@ Singleton {
     readonly property bool inputMuted: root.sourceAudio ? root.sourceAudio.muted : false
 
     property int scrollStep: 5
+    // [Audio.QuickSwitch] and friends: the devices to offer, in order, as name
+    // substrings (all devices when empty), and display names by PipeWire name or description.
+    property var outputQuickSwitch: []
+    property var outputDeviceNames: ({})
+    property var inputQuickSwitch: []
+    property var inputDeviceNames: ({})
+
+    readonly property string outputDeviceLabel: root.defaultSink ? root.deviceLabel(root.defaultSink, true) : ""
+    readonly property string inputDeviceLabel: root.defaultSource ? root.deviceLabel(root.defaultSource, false) : ""
     property double outputOsdSuppressedUntil: 0
     // The output level the OSD last saw, so it only shows for real changes.
     property int osdVolumePercent: -1
@@ -82,6 +91,113 @@ Singleton {
     function stepInputVolume(direction) {
         if (direction)
             root.setInputVolumePercent(root.inputVolumePercent + (direction > 0 ? root.scrollStep : -root.scrollStep));
+    }
+
+    function nameCandidates(node) {
+        var candidates = [];
+        var values = [node.name, node.description];
+        for (var i = 0; i < values.length; i++) {
+            var value = String(values[i] || "").trim();
+            if (value !== "" && candidates.indexOf(value) < 0)
+                candidates.push(value);
+        }
+        return candidates;
+    }
+
+    function rawDeviceLabel(node) {
+        return node.description || node.name || "Unknown";
+    }
+
+    function deviceLabel(node, isOut) {
+        var names = isOut ? root.outputDeviceNames : root.inputDeviceNames;
+        var candidates = root.nameCandidates(node);
+        for (var i = 0; i < candidates.length; i++) {
+            var mapped = String(names[candidates[i]] || "").trim();
+            if (mapped !== "")
+                return mapped;
+        }
+        return root.rawDeviceLabel(node);
+    }
+
+    // The node's place in the quick-switch list: -1 when the list is empty, -2 when unlisted.
+    function quickSwitchIndex(node, isOut) {
+        var configured = isOut ? root.outputQuickSwitch : root.inputQuickSwitch;
+        if (configured.length === 0)
+            return -1;
+        var candidates = root.nameCandidates(node);
+        for (var configuredIndex = 0; configuredIndex < configured.length; configuredIndex++) {
+            var needle = String(configured[configuredIndex] || "").trim().toLowerCase();
+            if (needle === "")
+                continue;
+            for (var candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
+                if (candidates[candidateIndex].toLowerCase().indexOf(needle) >= 0)
+                    return configuredIndex;
+            }
+        }
+        return -2;
+    }
+
+    function isSourceNode(node) {
+        if (node.isSource)
+            return true;
+        var mediaClass = typeof node.mediaClass === "string" ? node.mediaClass : "";
+        if (mediaClass.indexOf("Audio/Source") === 0)
+            return true;
+        var name = typeof node.name === "string" ? node.name : "";
+        if (name.indexOf(".monitor") !== -1)
+            return false;
+        return name.indexOf("alsa_input.") === 0 || name.indexOf(".input.") !== -1;
+    }
+
+    // The offered output or input devices as {node, label, rawLabel}, in quick-switch order.
+    function devices(isOut) {
+        var values = Pipewire.nodes && Pipewire.nodes.values ? Pipewire.nodes.values : [];
+        var result = [];
+        for (var i = 0; i < values.length; i++) {
+            var node = values[i];
+            if (!node || node.isStream || (isOut ? !node.isSink : !root.isSourceNode(node)))
+                continue;
+            var index = root.quickSwitchIndex(node, isOut);
+            if (index === -2)
+                continue;
+            result.push({
+                node: node,
+                label: root.deviceLabel(node, isOut),
+                rawLabel: root.rawDeviceLabel(node),
+                matchIndex: index
+            });
+        }
+        result.sort(function(a, b) {
+            if (a.matchIndex !== b.matchIndex)
+                return a.matchIndex - b.matchIndex;
+            return a.rawLabel.localeCompare(b.rawLabel);
+        });
+        return result;
+    }
+
+    function cycleDevice(isOut) {
+        var list = root.devices(isOut);
+        var current = isOut ? root.defaultSink : root.defaultSource;
+        var index = -1;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].node === current)
+                index = i;
+        }
+        var next = list.length > 0 ? list[(index + 1) % list.length].node : null;
+        if (!next || next === current)
+            return;
+        if (isOut)
+            root.setDefaultSink(next);
+        else
+            root.setDefaultSource(next);
+    }
+
+    function cycleOutputDevice() {
+        root.cycleDevice(true);
+    }
+
+    function cycleInputDevice() {
+        root.cycleDevice(false);
     }
 
     function setDefaultSink(node) {

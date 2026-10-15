@@ -6,8 +6,9 @@ import Quickshell.Io
 import "." as Services
 
 // Detects wf-recorder and the dictation tool (tools/dictate). Polling only runs
-// when one of them is installed, and slows down while nothing is active.
-// `speshell activity refresh` probes right away, so scripts needn't wait for a tick.
+// when one of them is installed, and slows down while nothing is active and as the
+// power mode saves more. Speshell's tools run `speshell activity refresh` as they
+// start and stop, which probes right away, so polling only catches the rest.
 Scope {
     id: root
 
@@ -127,8 +128,12 @@ Scope {
         }
     }
 
+    // Seconds between probes, while something is active and while nothing is.
+    readonly property var pollSeconds: ({ maximum: [1, 2], balanced: [2, 10], saver: [10, 60] })[Services.PowerService.mode]
+        || [2, 10]
+
     Timer {
-        interval: root.anyActive ? 1000 : 2000
+        interval: 1000 * root.pollSeconds[root.anyActive ? 0 : 1]
         repeat: true
         running: root.toolsAvailable
         onTriggered: root.refresh()

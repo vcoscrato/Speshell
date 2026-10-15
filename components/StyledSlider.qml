@@ -73,7 +73,7 @@ Controls.Slider {
             color: root.progressColor
 
             Behavior on width {
-                NumberAnimation { duration: 60; easing.type: ThemeModule.Theme.animEasing }
+                NumberAnimation { duration: ThemeModule.Theme.motion ? 60 : 0; easing.type: ThemeModule.Theme.animEasing }
             }
 
             Behavior on color {
@@ -104,6 +104,9 @@ Controls.Slider {
         Loader {
             id: knob
             anchors.fill: parent
+            // EffectClock runs at this speed and frame rate.
+            property real timeScale: 1
+            property int frameRate: Services.EffectsService.frameRate
             sourceComponent: Services.EffectsService.knob
         }
 

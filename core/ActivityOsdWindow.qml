@@ -90,7 +90,7 @@ PanelWindow {
         target: activityColumn
         property: "opacity"
         to: 0
-        duration: 140
+        duration: ThemeModule.Theme.motion ? 140 : 0
         easing.type: Easing.InCubic
         onStopped: {
             if (Services.ActivityService.activeCount === 0) {
@@ -171,6 +171,7 @@ PanelWindow {
                         }
 
                         Rectangle {
+                            id: stateDot
                             anchors.right: parent.right
                             anchors.bottom: parent.bottom
                             anchors.rightMargin: -2
@@ -182,9 +183,11 @@ PanelWindow {
                             border.width: 2
                             border.color: ThemeModule.Theme.bg
 
+                            // A still dot in power saver.
                             SequentialAnimation on opacity {
                                 loops: Animation.Infinite
-                                running: activityCard.modelData.state === "active"
+                                running: activityCard.modelData.state === "active" && ThemeModule.Theme.motion
+                                onRunningChanged: if (!running) stateDot.opacity = 1
                                 NumberAnimation { to: 0.35; duration: 650; easing.type: Easing.InOutSine }
                                 NumberAnimation { to: 1; duration: 650; easing.type: Easing.InOutSine }
                             }

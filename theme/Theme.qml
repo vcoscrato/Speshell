@@ -127,9 +127,11 @@ QtObject {
     readonly property color selectedBorder: root.alpha(root.accent, root.tintOutline)
 
     // ── Animation ───────────────────────────────────────────
-    readonly property int animDurationFast: 100
-    readonly property int animDuration:     200
-    readonly property int animDurationSlow: 350
+    // Off in power saver: transitions jump to their end and nothing pulses or blinks.
+    property bool motion: true
+    readonly property int animDurationFast: root.motion ? 100 : 0
+    readonly property int animDuration:     root.motion ? 200 : 0
+    readonly property int animDurationSlow: root.motion ? 350 : 0
     readonly property int animEasing:       Easing.OutCubic
 
     // ── Layout ──────────────────────────────────────────────

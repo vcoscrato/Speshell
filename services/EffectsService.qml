@@ -19,29 +19,32 @@ Singleton {
     property var current: null
     property string error: ""
 
+    // Power saver turns every moving part off; the still backdrop stays.
+    readonly property bool enabled: AppServices.PowerService.mode !== "saver"
+
     // Transition speeds from config, one per surface: a multiple of normal speed; 0
     // turns that surface's transitions off. Hosts pass them on as `timeScale`, which
     // EffectClock follows.
     property real launcherSpeed: 1
     property real dashboardSpeed: 1
     property real wallpaperSpeed: 1
-    readonly property bool transitionsEnabled: root.launcherSpeed > 0 || root.dashboardSpeed > 0
-        || root.wallpaperSpeed > 0
-    // Frames per second of transitions from config, passed on as `frameRate`.
-    property int frameRate: 60
+    // Frames per second of effects, passed on as `frameRate`: 0 ticks with every frame
+    // the display shows.
+    readonly property int frameRate: AppServices.PowerService.mode === "maximum" ? 0 : 60
 
-    readonly property Component launcherTransition: root.launcherSpeed > 0 && root.current
-        && root.current.launcherTransition ? root.current.launcherTransition : null
-    readonly property Component wallpaperTransition: root.wallpaperSpeed > 0 && root.current
-        && root.current.wallpaperTransition ? root.current.wallpaperTransition : null
-    readonly property Component dashboardTransition: root.dashboardSpeed > 0
+    readonly property Component launcherTransition: root.enabled && root.launcherSpeed > 0
+        ? root.optional("launcherTransition") : null
+    readonly property Component wallpaperTransition: root.enabled && root.wallpaperSpeed > 0
+        ? root.optional("wallpaperTransition") : null
+    readonly property Component dashboardTransition: root.enabled && root.dashboardSpeed > 0
         ? root.optional("dashboardTransition") : null
     // Still, so it stays with transitions off.
     readonly property Component dashboardBackdrop: root.optional("dashboardBackdrop")
-    readonly property Component dashboardInteractions: root.dashboardSpeed > 0
+    readonly property Component dashboardInteractions: root.enabled && root.dashboardSpeed > 0
         ? root.optional("dashboardInteractions") : null
-    // The thumb of sliders and switches; moved only by the hand, so it stays too.
-    readonly property Component knob: root.optional("knob")
+    // The thumb of sliders and switches; moved only by the hand, so it stays with
+    // transitions off. Power saver uses the plain thumb, which never animates.
+    readonly property Component knob: root.enabled ? root.optional("knob") : null
 
     // Controls report the user's hand on them here; the dashboard passes these on to
     // the effects' interactions. `knob` is the thumb that moved `dx` px or was let go,
@@ -52,7 +55,7 @@ Singleton {
     signal picked(Item target, Item pointer)
     signal switched(Item control, bool on)
 
-    // The dashboard parts came after API v1's transitions, so effects may omit them.
+    // Every part is optional; the dashboard parts came after API v1's transitions.
     function optional(name) {
         return root.current && (name in root.current) && root.current[name] ? root.current[name] : null;
     }

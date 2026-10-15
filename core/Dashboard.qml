@@ -181,6 +181,13 @@ Item {
                             else if (wName === "audioControl")
                                 Services.AudioService.stepOutputVolume(delta);
                         }
+
+                        onRightClicked: function(secondary) {
+                            if (wName === "audioInputControl" || (wName === "audioControl" && secondary))
+                                Services.AudioService.cycleInputDevice();
+                            else if (wName === "audioControl")
+                                Services.AudioService.cycleOutputDevice();
+                        }
                     }
                 }
             }

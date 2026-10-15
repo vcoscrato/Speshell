@@ -87,6 +87,13 @@ PanelWindow {
             Services.BrightnessService.stepPercent(direction);
     }
 
+    function cycleDevice(panelName) {
+        if (panelName === "audioControl")
+            Services.AudioService.cycleOutputDevice();
+        else if (panelName === "audioInputControl")
+            Services.AudioService.cycleInputDevice();
+    }
+
     function formatTimer(seconds) {
         const hours = Math.floor(seconds / 3600);
         const minutes = Math.floor(seconds % 3600 / 60);
@@ -516,6 +523,7 @@ PanelWindow {
                                 labelPlacement: root.labelSide + "-end"
                                 onClicked: function(pointer) { root.toggleDropdown(button.modelData, button, pointer); }
                                 onWheeled: function(delta) { root.step(button.modelData, delta); }
+                                onRightClicked: root.cycleDevice(button.modelData)
 
                                 Components.AppIcon {
                                     anchors.centerIn: parent
@@ -640,7 +648,7 @@ PanelWindow {
     }
 
     // A square bar button, its content given by the user: hover and open fills, a label
-    // while the pointer is over it, a click, and the wheel.
+    // while the pointer is over it, a click, a right click, and the wheel.
     component BarButton: Item {
         id: barButton
 
@@ -653,6 +661,7 @@ PanelWindow {
         // `pointer`: the MouseArea clicked, or null from the keyboard.
         signal clicked(Item pointer)
         signal wheeled(real delta)
+        signal rightClicked()
 
         anchors.verticalCenter: parent ? parent.verticalCenter : undefined
         width: barButton.bar ? barButton.bar.itemSize : ThemeModule.Theme.controlHeight
@@ -682,11 +691,17 @@ PanelWindow {
             id: barMouse
             anchors.fill: parent
             hoverEnabled: true
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
             cursorShape: Qt.PointingHandCursor
             onEntered: barButton.pointerInside = true
             onExited: barButton.pointerInside = false
             onCanceled: barButton.pointerInside = false
-            onClicked: barButton.clicked(barMouse)
+            onClicked: function(mouse) {
+                if (mouse.button === Qt.RightButton)
+                    barButton.rightClicked();
+                else
+                    barButton.clicked(barMouse);
+            }
             onWheel: function(wheel) { barButton.wheeled(wheel.angleDelta.y); }
         }
     }

@@ -39,6 +39,7 @@ TestCase {
             { tag: "partial integer", text: "[Launcher]\nvisibleRows = 5rows", message: "Expected a whole number" },
             { tag: "not a boolean", text: "[Weather]\nenabled = yes", message: "Expected true or false" },
             { tag: "unknown choice", text: "[Audio]\npanelMode = merged", message: "Expected one of" },
+            { tag: "unknown power mode", text: "[Power]\nmode = turbo", message: "Expected one of" },
             { tag: "insecure URL", text: "[Launcher]\nsearchUrl = http://example.com/?q={query}", message: "must use HTTPS" },
             { tag: "missing placeholder", text: "[Launcher]\nsearchUrl = https://example.com/", message: "exactly one {query}" },
             { tag: "reserved bang", text: "[Launcher.Bangs]\naudio = https://example.com/?q={query}", message: "is reserved" },

@@ -102,7 +102,7 @@ PanelWindow {
         target: osdCard
         property: "opacity"
         to: 0
-        duration: 140
+        duration: ThemeModule.Theme.motion ? 140 : 0
         easing.type: Easing.InCubic
         onStopped: {
             if (osdCard.opacity <= 0)
@@ -195,7 +195,7 @@ PanelWindow {
 
                         Behavior on width {
                             NumberAnimation {
-                                duration: 100
+                                duration: ThemeModule.Theme.animDurationFast
                                 easing.type: ThemeModule.Theme.animEasing
                             }
                         }

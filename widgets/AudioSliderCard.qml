@@ -1,6 +1,5 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import Quickshell.Services.Pipewire
 import "../components" as Components
 import "../services" as Services
 import "../theme" as ThemeModule
@@ -9,144 +8,8 @@ Components.Card {
     id: root
 
     property bool presented: false
-    property var quickSwitchDevices: []
-    property var deviceDisplayNames: ({})
-    property var inputQuickSwitchDevices: []
-    property var inputDeviceDisplayNames: ({})
-
     // "output" = speaker, "input" = mic, "combined" = both speaker & mic in one card
     property string mode: "output"
-
-    readonly property bool isCombined: mode === "combined"
-
-    function buildNodeList(isOut) {
-        if (!root.presented || !Pipewire.nodes || !Pipewire.nodes.values)
-            return [];
-
-        var values = Pipewire.nodes.values;
-        var result = [];
-        for (var i = 0; i < values.length; i++) {
-            var node = values[i];
-            if (!node)
-                continue;
-            if (isOut) {
-                if ((node.isSink || false) && !node.isStream) {
-                    var outEntry = root.buildDeviceEntry(node, true);
-                    if (outEntry)
-                        result.push(outEntry);
-                }
-            } else {
-                if (root.isSourceNode(node)) {
-                    var inEntry = root.buildDeviceEntry(node, false);
-                    if (inEntry)
-                        result.push(inEntry);
-                }
-            }
-        }
-
-        var configuredDevices = root.quickSwitchFor(isOut);
-        if (configuredDevices.length > 0) {
-            result.sort(function(a, b) {
-                if (a.matchIndex !== b.matchIndex)
-                    return a.matchIndex - b.matchIndex;
-                return a.rawLabel.localeCompare(b.rawLabel);
-            });
-        }
-        return result;
-    }
-
-    function rawDeviceLabel(node) {
-        return node.description || node.name || "Unknown";
-    }
-
-    function quickSwitchFor(isOut) {
-        var configured = isOut || !root.isCombined
-            ? root.quickSwitchDevices
-            : root.inputQuickSwitchDevices;
-        return Array.isArray(configured) ? configured : [];
-    }
-
-    function displayNamesFor(isOut) {
-        var configured = isOut || !root.isCombined
-            ? root.deviceDisplayNames
-            : root.inputDeviceDisplayNames;
-        return configured && typeof configured === "object" ? configured : ({});
-    }
-
-    function nameCandidates(node) {
-        var candidates = [];
-        var values = [node ? node.name : "", node ? node.description : ""];
-        for (var i = 0; i < values.length; i++) {
-            var value = String(values[i] || "").trim();
-            if (value !== "" && candidates.indexOf(value) < 0)
-                candidates.push(value);
-        }
-        return candidates;
-    }
-
-    function mappedDeviceLabel(node, isOut) {
-        var names = root.displayNamesFor(isOut);
-        var candidates = root.nameCandidates(node);
-        for (var i = 0; i < candidates.length; i++) {
-            if (Object.prototype.hasOwnProperty.call(names, candidates[i])) {
-                var mapped = String(names[candidates[i]] || "").trim();
-                if (mapped !== "")
-                    return mapped;
-            }
-        }
-        return "";
-    }
-
-    function matchIndex(node, isOut) {
-        var configured = root.quickSwitchFor(isOut);
-        if (configured.length === 0)
-            return -1;
-
-        var candidates = root.nameCandidates(node);
-        for (var configuredIndex = 0; configuredIndex < configured.length; configuredIndex++) {
-            var needle = String(configured[configuredIndex] || "").trim().toLowerCase();
-            if (needle === "")
-                continue;
-            for (var candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
-                if (candidates[candidateIndex].toLowerCase().indexOf(needle) >= 0)
-                    return configuredIndex;
-            }
-        }
-        return -2;
-    }
-
-    function buildDeviceEntry(node, isOut) {
-        var rawLabel = root.rawDeviceLabel(node);
-        var matchedIndex = root.matchIndex(node, isOut);
-        if (matchedIndex === -2)
-            return null;
-        var mappedLabel = root.mappedDeviceLabel(node, isOut);
-        return {
-            node: node,
-            label: mappedLabel !== "" ? mappedLabel : rawLabel,
-            rawLabel: rawLabel,
-            matchIndex: matchedIndex
-        };
-    }
-
-    function isSourceNode(node) {
-        if (!node)
-            return false;
-        if (Boolean(node.isSource))
-            return true;
-        var mediaClass = typeof node.mediaClass === "string" ? node.mediaClass : "";
-        if (mediaClass.indexOf("Audio/Source") === 0)
-            return true;
-        var name = typeof node.name === "string" ? node.name : "";
-        if (name.indexOf(".monitor") !== -1)
-            return false;
-        if (name.indexOf("alsa_input.") === 0 || name.indexOf(".input.") !== -1)
-            return true;
-        var description = typeof node.description === "string" ? node.description : "";
-        if (description.indexOf("Monitor of ") === 0)
-            return false;
-        return false;
-    }
 
     Column {
         width: parent.width
@@ -200,7 +63,7 @@ Components.Card {
                 spacing: ThemeModule.Theme.spacingTiny
 
                 Repeater {
-                    model: root.buildNodeList(true)
+                    model: root.presented ? Services.AudioService.devices(true) : []
 
                     delegate: Rectangle {
                         id: outDevDelegate
@@ -322,7 +185,7 @@ Components.Card {
                 spacing: ThemeModule.Theme.spacingTiny
 
                 Repeater {
-                    model: root.buildNodeList(false)
+                    model: root.presented ? Services.AudioService.devices(false) : []
 
                     delegate: Rectangle {
                         id: inDevDelegate

@@ -30,16 +30,18 @@ Components.Card {
         root.dateString = Qt.formatDate(now, "dddd, MMMM d");
     }
 
+    // Each second, when the colon blinks; without motion it stays and the clock wakes
+    // each minute.
     function scheduleNextTick() {
         clockTimer.stop();
         if (!root.presented)
             return;
 
         var now = new Date();
-        var nextSecond = new Date(now.getTime());
-        nextSecond.setMilliseconds(0);
-        nextSecond.setSeconds(nextSecond.getSeconds() + 1);
-        clockTimer.interval = Math.max(50, nextSecond.getTime() - now.getTime());
+        var next = new Date(now.getTime());
+        next.setMilliseconds(0);
+        next.setSeconds(ThemeModule.Theme.motion ? next.getSeconds() + 1 : 60);
+        clockTimer.interval = Math.max(50, next.getTime() - now.getTime());
         clockTimer.start();
     }
 
@@ -82,11 +84,21 @@ Components.Card {
         running: false
         repeat: false
         onTriggered: {
-            root.showColon = !root.showColon;
+            root.showColon = !root.showColon || !ThemeModule.Theme.motion;
             var now = new Date();
-            if (now.getSeconds() === 0) {
+            // A minute's tick may come a little early.
+            if (now.getSeconds() === 0 || !ThemeModule.Theme.motion) {
                 root.refreshTime();
             }
+            root.scheduleNextTick();
+        }
+    }
+
+    Connections {
+        target: ThemeModule.Theme
+
+        function onMotionChanged() {
+            root.showColon = true;
             root.scheduleNextTick();
         }
     }

@@ -197,8 +197,9 @@ Singleton {
         return setProperty("Appearance", surface + "TransitionSpeed", speed);
     }
 
-    function setTransitionFrameRate(frameRate) {
-        return setProperty("Appearance", "transitionFrameRate", frameRate);
+    // How much power Speshell may use: "maximum", "balanced", or "saver".
+    function setPowerMode(mode) {
+        return setProperty("Power", "mode", mode);
     }
 
     // One [Bar] key: position, height, width, margin, gap, or outline.
