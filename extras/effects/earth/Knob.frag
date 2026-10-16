@@ -15,6 +15,7 @@ layout(std140, binding = 0) uniform buf {
     vec4 cLight;
     vec4 cShade;
     vec4 cJade;
+    vec4 cGlint;
 } u;
 #include "../../lib/common.glsl"
 
@@ -48,7 +49,7 @@ void main() {
 
     // A jade vein across the stone.
     float vein = abs(q.y - 0.35 * q.x + R * 0.15 + 1.5 * sin(q.x * 0.9)) - 0.6 - 0.5 * u.glow;
-    col = mix(col, mix(u.cJade.rgb, vec3(1.0), 0.25 * u.glow), cover(-vein) * (0.55 + 0.45 * u.glow) * (1.0 - u.dim));
+    col = mix(col, mix(u.cJade.rgb, u.cGlint.rgb, 0.25 * u.glow), cover(-vein) * (0.55 + 0.45 * u.glow) * (1.0 - u.dim));
 
     vec4 o = vec4(u.cShade.rgb, 1.0) * cover(-d);
     o = vec4(col, 1.0) * cover(-d - 1.3) + o * (1.0 - cover(-d - 1.3));

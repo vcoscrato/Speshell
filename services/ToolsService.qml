@@ -22,7 +22,7 @@ Singleton {
     // Each tool's script in tools/, and the commands it needs.
     readonly property var catalog: [
         { id: "dictate", label: "Dictation", detail: "Speak, then type it out", iconName: "dictation",
-            requires: ["pw-record", "whisper-cli", "wtype", "wl-copy"] },
+            requires: ["pw-record", "whisper-cli", "wtype", "wl-copy"], types: true },
         { id: "ocr", label: "Copy text", detail: "Read the text in an area", iconName: "text-scan",
             requires: ["grim", "slurp", "tesseract", "wl-copy"] },
         { id: "screenshot", label: "Screenshot", detail: "Save and copy an area", iconName: "screenshot",
@@ -73,10 +73,6 @@ Singleton {
         return null;
     }
 
-    function isAvailable(id) {
-        return root.tools.some(function(tool) { return tool.id === id; });
-    }
-
     // Looks for the tools' commands again, so one installed since shows up.
     function probe() {
         if (probeProc.running)
@@ -121,9 +117,10 @@ Singleton {
     }
 
     // Runs tool `id` with `mode` (screenshot and record: "region" or "screen"; dictate:
-    // "cancel" or nothing). The dashboard and the bar's dropdowns close first, so the
-    // tool captures and types into what's under them; when one was open, the tool waits
-    // for it to go. Returns whether the tool is known and installed.
+    // "cancel" or nothing). The bar's dropdowns close first, and for dictation, which
+    // types into the focused window, the dashboard too; the capture tools take the
+    // dashboard as it shows. When one was open, the tool waits for it to go. Returns
+    // whether the tool is known and installed.
     function run(id, mode) {
         if (!root.probed) {
             root.pendingRun = { id: id, mode: mode };
@@ -132,7 +129,7 @@ Singleton {
         var tool = root.tool(id);
         if (!tool)
             return false;
-        if (!root.isAvailable(id)) {
+        if (root.tools.indexOf(tool) < 0) {
             var missing = tool.requires.filter(function(command) { return root.installedCommands.indexOf(command) < 0; });
             NotificationService.addInternalNotification("tool-" + id, tool.label + " unavailable",
                 "Install " + missing.join(", ") + " to use it.", true);
@@ -143,7 +140,7 @@ Singleton {
         if (mode)
             command.push(mode);
         var context = { command: command, environment: root.environment() };
-        if (DashboardService.dismissSurfaces()) {
+        if (DashboardService.dismissSurfaces(!tool.types)) {
             launchTimer.context = context;
             launchTimer.restart();
         } else {

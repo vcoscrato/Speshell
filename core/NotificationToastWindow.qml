@@ -22,18 +22,15 @@ PanelWindow {
 
     screen: root.targetScreen
 
-    // ── Prevent focus stealing from games and other apps ──
-    // Explicitly non-focusable: the toast must never take keyboard focus.
+    // Never takes focus, so toasts can't steal it from games and other apps.
     focusable: false
-    // Don't reserve exclusive screen space for notifications.
     exclusionMode: ExclusionMode.Ignore
 
-    // Anchor to the top right of the screen
     anchors {
         top: true
         right: true
     }
-    
+
     // Quickshell's type info hides the fields of PanelWindow.margins.
     // qmllint disable missing-property
     margins {
@@ -42,19 +39,16 @@ PanelWindow {
     }
     // qmllint enable missing-property
 
-    // Transparent background, resizing to fit contents
     color: "transparent"
     implicitWidth: 350
     implicitHeight: toastColumn.height
-    
-    // Only show if there are active popups
     visible: Services.NotificationService.activePopups.length > 0
 
     Column {
         id: toastColumn
         width: parent.width
         spacing: ThemeModule.Theme.spacingMedium
-        
+
         Repeater {
             model: Services.NotificationService.activePopups
 
@@ -85,29 +79,24 @@ PanelWindow {
                         ColorAnimation { duration: ThemeModule.Theme.animDuration }
                     }
                 }
-                
-                // Add an entrance animation
+
                 scale: 0.95
                 opacity: 0
-                Component.onCompleted: {
-                    entranceAnim.start()
-                }
-                
+                Component.onCompleted: entranceAnim.start()
+
                 ParallelAnimation {
                     id: entranceAnim
                     NumberAnimation { target: toastCard; property: "scale"; to: 1.0; duration: ThemeModule.Theme.animDuration; easing.type: Easing.OutBack }
                     NumberAnimation { target: toastCard; property: "opacity"; to: 1.0; duration: ThemeModule.Theme.animDuration }
                 }
 
-                // Click anywhere on the toast background to dismiss.
+                // A click runs the default action, or opens the app, and dismisses the toast.
                 MouseArea {
                     id: toastMouse
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: toastCard.modelData.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: {
-                        Services.NotificationService.activatePopup(toastCard.modelData.popupId)
-                    }
+                    onClicked: Services.NotificationService.activatePopup(toastCard.modelData.popupId)
                 }
 
                 Column {
@@ -210,9 +199,7 @@ PanelWindow {
                     iconColor: ThemeModule.Theme.overlay
                     hoverColor: ThemeModule.Theme.alpha(ThemeModule.Theme.error, ThemeModule.Theme.tintStrong)
                     tooltipText: "Dismiss notification"
-                    onClicked: {
-                        Services.NotificationService.dismissPopup(toastCard.modelData.popupId)
-                    }
+                    onClicked: Services.NotificationService.dismissPopup(toastCard.modelData.popupId)
                 }
             }
         }

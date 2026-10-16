@@ -17,7 +17,6 @@ Singleton {
     readonly property string name: root.dir.substring(root.dir.lastIndexOf("/") + 1)
 
     property var current: null
-    property string error: ""
 
     // Power saver turns every moving part off; the still backdrop stays.
     readonly property bool enabled: AppServices.PowerService.mode !== "saver"
@@ -57,7 +56,7 @@ Singleton {
 
     // Every part is optional; the dashboard parts came after API v1's transitions.
     function optional(name) {
-        return root.current && (name in root.current) && root.current[name] ? root.current[name] : null;
+        return root.current && root.current[name] || null;
     }
 
     // A transition from the old effects may still be playing, for example the launcher
@@ -69,17 +68,16 @@ Singleton {
     }
 
     function fail(message) {
-        root.error = message;
         AppServices.NotificationService.addInternalNotification("effects", "Effects unavailable", message);
     }
 
+    // Untyped, since qmllint only knows createObject() returns a QObject.
     function declaredApi(effectsObject) {
         return effectsObject.apiVersion;
     }
 
     function load() {
         root.unload();
-        root.error = "";
         if (root.dir === "")
             return;
 

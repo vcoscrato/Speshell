@@ -71,7 +71,6 @@ Item {
     }
 
     Flames {
-
         theme: root.theme
         anchors.fill: parent
         time: clock.simTime

@@ -16,14 +16,11 @@ layout(std140, binding = 0) uniform buf {
     vec4 cShade;
     vec4 cDust;
     vec4 cJade;
+    vec4 cGlint;
 } u;
 #include "../../lib/common.glsl"
 
 const vec2 LIGHT = vec2(-0.55, -0.83);
-
-vec4 over(vec4 under, vec3 col, float a) {
-    return vec4(col, 1.0) * a + under * (1.0 - a);
-}
 
 // A lopsided, faceted stone of radius about R: the top face and the side faces, each
 // shaded by where it faces, with a dark outline.
@@ -66,7 +63,7 @@ vec4 shard(vec2 p, float R) {
     float w = R * 0.42;
     float d = max(abs(p.x) - w, abs(p.y) + abs(p.x) * 1.3 - R);
     vec3 col = p.x < 0.0 ? mix(u.cJade.rgb, u.cLight.rgb, 0.35) : mix(u.cJade.rgb, u.cShade.rgb, 0.3);
-    col = mix(col, vec3(1.0), 0.6 * cover(0.7 - abs(p.x + w * 0.45)) * step(abs(p.y), R * 0.5));
+    col = mix(col, u.cGlint.rgb, 0.6 * cover(0.7 - abs(p.x + w * 0.45)) * step(abs(p.y), R * 0.5));
     vec4 c = over(vec4(0.0), u.cShade.rgb, cover(-d));
     return over(c, col, cover(-d - 1.0));
 }

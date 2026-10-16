@@ -18,7 +18,7 @@ The themes and effects Speshell ships, the paintings behind their wallpapers, an
 | `themes/<theme>/` | `theme.ini` (name, palette, `effects = <name>`) and the rendered wallpaper `<painting>.jpg` | yes | designers: palettes; artists: commit the wallpaper they render |
 | `paintings/` | `<painting>.frag`, one shader per wallpaper, and `landscape.glsl`, the helpers they share | no | artists |
 | `effects/<name>/` | Launcher, wallpaper, and dashboard transitions, the dashboard backdrop, and the effects on the dashboard's controls. See [effects/README.md](effects/README.md) | yes | effects developers |
-| `lib/` | `common.glsl` (noise, signed distances, banding, Voronoi), `EffectClock.qml`, `Particles.qml`, and `Colors.js`, shared by every effect | yes | effects developers; a change here touches every effect |
+| `lib/` | `common.glsl` (noise, signed distances, banding, compositing, Voronoi, rounded-rect borders), `EffectClock.qml`, `Particles.qml`, and `Colors.js`, shared by every effect | yes | effects developers; a change here touches every effect |
 | `lab/` | The offscreen harness, scenes, and scripts behind the `just` recipes; renders go to `~/.cache/speshell-lab/` (`LAB_OUT`), outside the checkout | no | anyone improving the tooling |
 
 The package installs `themes/`, `effects/`, and `lib/` to `/usr/share/speshell/extras`. Nothing else in this directory ships. Keep sources and tools out of those three directories.
@@ -59,7 +59,7 @@ just preview water wallpaper
 just preview earth dashboard             # in the theme of the same name, over its wallpaper
 just preview earth controls              # sliders, switches, and picks, at twice the size
 just preview earth picks                 # picks up close: a bar's clock clicked near its end, a row, a sidebar panel
-just check                               # every effect and scene
+just check                               # every effect in every scene but picks
 just perf fire launcher                  # GPU time per frame at 1080p
 ```
 

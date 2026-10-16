@@ -49,7 +49,6 @@ Singleton {
                 + "config_dir=\"$config_root/speshell\"; "
                 + "data_dir=\"$data_root/speshell\"; "
                 + "ini_file=\"$config_dir/config.ini\"; "
-                + "mkdir -p \"$config_root\" \"$data_root\" || exit 20; "
                 + "mkdir -p \"$config_dir\" \"$data_dir\" || exit 20; "
                 + "printf '%s\\n%s\\n' \"$config_dir\" \"$data_dir\"; "
                 + "if [ ! -e \"$ini_file\" ] && [ ! -L \"$ini_file\" ]; then "
@@ -173,66 +172,6 @@ Singleton {
         root.operationFailed = false;
         root.operationMessage = "";
         console.info("[Speshell] Applied config.ini changes.");
-    }
-
-    function setTextScale(scale) {
-        return setProperty("Appearance", "textScale", scale);
-    }
-
-    function setPanelWidth(width) {
-        return setProperty("Appearance", "panelWidth", width);
-    }
-
-    function setAudioScrollStep(step) {
-        return setProperty("Audio", "scrollStep", step);
-    }
-
-    function setShuffleAtLaunch(mode) {
-        return setProperty("Appearance", "shuffleAtLaunch", mode);
-    }
-
-    // The speed of one surface's transitions ("launcher", "dashboard", or "wallpaper"):
-    // a multiple of their normal speed; 0 turns them off.
-    function setTransitionSpeed(surface, speed) {
-        return setProperty("Appearance", surface + "TransitionSpeed", speed);
-    }
-
-    // How much power Speshell may use: "maximum", "balanced", or "saver".
-    function setPowerMode(mode) {
-        return setProperty("Power", "mode", mode);
-    }
-
-    // One [Bar] key: position, height, width, margin, gap, or outline.
-    function setBar(key, value) {
-        return setProperty("Bar", key, value);
-    }
-
-    function setDrawWallpaper(enabled) {
-        return setProperty("Appearance", "drawWallpaper", enabled ? "true" : "false");
-    }
-
-    function setWeatherEnabled(enabled) {
-        return setProperty("Weather", "enabled", enabled ? "true" : "false");
-    }
-
-    function setWeatherLocation(location) {
-        return setProperty("Weather", "location", location);
-    }
-
-    function setMaxVisibleNotification(count) {
-        return setProperty("Notifications", "maxVisible", count);
-    }
-
-    function setLauncherRows(rows) {
-        return setProperty("Launcher", "visibleRows", rows);
-    }
-
-    function setLauncherWidth(width) {
-        return setProperty("Launcher", "width", width);
-    }
-
-    function setLauncherSearchUrl(url) {
-        return setProperty("Launcher", "searchUrl", url);
     }
 
     function finishConfigWrite(succeeded) {

@@ -27,19 +27,13 @@ vec3 sky(float t) {
     return mix(d, e, (t - 0.68) / 0.32);
 }
 
-// Piecewise-linear noise: straight runs between random kinks, as a bolt zigzags.
-float zig(float y, float seg, float seed) {
-    float i = floor(y / seg), f = fract(y / seg);
-    return mix(hash(vec2(i, seed)), hash(vec2(i + 1.0, seed)), f) - 0.5;
-}
-
 // Signed horizontal offset of p from a bolt that falls from y0 to y1 around x(y),
 // and its slope there; returns (distance across, 0..1 along from the top).
 vec2 boltDist(vec2 p, float x0, float x1, float y0, float y1, float amp, float seed) {
     float t = (y0 - p.y) / (y0 - y1);
     float e = 0.0015;
-    float bx = mix(x0, x1, t) + amp * (zig(p.y, 0.035, seed) + 0.45 * zig(p.y, 0.011, seed + 3.0));
-    float bx2 = mix(x0, x1, t + e / (y0 - y1)) + amp * (zig(p.y - e, 0.035, seed) + 0.45 * zig(p.y - e, 0.011, seed + 3.0));
+    float bx = mix(x0, x1, t) + amp * (zig(p.y / 0.035, seed) + 0.45 * zig(p.y / 0.011, seed + 3.0));
+    float bx2 = mix(x0, x1, t + e / (y0 - y1)) + amp * (zig((p.y - e) / 0.035, seed) + 0.45 * zig((p.y - e) / 0.011, seed + 3.0));
     float slope = (bx2 - bx) / e;
     return vec2(abs(p.x - bx) / sqrt(1.0 + slope * slope), t);
 }
@@ -84,17 +78,12 @@ vec2 mesaTop(Mesa m, float x) {
     return vec2(h, clamp(d / w, -1.0, 1.0));
 }
 
-float sdSegment(vec2 p, vec2 a, vec2 b) {
-    vec2 pa = p - a, ba = b - a;
-    return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0));
-}
-
 // Signed distance to a saguaro at base b (q units) of height h: a trunk and up to
 // two arms that bend up at a rounded elbow.
 float saguaro(vec2 q, vec2 b, float h, float seed) {
     vec2 p = q - b;
     float w = h * 0.075;
-    float d = sdSegment(p, vec2(0.0, -w), vec2(0.0, h - w)) - w;
+    float d = sdSeg(p, vec2(0.0, -w), vec2(0.0, h - w)) - w;
     for (int i = 0; i < 2; i++) {
         float side = i == 0 ? -1.0 : 1.0;
         if (seed > 2.5 && hash(vec2(seed, float(i))) < 0.3)
@@ -104,8 +93,8 @@ float saguaro(vec2 q, vec2 b, float h, float seed) {
         float top = ay + h * mix(0.2, 0.36, hash(vec2(seed, float(i) + 8.0)));
         float aw = w * 0.78;
         float elbow = abs(ax) * 0.45;
-        float arm = min(sdSegment(p, vec2(0.0, ay), vec2(ax - side * elbow, ay)),
-                        sdSegment(p, vec2(ax, ay + elbow), vec2(ax, top)));
+        float arm = min(sdSeg(p, vec2(0.0, ay), vec2(ax - side * elbow, ay)),
+                        sdSeg(p, vec2(ax, ay + elbow), vec2(ax, top)));
         // The elbow: a quarter circle joining the two.
         vec2 e = p - vec2(ax - side * elbow, ay + elbow);
         if (e.y < 0.0 && e.x * side > 0.0)
@@ -241,7 +230,7 @@ void main() {
         float len = (0.06 + 0.08 * hash(vec2(fi, 22.0)));
         float side = mod(fi, 2.0) < 1.0 ? -1.0 : 1.0;
         float tb = (yb - HORIZON) / (boltTop - HORIZON);
-        float xb = mix(aspect * 0.24, bx0, tb) + 0.05 * (zig(yb, 0.035, 1.0) + 0.45 * zig(yb, 0.011, 4.0));
+        float xb = mix(aspect * 0.24, bx0, tb) + 0.05 * (zig(yb / 0.035, 1.0) + 0.45 * zig(yb / 0.011, 4.0));
         vec2 br = boltDist(q, xb, xb + side * len * 0.9, yb, yb - len, 0.02, 7.0 + fi);
         if (br.y > 0.0 && br.y < 1.0) {
             float w = 0.0016 * (1.0 - br.y);

@@ -39,23 +39,21 @@ Singleton {
         stateProc.running = true;
     }
 
-    // The regular workspaces on `monitorName` (all monitors when empty) from hyprctl's
-    // -j monitors, workspaces, and clients, in id order. The monitor's active workspace
-    // is listed even when empty. Each workspace is { id, name, monitor, active, apps, title }:
-    // apps are its window classes, each once, tiled before floating and in reading
-    // order, and title is that of its last focused window. Each also names its monitor.
-    function overview(monitors, workspaces, clients, monitorName) {
+    // The regular workspaces from hyprctl's -j monitors, workspaces, and clients, in id
+    // order. Each monitor's active workspace is listed even when empty. Each workspace is
+    // { id, name, monitor, active, apps, title }: apps are its window classes, each once,
+    // tiled before floating and in reading order, and title is that of its last focused window.
+    function overview(monitors, workspaces, clients) {
         var activeIds = ({});
         (monitors || []).forEach(function(monitor) {
             if (monitor.activeWorkspace)
                 activeIds[monitor.name] = monitor.activeWorkspace.id;
         });
-        var target = monitorName || "";
 
         var byId = ({});
         var result = [];
         var add = function(id, name, monitor) {
-            if (byId[id] || id <= 0 || (target !== "" && monitor !== target))
+            if (byId[id] || id <= 0)
                 return;
             byId[id] = { id: id, name: String(name || id), monitor: String(monitor || ""),
                          active: activeIds[monitor] === id,
@@ -100,8 +98,7 @@ Singleton {
         var parts = String(text || "").split("\u001e");
         var monitorName = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : "";
         try {
-            const list = root.overview(JSON.parse(parts[0]), JSON.parse(parts[1]),
-                                       JSON.parse(parts[2]), "");
+            const list = root.overview(JSON.parse(parts[0]), JSON.parse(parts[1]), JSON.parse(parts[2]));
             const read = JSON.stringify(list);
             if (read !== root.lastRead) {
                 root.lastRead = read;
@@ -140,15 +137,12 @@ Singleton {
         return Quickshell.iconPath(entry && entry.icon ? entry.icon : name.toLowerCase(), true);
     }
 
-    function dispatch(argument) {
-        Quickshell.execDetached(["hyprctl", "dispatch", argument]);
-    }
-
     // Shows the workspace, under the dashboard if it is open. Hyprland keeps a special workspace open
     // across this, but closes it when a window outside it takes focus, so the overview
     // never focuses windows.
     function focusWorkspace(id) {
-        root.dispatch(Hyprland.usingLua ? "hl.dsp.focus({ workspace = " + Number(id) + " })" : "workspace " + Number(id));
+        Quickshell.execDetached(["hyprctl", "dispatch",
+            Hyprland.usingLua ? "hl.dsp.focus({ workspace = " + Number(id) + " })" : "workspace " + Number(id)]);
     }
 
     onWatchingChanged: if (root.watching) root.refresh()

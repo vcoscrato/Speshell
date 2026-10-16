@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell.Networking
 import "../components" as Components
 import "../theme" as ThemeModule
 import "../services" as Services
@@ -10,9 +9,9 @@ Components.Card {
     id: root
     title: "Network"
     iconName: "wifi"
-    collapsible: true
     property bool presented: false
     readonly property var network: Services.NetworkService
+    readonly property var vpn: Services.VpnService
     readonly property bool wifiReady: root.network.wifiOn && root.network.wifiDevice !== null
     readonly property bool connecting: root.network.connectingNetwork !== null && root.network.connectedWifi === null
 
@@ -33,11 +32,8 @@ Components.Card {
         Components.ToggleSwitch {
             visible: root.network.wifiDevice !== null
             checked: root.network.wifiOn
-            activeColor: ThemeModule.Theme.accent
             tooltipText: root.network.wifiOn ? "Turn Wi-Fi off" : "Turn Wi-Fi on"
-            onToggled: function(state) {
-                Networking.wifiEnabled = state;
-            }
+            onToggled: function(state) { root.network.setWifiEnabled(state); }
         }
     }
 
@@ -75,6 +71,121 @@ Components.Card {
             primaryEnabled: false
         },
 
+        Repeater {
+            model: root.vpn.connections
+            delegate: Components.DeviceRow {
+                id: vpnRow
+                required property var modelData
+                readonly property bool connected: vpnRow.modelData.state === "activated"
+                readonly property var prompt: root.vpn.promptFor(vpnRow.modelData.uuid)
+                readonly property bool failed: root.vpn.errorUuid === vpnRow.modelData.uuid && root.vpn.errorText !== ""
+
+                title: vpnRow.modelData.name
+                subtitle: root.vpn.subtitle(vpnRow.modelData)
+                iconName: "vpn"
+                current: vpnRow.connected
+                busy: root.vpn.busy(vpnRow.modelData)
+                primaryEnabled: !vpnRow.connected && !vpnRow.busy
+                actionChips: {
+                    if (vpnRow.connected && !vpnRow.busy)
+                        return [{ text: "Disconnect", tone: "neutral", actionId: "disconnect" }];
+                    if (vpnRow.failed && root.vpn.errorCanRetry)
+                        return [{ text: "Enter password", tone: "neutral", actionId: "retry" }];
+                    return [];
+                }
+                onPrimaryTriggered: {
+                    if (vpnRow.prompt)
+                        root.vpn.cancel();
+                    else
+                        root.vpn.connect(vpnRow.modelData.uuid, false);
+                }
+                onActionTriggered: actionId => {
+                    if (actionId === "retry")
+                        root.vpn.connect(vpnRow.modelData.uuid, true);
+                    else
+                        root.vpn.disconnect(vpnRow.modelData.uuid);
+                }
+
+                Text {
+                    visible: !!vpnRow.prompt && vpnRow.prompt.message !== ""
+                    width: parent.width
+                    text: vpnRow.prompt ? vpnRow.prompt.message : ""
+                    font.pixelSize: ThemeModule.Theme.fontSizeCaption
+                    font.family: ThemeModule.Theme.fontFamily
+                    color: vpnRow.prompt && vpnRow.prompt.kind === "login" ? ThemeModule.Theme.error : ThemeModule.Theme.subtext
+                    wrapMode: Text.WordWrap
+                }
+
+                Components.InlinePrompt {
+                    id: vpnUser
+                    visible: !!vpnRow.prompt && vpnRow.prompt.kind === "login" && vpnRow.prompt.needUser
+                    placeholder: "Username"
+                    masked: false
+                    showActions: false
+                    onVisibleChanged: if (visible) text = vpnRow.prompt.user
+                    onAccepted: vpnPassword.focusInput()
+                    onCancelled: root.vpn.cancel()
+                }
+
+                Components.InlinePrompt {
+                    id: vpnPassword
+                    visible: !!vpnRow.prompt && vpnRow.prompt.kind === "login"
+                    autoFocus: !vpnUser.visible
+                    onAccepted: root.vpn.submitLogin(vpnUser.text, vpnPassword.text)
+                    onCancelled: root.vpn.cancel()
+                }
+
+                Components.InlinePrompt {
+                    visible: !!vpnRow.prompt && vpnRow.prompt.kind === "question"
+                    placeholder: vpnRow.prompt ? vpnRow.prompt.label : ""
+                    masked: !!vpnRow.prompt && vpnRow.prompt.masked
+                    onAccepted: root.vpn.answer(text)
+                    onCancelled: root.vpn.cancel()
+                }
+
+                Flow {
+                    visible: !!vpnRow.prompt && vpnRow.prompt.kind === "choice"
+                    width: parent.width
+                    spacing: ThemeModule.Theme.spacingTiny
+
+                    Text {
+                        height: choiceCancel.height
+                        verticalAlignment: Text.AlignVCenter
+                        text: vpnRow.prompt && vpnRow.prompt.kind === "choice" ? vpnRow.prompt.label : ""
+                        font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                        font.family: ThemeModule.Theme.fontFamily
+                        color: ThemeModule.Theme.subtext
+                    }
+
+                    Repeater {
+                        model: vpnRow.prompt && vpnRow.prompt.kind === "choice" ? vpnRow.prompt.choices : []
+                        delegate: Components.InlineActionChip {
+                            required property string modelData
+                            text: modelData
+                            tone: "accent"
+                            onActivated: root.vpn.answer(modelData)
+                        }
+                    }
+
+                    Components.InlineActionChip {
+                        id: choiceCancel
+                        text: "Cancel"
+                        onActivated: root.vpn.cancel()
+                    }
+                }
+
+                Text {
+                    visible: vpnRow.failed
+                    width: parent.width
+                    text: root.vpn.errorText
+                    font.pixelSize: ThemeModule.Theme.fontSizeCaption
+                    font.family: ThemeModule.Theme.fontFamily
+                    color: ThemeModule.Theme.error
+                    wrapMode: Text.WordWrap
+                }
+            }
+        },
+
         Text {
             visible: root.network.connectError !== "" && root.network.passwordRowName === ""
             width: parent.width
@@ -99,7 +210,7 @@ Components.Card {
             detail: "Turn it on to see networks nearby."
             actionLabel: "Turn on Wi-Fi"
             actionIconName: "wifi"
-            onActivated: Networking.wifiEnabled = true
+            onActivated: root.network.setWifiEnabled(true)
         }
     ]
 
@@ -140,71 +251,12 @@ Components.Card {
                             networkRow.modelData.network.forget();
                     }
 
-                    Rectangle {
+                    Components.InlinePrompt {
                         visible: networkRow.prompting
-                        width: parent.width
-                        height: ThemeModule.Theme.controlHeight
-                        radius: ThemeModule.Theme.borderRadiusSmall
-                        color: ThemeModule.Theme.card
-                        border.width: ThemeModule.Theme.borderWidth
-                        border.color: passwordInput.activeFocus ? ThemeModule.Theme.accent : ThemeModule.Theme.cardHover
-
-                        TextInput {
-                            id: passwordInput
-                            anchors.left: parent.left
-                            anchors.right: promptActions.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.leftMargin: ThemeModule.Theme.spacingSmall
-                            anchors.rightMargin: ThemeModule.Theme.spacingSmall
-                            text: root.network.passwordText
-                            echoMode: TextInput.Password
-                            color: ThemeModule.Theme.text
-                            selectionColor: ThemeModule.Theme.accent
-                            selectedTextColor: ThemeModule.Theme.bg
-                            font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                            font.family: ThemeModule.Theme.fontFamily
-                            clip: true
-                            onTextChanged: root.network.passwordText = text
-                            onAccepted: root.network.requestConnectForItem(networkRow.modelData, root.network.passwordText)
-                            Keys.onEscapePressed: root.network.cancelPasswordPrompt()
-
-                            Component.onCompleted: {
-                                if (networkRow.prompting)
-                                    passwordInput.forceActiveFocus();
-                            }
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Password"
-                                color: ThemeModule.Theme.overlay
-                                font: passwordInput.font
-                                visible: passwordInput.text === ""
-                            }
-                        }
-
-                        Row {
-                            id: promptActions
-                            anchors.right: parent.right
-                            anchors.rightMargin: ThemeModule.Theme.spacingTiny
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: ThemeModule.Theme.spacingTiny
-
-                            Components.InlineActionChip {
-                                text: "Connect"
-                                tone: "success"
-                                onActivated: root.network.requestConnectForItem(networkRow.modelData, root.network.passwordText)
-                            }
-
-                            Components.InlineActionChip {
-                                text: "Cancel"
-                                onActivated: root.network.cancelPasswordPrompt()
-                            }
-                        }
-
-                        onVisibleChanged: {
-                            if (visible)
-                                passwordInput.forceActiveFocus();
-                        }
+                        text: root.network.passwordText
+                        onTextChanged: root.network.passwordText = text
+                        onAccepted: root.network.requestConnectForItem(networkRow.modelData, root.network.passwordText)
+                        onCancelled: root.network.cancelPasswordPrompt()
                     }
 
                     Text {

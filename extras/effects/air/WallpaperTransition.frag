@@ -15,6 +15,7 @@ layout(std140, binding = 0) uniform buf {
     float spin;
     vec4 cRim;
     vec4 cHaze;
+    vec4 cGlint;
 } u;
 layout(binding = 1) uniform sampler2D source;
 #include "../../lib/common.glsl"
@@ -39,6 +40,6 @@ void main() {
     float band2 = 1.0 - smoothstep(6.0 - aa, 6.0 + aa, out_);
     col.rgb = mix(col.rgb, u.cHaze.rgb * col.a, haze * 0.35);
     col.rgb = mix(col.rgb, u.cRim.rgb * col.a, band1 * 0.55);
-    col.rgb = mix(col.rgb, vec3(1.0) * col.a, band2 * 0.9);
+    col.rgb = mix(col.rgb, u.cGlint.rgb * col.a, band2 * 0.9);
     fragColor = col * smoothstep(-aa, aa, out_) * u.qt_Opacity;
 }

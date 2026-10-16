@@ -1,5 +1,4 @@
 import QtQuick
-import "common"
 
 // Relâmpago's effects on the dashboard's controls. A knob dragged along a slider
 // throws sparks off behind it with arcs of electricity crackling into it; let go,

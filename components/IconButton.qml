@@ -11,10 +11,8 @@ Rectangle {
     property color hoverColor: ThemeModule.Theme.cardHover
     property real size: ThemeModule.Theme.controlHeight
     property real iconXOffset: 0
-    property real iconYOffset: 0
     property bool iconSpinning: false
     property string tooltipText: ""
-    property int tooltipDelay: 300
     property alias containsMouse: mouseArea.containsMouse
 
     signal clicked()
@@ -42,7 +40,6 @@ Rectangle {
         id: iconContainer
         anchors.centerIn: parent
         anchors.horizontalCenterOffset: root.iconXOffset
-        anchors.verticalCenterOffset: root.iconYOffset
         width: root.size
         height: root.size
         scale: mouseArea.pressed ? 0.85 : 1.0
@@ -80,6 +77,5 @@ Rectangle {
     Components.Tooltip {
         visible: root.tooltipText !== "" && mouseArea.containsMouse
         text: root.tooltipText
-        delay: root.tooltipDelay
     }
 }

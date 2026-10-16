@@ -52,7 +52,13 @@ timestamped_file() {
   printf '%s/%s/%s_%s' "$base" "$2" "$3" "$(date +%Y-%m-%d_%H-%M-%S)"
 }
 
-# Opens a file or URL with the desktop's default app.
-open_with_default() {
-  setsid -f xdg-open "$1" >/dev/null 2>&1 || true
+# A toast that offers to open $3, a file or URL, with the desktop's default app.
+notify_open() {
+  if command -v xdg-open >/dev/null 2>&1; then
+    if [[ "$(notify "$1" "$2" "open=Open")" == open ]]; then
+      setsid -f xdg-open "$3" >/dev/null 2>&1 || true
+    fi
+  else
+    notify "$1" "$2"
+  fi
 }

@@ -30,12 +30,6 @@ float frontX(float y) {
     return u.front * (u.size.x + LAG + 120.0) - 60.0 - lag;
 }
 
-float sdLeaf(vec2 p, float r, float d) {
-    p = abs(p);
-    float b = sqrt(r * r - d * d);
-    return ((p.y - b) * d > p.x * b) ? length(p - vec2(0.0, b)) : length(p - vec2(-d, 0.0)) - r;
-}
-
 void main() {
     vec2 p = qt_TexCoord0 * u.size;
     // Rows sway as the gust passes, so the streaks bend.

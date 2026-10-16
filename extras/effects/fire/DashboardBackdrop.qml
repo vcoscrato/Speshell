@@ -11,7 +11,6 @@ ShaderEffect {
     property size size: Qt.size(width, height)
     property color cBase: root.theme ? root.theme.bg : "#282828"
     property color cDeep: root.theme ? root.theme.crust : "#1b1b1b"
-    property color cText: root.theme ? root.theme.text : "#ebdbb2"
     property color cAccent: root.theme ? root.theme.accent : "#fe8019"
     property color cEmber: root.theme ? root.theme.peach : "#fe8019"
     property color cFlame: root.theme ? root.theme.error : "#fb4934"

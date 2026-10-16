@@ -21,7 +21,6 @@ Item {
     property bool done: false
 
     EffectClock {
-        id: clock
         onAdvanced: function(dt) {
             // Finish a tick after the settled panel has drawn, so nothing jumps when
             // the entrance goes.

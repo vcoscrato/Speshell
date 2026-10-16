@@ -5,7 +5,6 @@ import "../theme" as ThemeModule
 
 Components.Card {
     id: root
-    title: ""
 
     property int displayYear: new Date().getFullYear()
     property int displayMonth: new Date().getMonth()

@@ -7,11 +7,9 @@ import "../theme" as ThemeModule
 T.ToolTip {
     id: root
 
-    property real maxWidth: 260
-
     x: parent ? (parent.width - width) / 2 : 0
     y: -height - ThemeModule.Theme.spacingTiny
-    width: Math.min(implicitWidth, root.maxWidth)
+    width: Math.min(implicitWidth, 260)
     implicitWidth: implicitContentWidth + leftPadding + rightPadding
     implicitHeight: implicitContentHeight + topPadding + bottomPadding
     margins: ThemeModule.Theme.spacingTiny

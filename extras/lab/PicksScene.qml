@@ -54,7 +54,6 @@ Item {
     }
 
     Item {
-        id: stage
         x: 16
         y: 16
         width: 420
@@ -242,7 +241,6 @@ Item {
 
         // The pointer, pressing.
         Canvas {
-            id: cursor
             x: root.pointer.x - 1
             y: root.pointer.y - 1
             width: 14

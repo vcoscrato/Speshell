@@ -10,12 +10,10 @@ Singleton {
     property var history: []
     property bool viewPresented: false
     property bool historyDirty: true
-    property bool loading: false
     property bool available: true
     property bool liveUpdatesAvailable: true
     property int maxItems: 40
     property bool refreshQueued: false
-    property bool queuedLoadingIndicator: false
     property string feedbackText: ""
     property string feedbackTone: "neutral"
     property string lastCopiedId: ""
@@ -88,12 +86,6 @@ Singleton {
         }
     }
 
-    function startWatching() {
-        if (!clipboardWatchProc.running) {
-            clipboardWatchProc.running = true;
-        }
-    }
-
     function setViewPresented(presented) {
         var next = !!presented;
         if (root.viewPresented === next)
@@ -106,7 +98,7 @@ Singleton {
                 root.feedbackTone = "warning";
             }
             if (root.historyDirty)
-                root.refresh(false);
+                root.refresh();
         } else {
             clipboardChangeDebounce.stop();
         }
@@ -119,7 +111,7 @@ Singleton {
         interval: 200
         running: false
         repeat: false
-        onTriggered: root.refresh(false)
+        onTriggered: root.refresh()
     }
 
     Timer {
@@ -127,7 +119,7 @@ Singleton {
         interval: 30000
         running: false
         repeat: false
-        onTriggered: root.startWatching()
+        onTriggered: clipboardWatchProc.running = true
     }
 
     Process {
@@ -139,7 +131,7 @@ Singleton {
                 + "&& command -v cliphist >/dev/null 2>&1 "
                 + "&& exec wl-paste --watch sh -c 'cliphist store && printf \\\"%s\\\\n\\\" \\\"$CLIPBOARD_STATE\\\"'"
         ]
-        running: false
+        running: true
 
         stdout: SplitParser {
             onRead: {
@@ -167,24 +159,13 @@ Singleton {
         }
     }
 
-    Component.onCompleted: root.startWatching()
-
-    function refresh(showLoadingIndicator) {
-        var showIndicator = showLoadingIndicator === undefined
-            ? true
-            : Boolean(showLoadingIndicator);
-
+    function refresh() {
         if (cliphistListProc.running) {
             root.refreshQueued = true;
-            root.queuedLoadingIndicator = root.queuedLoadingIndicator || showIndicator;
-            if (showIndicator) {
-                root.loading = true;
-            }
             return;
         }
 
         root.historyDirty = false;
-        root.loading = showIndicator;
         cliphistListProc.running = true;
     }
 
@@ -192,14 +173,7 @@ Singleton {
         id: cliphistListProc
         command: ["sh", "-c", "cliphist list | head -n \"$1\"", "speshell-cliphist", String(root.maxItems)]
         running: false
-        
-        property string buffer: ""
-        
-        stdout: SplitParser {
-            onRead: function(data) {
-                cliphistListProc.buffer += data + "\n";
-            }
-        }
+        stdout: StdioCollector { id: cliphistListOutput }
 
         onExited: function(exitCode) {
             root.available = exitCode === 0;
@@ -211,10 +185,8 @@ Singleton {
                     root.feedbackText = "Clipboard history is unavailable.";
                     root.feedbackTone = "warning";
                 }
-                cliphistListProc.buffer = "";
             } else {
-                var lines = cliphistListProc.buffer.split("\n");
-                cliphistListProc.buffer = "";
+                var lines = cliphistListOutput.text.split("\n");
                 var newHistory = [];
                 // Keep decoded thumbnails, so a refresh doesn't blank the images.
                 var thumbnails = {};
@@ -238,12 +210,8 @@ Singleton {
             }
 
             if (root.refreshQueued) {
-                var showIndicator = root.queuedLoadingIndicator;
                 root.refreshQueued = false;
-                root.queuedLoadingIndicator = false;
-                root.refresh(showIndicator);
-            } else {
-                root.loading = false;
+                root.refresh();
             }
         }
     }
@@ -282,7 +250,7 @@ Singleton {
             if (exitCode === 0) {
                 if (root.pendingCopyId !== "") {
                     root.lastCopiedId = root.pendingCopyId;
-                    root.refresh(false);
+                    root.refresh();
                 }
                 root.feedbackText = "Copied to the clipboard.";
                 root.feedbackTone = "success";
@@ -295,10 +263,6 @@ Singleton {
     }
 
     function clearHistory() {
-        if (clearProc.running) {
-            return;
-        }
-
         clearProc.running = true;
     }
 
@@ -311,7 +275,7 @@ Singleton {
                 root.feedbackText = "";
                 root.feedbackTone = "neutral";
                 root.history = [];
-                root.refresh(false);
+                root.refresh();
             } else {
                 root.feedbackText = "Failed to clear history.";
                 root.feedbackTone = "error";

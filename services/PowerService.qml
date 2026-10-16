@@ -25,10 +25,7 @@ Singleton {
 
     property string lockerPurpose: ""
     property string lockerProbeTarget: ""
-    property string queuedLockerProbeTarget: ""
     property string checkedLockerExecutable: ""
-
-    signal actionCompleted(string action)
 
     function actionLabel(action) {
         if (action === "lock") return "Lock";
@@ -47,10 +44,6 @@ Singleton {
         return firstLine !== "" ? firstLine : fallback;
     }
 
-    function clearFeedback() {
-        root.errorMessage = "";
-    }
-
     function fail(message) {
         lockerReadyTimer.stop();
         root.busy = false;
@@ -59,11 +52,10 @@ Singleton {
         root.errorMessage = message;
     }
 
-    function finish(action) {
+    function finish() {
         root.busy = false;
         root.activeAction = "";
         root.lockerPurpose = "";
-        root.actionCompleted(action);
     }
 
     function probeLocker() {
@@ -71,7 +63,6 @@ Singleton {
         var executable = command.length > 0 ? String(command[0]).trim() : "";
 
         if (executable === "") {
-            root.queuedLockerProbeTarget = "";
             root.checkedLockerExecutable = "";
             root.lockerAvailable = false;
             root.lockerChecking = false;
@@ -87,20 +78,18 @@ Singleton {
         if (root.checkedLockerExecutable !== executable)
             root.lockerAvailable = false;
 
-        if (lockerProbe.running) {
-            root.queuedLockerProbeTarget = executable;
+        // A running probe checks again for this one when it ends.
+        if (lockerProbe.running)
             return;
-        }
 
         root.lockerProbeTarget = executable;
-        root.queuedLockerProbeTarget = "";
         lockerProbe.command = ["which", executable];
         lockerProbe.running = true;
     }
 
     function startLocker(purpose) {
         if (!root.lockerAvailable) {
-            root.fail("Screen locker unavailable. Check powerMenu.lockCommand.");
+            root.fail("Screen locker unavailable. Check [Power] lockCommand.");
             return false;
         }
         if (lockerProcess.running) {
@@ -119,7 +108,7 @@ Singleton {
         if (root.busy)
             return false;
 
-        root.clearFeedback();
+        root.errorMessage = "";
         root.busy = true;
         root.activeAction = action;
 
@@ -166,7 +155,7 @@ Singleton {
             }
 
             if (purpose === "lock") {
-                root.finish("lock");
+                root.finish();
                 return;
             }
 
@@ -183,21 +172,17 @@ Singleton {
             var completedTarget = root.lockerProbeTarget;
             var command = root.lockCommand || [];
             var desiredTarget = command.length > 0 ? String(command[0]).trim() : "";
-            var queuedTarget = root.queuedLockerProbeTarget;
             root.lockerProbeTarget = "";
-            root.queuedLockerProbeTarget = "";
 
             if (completedTarget === desiredTarget) {
                 root.checkedLockerExecutable = completedTarget;
                 root.lockerAvailable = exitCode === 0;
             }
 
-            if (desiredTarget !== completedTarget
-                    || (queuedTarget !== "" && queuedTarget !== completedTarget)) {
+            if (desiredTarget !== completedTarget)
                 Qt.callLater(root.probeLocker);
-            } else {
+            else
                 root.lockerChecking = false;
-            }
         }
     }
 
@@ -224,7 +209,7 @@ Singleton {
             if (root.activeAction !== "sleep")
                 return;
             if (exitCode === 0)
-                root.finish("sleep");
+                root.finish();
             else
                 root.fail(root.commandError(suspendError, "Could not suspend the system."));
         }
@@ -245,7 +230,7 @@ Singleton {
                 ));
                 return;
             }
-            root.finish(action);
+            root.finish();
         }
     }
 

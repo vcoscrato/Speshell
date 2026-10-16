@@ -5,8 +5,8 @@ import "common"
 // Water launcher transition: a whip of water spirals in to the middle of the
 // launcher and spreads into a sheet in its shape; the water clears to leave the
 // launcher, and two streams keep circling it while it is open, among orbs, currents,
-// and mist held in the air. Closing turns it
-// back to water, draws it into an orb, and whips away.
+// and mist held in the air. Closing turns it back to water, draws it into an orb,
+// and whips away.
 Item {
     id: root
 
@@ -118,7 +118,6 @@ Item {
         property var source: panelTex
         property real time: clock.simTime
         property rect rect: Qt.rect(x, y, width, height)
-        property real pad: root.pad
         property rect panel: root.panelRect
         property real radius: 10
         property real grow: root.grow

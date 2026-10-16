@@ -67,7 +67,7 @@ Components.Card {
     function updateRenderedMarkdown() {
         var src = notesInput.text;
         if (!src || src.trim() === "") {
-            root.renderedMarkdown = "*No note content. Click anywhere in box to add notes.*";
+            root.renderedMarkdown = "";
             return;
         }
         var str = root.spaceParagraphs(String(src));
@@ -487,10 +487,9 @@ Components.Card {
             anchors.fill: parent
             anchors.margins: root.editorPadding
             readonly property bool needsVerticalScroll: contentHeight > height + 1
-            readonly property int scrollbarInset: root.editorScrollbarInset
             // Always reserve the scrollbar gutter: making the text width depend on
             // needsVerticalScroll creates a binding loop through the wrapped height.
-            contentWidth: Math.max(0, width - scrollbarInset)
+            contentWidth: Math.max(0, width - root.editorScrollbarInset)
             contentHeight: Math.max(
                 root.previewMode ? markdownText.implicitHeight : notesInput.implicitHeight,
                 height
@@ -564,7 +563,7 @@ Components.Card {
                 TextEdit {
                     id: markdownText
                     width: parent.width
-                    text: root.renderedMarkdown !== "" ? root.renderedMarkdown : "*No note content. Click anywhere in box to edit.*"
+                    text: root.renderedMarkdown !== "" ? root.renderedMarkdown : "*No note content. Click anywhere in box to add notes.*"
                     textFormat: TextEdit.MarkdownText
                     wrapMode: TextEdit.Wrap
                     readOnly: true
@@ -572,7 +571,6 @@ Components.Card {
                     color: ThemeModule.Theme.text
                     font.pixelSize: ThemeModule.Theme.fontSizeSmall
                     font.family: ThemeModule.Theme.fontFamily
-                    onLinkActivated: (link) => Qt.openUrlExternally(link)
                 }
 
                 MouseArea {

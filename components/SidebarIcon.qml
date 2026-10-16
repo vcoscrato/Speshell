@@ -12,7 +12,6 @@ Rectangle {
     property string iconName: ""
     property bool active: false
     property string statusText: ""
-    property string tooltipText: ""
     // A secondary icon splits the button: both halves open the panel, and the
     // wheel and right click report which half they came over.
     property string secondaryIconName: ""
@@ -26,11 +25,9 @@ Rectangle {
         && root.Window.window.visible)
     readonly property string effectiveTooltipText: root.pointerSecondary
         ? root.secondaryStatusText
-        : (root.tooltipText !== ""
-            ? root.tooltipText
-            : (root.statusText !== ""
-                ? root.statusText
-                : (WidgetRegistry.label(root.widgetName) || root.widgetName)))
+        : (root.statusText !== ""
+            ? root.statusText
+            : (WidgetRegistry.label(root.widgetName) || root.widgetName))
 
     signal activated(string name)
     signal wheelDelta(int angleDelta, bool secondary)
@@ -110,7 +107,6 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             width: 3
             height: 18
-            radius: 0
             color: ThemeModule.Theme.accent
             visible: root.active
         }
@@ -145,5 +141,4 @@ Rectangle {
             root.wheelDelta(wheel.angleDelta.y, root.pointerSecondary)
         }
     }
-
 }

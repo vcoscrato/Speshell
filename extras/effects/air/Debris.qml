@@ -27,5 +27,6 @@ ShaderEffect {
     property color cLeafBack: theme ? Colors.mix(theme.accent, theme.crust, 0.25) : "#c9711f"
     property color cOutline: theme ? Colors.mix(theme.crust, theme.accent, 0.3) : "#5a3417"
     property color cDust: theme ? theme.rosewater : "#e9f2fa"
+    property color cGlint: theme ? theme.text : "#f4ead8"
     fragmentShader: Qt.resolvedUrl("qsb/Debris.qsb")
 }

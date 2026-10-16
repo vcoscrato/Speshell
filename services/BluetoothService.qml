@@ -13,6 +13,11 @@ Singleton {
     readonly property bool enabled: root.adapter ? root.adapter.enabled : false
     readonly property bool scanning: root.adapter ? root.adapter.discovering : false
 
+    function setEnabled(on) {
+        if (root.adapter)
+            root.adapter.enabled = on;
+    }
+
     function startDiscovery() {
         if (!root.adapter || !root.enabled)
             return;

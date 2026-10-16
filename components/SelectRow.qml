@@ -7,8 +7,6 @@ Rectangle {
 
     property string label: ""
     property string value: ""
-    property int valueMaxWidth: 180
-    property string indicatorIconName: "chevron-down"
     signal activated()
 
     width: parent ? parent.width : 300
@@ -53,7 +51,7 @@ Rectangle {
         spacing: ThemeModule.Theme.spacingTiny
 
         Text {
-            width: Math.min(root.valueMaxWidth, implicitWidth)
+            width: Math.min(180, implicitWidth)
             text: root.value
             font.pixelSize: ThemeModule.Theme.fontSizeSmall
             font.family: ThemeModule.Theme.fontFamily
@@ -64,11 +62,10 @@ Rectangle {
         }
 
         Components.AppIcon {
-            name: root.indicatorIconName
+            name: "chevron-down"
             size: ThemeModule.Theme.iconSizeTiny
             iconColor: ThemeModule.Theme.subtext
             anchors.verticalCenter: parent.verticalCenter
-            visible: root.indicatorIconName !== ""
         }
     }
 

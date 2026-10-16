@@ -2,7 +2,7 @@
 
 An effects directory animates the launcher, wallpaper changes, the dashboard's entrance, and the dashboard's controls, and paints the backdrop of the dashboard and launcher, for any theme that names it with `effects = <name>` in its `theme.ini`. Speshell looks in `extras/effects` and `~/.local/share/speshell/effects`; a user directory replaces a shipped one of the same name. If effects fail to load, Speshell notifies and runs without them.
 
-Every effect here has the same files. Each shader sits beside the QML that draws it, under the same name:
+Every effect here has these files; a part that draws with a shader another part shares has no `.frag` of its own. Each shader sits beside the QML that draws it, under the same name:
 
 ```
 <name>/
@@ -14,7 +14,7 @@ Every effect here has the same files. Each shader sits beside the QML that draws
 ├── Interactions.qml/.frag        the effects on the dashboard's controls
 ├── Knob.qml/.frag                the thumb of the dashboard's sliders and switches
 ├── <Part>.qml/.frag              pieces the transitions use (Flames, Wind, Whip, ...)
-├── <Name>.js                     color recipes several parts share (Flame, Water, Stone)
+├── <Name>.js                     color recipes several parts share (Flame, Water, Stone, Bolt)
 ├── common -> ../../lib           symlink that gives QML `import "common"` (EffectClock, Particles) and `common/Colors.js`
 └── qsb/                          git-ignored: `just shaders` compiles each `<Name>.frag` to `qsb/<Name>.qsb`
 ```
@@ -41,7 +41,7 @@ QtObject {
 
 The dashboard parts arrived after the first two, still under version 1; an older Speshell ignores them.
 
-**Colors.** Every part receives `theme`, the active palette as `Theme.qml` names it (`bg`, `crust`, `text`, `accent`, `peach`, `sky`, ...). Any theme may use any effects, so take every color from it, picking slots by meaning: fire from the warm colors, water from the blues, stone from the neutrals. Blend with `mix` and `alpha` from `common/Colors.js`, and brighten with `Qt.lighter` where light burns brighter than any theme color (a flame's core, foam). `theme` is null for a moment after creation, so each color falls back to a literal until it arrives: `root.theme ? root.theme.accent : "#fe8019"`. An older Speshell passes no `theme` to the launcher and wallpaper transitions, so they keep those fallbacks there.
+**Colors.** Every part receives `theme`, the active palette as `Theme.qml` names it (`bg`, `crust`, `text`, `accent`, `peach`, `sky`, ...). Any theme may use any effects, so take every color from it, picking slots by meaning: fire from the warm colors, water from the blues, stone from the neutrals. Blend with `mix` and `alpha` from `common/Colors.js`, brighten with `Qt.lighter` where light burns brighter than any theme color (a flame's core, foam), and take a glint or sheen from `text`, the lightest color, never pure white. `theme` is null for a moment after creation, so each color falls back to a literal until it arrives: `root.theme ? root.theme.accent : "#fe8019"`. An older Speshell passes no `theme` to the launcher and wallpaper transitions, so they keep those fallbacks there.
 
 **Launcher transition.** Created when the launcher opens and destroyed after it hides. It fills the launcher's full-screen surface above the panel and receives:
 

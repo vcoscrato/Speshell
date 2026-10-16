@@ -18,6 +18,10 @@ Singleton {
     // Whether the user scanned this session, so an empty list can say what it means.
     property bool scanRequested: false
 
+    function setWifiEnabled(on) {
+        Networking.wifiEnabled = on;
+    }
+
     // ── Native API helpers ──
     function findWifiDevice() {
         for (var i = 0; i < Networking.devices.values.length; i++) {
@@ -35,44 +39,19 @@ Singleton {
         return null;
     }
 
-    function findConnectedWifi() {
-        var dev = root.findWifiDevice();
-        if (!dev) return null;
-        for (var i = 0; i < dev.networks.values.length; i++) {
-            var net = dev.networks.values[i];
-            if (net.connected) return net;
-        }
-        return null;
-    }
-
-    function findConnectingNetwork() {
-        var dev = root.findWifiDevice();
-        if (!dev) return null;
-        for (var i = 0; i < dev.networks.values.length; i++) {
-            var net = dev.networks.values[i];
-            if (net.state === ConnectionState.Connecting) return net;
-        }
-        return null;
-    }
-
-    function buildOtherNetworks() {
-        var dev = root.findWifiDevice();
-        if (!dev) return [];
+    // The Wi-Fi device's networks that pass `test`.
+    function wifiNetworks(test) {
         var result = [];
-        for (var i = 0; i < dev.networks.values.length; i++) {
-            var net = dev.networks.values[i];
-            if (!net.connected && net.state !== ConnectionState.Connecting)
-                result.push(net);
+        var networks = root.wifiDevice ? root.wifiDevice.networks.values : [];
+        for (var i = 0; i < networks.length; i++) {
+            if (test(networks[i]))
+                result.push(networks[i]);
         }
         return result;
     }
 
-    function networkKeyFromValues(name, security) {
-        return String(name || "") + "|" + String(security);
-    }
-
     function networkKey(network) {
-        return root.networkKeyFromValues(network ? network.name : "", network ? network.security : "");
+        return network ? String(network.name || "") + "|" + String(network.security) : "|";
     }
 
     function signalPercent(value) {
@@ -102,17 +81,9 @@ Singleton {
     }
 
     function findLiveNetwork(item) {
-        if (!item || !root.wifiDevice) {
+        if (!item)
             return null;
-        }
-
-        for (var i = 0; i < root.wifiDevice.networks.values.length; i++) {
-            var network = root.wifiDevice.networks.values[i];
-            if (root.networkKey(network) === item.key) {
-                return network;
-            }
-        }
-        return null;
+        return root.wifiNetworks(function(network) { return root.networkKey(network) === item.key; })[0] || null;
     }
 
     function sortNetworks(items) {
@@ -262,16 +233,30 @@ Singleton {
     }
 
     function onNetworkItemPrimary(item) {
-        var network = item ? root.findLiveNetwork(item) : null;
+        var network = root.findLiveNetwork(item);
         if (!network) {
             root.startWifiScan();
             return;
         }
-        root.onNetworkPrimary(network);
+        if (network.connected)
+            return;
+        if (network.known || root.isOpen(network.security)) {
+            root.beginConnection(network, "");
+            return;
+        }
+        if (!root.supportsPsk(network.security)) {
+            root.connectErrorName = network.name;
+            root.connectError = "This network needs settings that Speshell cannot request. Configure it in NetworkManager first.";
+            return;
+        }
+        var opening = root.passwordRowName !== network.name;
+        root.cancelPasswordPrompt();
+        if (opening)
+            root.passwordRowName = network.name;
     }
 
     function requestConnectForItem(item, psk) {
-        var network = item ? root.findLiveNetwork(item) : null;
+        var network = root.findLiveNetwork(item);
         if (!network) {
             root.startWifiScan();
             return;
@@ -292,29 +277,6 @@ Singleton {
         root.passwordText = "";
         root.connectErrorName = "";
         root.connectError = "";
-    }
-
-    function onNetworkPrimary(network) {
-        if (network.connected) return;
-        if (network.known || root.isOpen(network.security)) {
-            root.beginConnection(network, "");
-            return;
-        }
-
-        if (!root.supportsPsk(network.security)) {
-            root.connectErrorName = network.name;
-            root.connectError = "This network needs settings that Speshell cannot request. Configure it in NetworkManager first.";
-            return;
-        }
-
-        if (root.passwordRowName === network.name) {
-            root.cancelPasswordPrompt();
-        } else {
-            root.passwordRowName = network.name;
-            root.passwordText = "";
-            root.connectErrorName = "";
-            root.connectError = "";
-        }
     }
 
     function supportsPsk(security) {
@@ -401,9 +363,13 @@ Singleton {
     readonly property bool wifiOn: Networking.wifiEnabled
     readonly property var wifiDevice: root.findWifiDevice()
     readonly property var wiredDevice: root.findWiredDevice()
-    readonly property var connectedWifi: root.findConnectedWifi()
-    readonly property var connectingNetwork: root.findConnectingNetwork()
-    readonly property var otherNetworks: root.buildOtherNetworks()
+    readonly property var connectedWifi: root.wifiNetworks(function(network) { return network.connected; })[0] || null
+    readonly property var connectingNetwork: root.wifiNetworks(function(network) {
+        return network.state === ConnectionState.Connecting;
+    })[0] || null
+    readonly property var otherNetworks: root.wifiNetworks(function(network) {
+        return !network.connected && network.state !== ConnectionState.Connecting;
+    })
     readonly property var displayedNetworks: root.buildDisplayedNetworks()
     readonly property bool isScanning: root.wifiDevice ? root.wifiDevice.scannerEnabled : false
 

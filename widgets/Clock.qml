@@ -7,7 +7,6 @@ import "../theme" as ThemeModule
 
 Components.Card {
     id: root
-    title: ""
     property bool presented: false
 
     readonly property bool timerRunning: Services.FocusTimerService.running
@@ -81,8 +80,6 @@ Components.Card {
     Timer {
         id: clockTimer
         interval: 1000
-        running: false
-        repeat: false
         onTriggered: {
             root.showColon = !root.showColon || !ThemeModule.Theme.motion;
             var now = new Date();
@@ -231,7 +228,6 @@ Components.Card {
                 anchors.right: parent.right
                 anchors.top: parent.top
                 iconName: "timer"
-                iconSize: ThemeModule.Theme.iconSizeMedium
                 iconColor: root.timerRunning || root.timerControlsOpen
                     ? ThemeModule.Theme.accent
                     : ThemeModule.Theme.subtext
@@ -253,7 +249,6 @@ Components.Card {
             border.color: ThemeModule.Theme.controlBorder
 
             Row {
-                id: timerActions
                 anchors.left: parent.left
                 anchors.leftMargin: ThemeModule.Theme.spacingSmall
                 anchors.verticalCenter: parent.verticalCenter

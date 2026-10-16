@@ -8,7 +8,6 @@ Singleton {
 
     property var providerActivities: ({})
     property var activities: []
-    readonly property int activeCount: root.activities.length
 
     readonly property var activeStates: ["active", "busy", "paused", "error"]
     readonly property var inactiveStates: ["idle", "inactive", "stopped", "complete"]
@@ -213,9 +212,5 @@ Singleton {
         if (minutes < 60)
             return minutes + "m " + (seconds % 60) + "s";
         return Math.floor(minutes / 60) + "h " + (minutes % 60) + "m";
-    }
-
-    function listJson() {
-        return JSON.stringify(root.activities);
     }
 }

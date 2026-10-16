@@ -25,8 +25,8 @@ every monitor:
 - Workspaces show this monitor's; clicking one shows it. The mark opens and
   closes the dashboard.
 - Each panel icon, the clock, the track's cover, and a running timer open the same
-  panel the dashboard shows, toward
-  the screen's middle, with the theme's knobs and control effects. A click outside,
+  panel the dashboard shows, toward the screen's middle, with the theme's knobs and
+  control effects. A click outside,
   Escape, or the same icon closes it; opening the dashboard closes it too. Typing a
   Wi-Fi password works.
 - Play/pause and the track's cover sit left of the clock and a running timer right
@@ -104,7 +104,10 @@ every monitor:
   show it.
 - Network and Bluetooth only scan after refresh and stop scanning when you leave
   the panel. Connect and disconnect devices, including a secured network and a
-  wrong password. "Last refreshed" shows the scan's age.
+  wrong password.
+- VPN and WireGuard profiles connect and disconnect from the Network panel. A
+  login's questions show on the profile's row, and a failed saved password can be
+  typed again.
 - Clipboard history lists, selects and clears entries. Without `cliphist` or
   `wl-clipboard`, the panel explains what's missing.
 
@@ -129,8 +132,9 @@ every monitor:
 - The Tools button (bar) and rail icon (dashboard) show only with a tool
   installed, and list only installed tools; one installed while Speshell runs
   appears the next time the panel opens.
-- Each tool closes the dashboard or dropdown before it selects or captures, so
-  neither shows in the result. The selection uses the theme's accent.
+- Each tool closes the bar's dropdown before it selects or captures, so it doesn't
+  show in the result. The capture tools leave the dashboard open, and dictation
+  closes it. The selection uses the theme's accent.
 - Copy text, Scan code, Screenshot (area and screen) and Pick color copy their
   result and toast it; cancelling the selection does nothing. Screenshot's
   Annotate opens Swappy, and a link's Open opens the browser.

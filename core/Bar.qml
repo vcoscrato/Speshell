@@ -113,6 +113,8 @@ PanelWindow {
             return Services.BrightnessService.available ? "brightness" : "display";
         if (panelName === "networkPanel") {
             const network = Services.NetworkService;
+            if (Services.VpnService.active)
+                return "vpn";
             if (network.wiredDevice !== null)
                 return "network-wired";
             return network.connectedWifi !== null
@@ -469,6 +471,9 @@ PanelWindow {
                     Row {
                         id: trayRow
                         anchors.centerIn: parent
+                        // Items are spacingTiny narrower than the panel buttons, so
+                        // twice the spacing keeps the same icon pitch.
+                        spacing: ThemeModule.Theme.spacingSmall
 
                         Repeater {
                             id: trayRepeater

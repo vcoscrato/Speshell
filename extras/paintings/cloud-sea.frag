@@ -14,11 +14,6 @@ layout(std140, binding = 0) uniform buf {
 #include "../lib/common.glsl"
 #include "landscape.glsl"
 
-vec2 rot(vec2 v, float a) {
-    float c = cos(a), s = sin(a);
-    return vec2(c * v.x - s * v.y, s * v.x + c * v.y);
-}
-
 // Five-stop sky ramp.
 vec3 sky(float t) {
     vec3 a = rgb(252, 214, 150), b = rgb(242, 164, 84), c = rgb(196, 112, 106);

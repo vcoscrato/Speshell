@@ -1,51 +1,25 @@
 pragma ComponentBehavior: Bound
 // qmllint disable uncreatable-type unqualified unresolved-type
 import QtQuick
-import Quickshell
 import Quickshell.Wayland
 import "../components" as Components
 import "../services" as Services
 import "../theme" as ThemeModule
 
-PanelWindow {
+OsdWindow {
     id: root
 
-    property bool shown: false
     property int displayedVolume: 0
     property bool displayedMuted: false
-    property var targetScreen: null
 
     readonly property color indicatorColor: ThemeModule.Theme.accent
     readonly property string indicatorIcon: root.displayedMuted
         ? "audio-output-muted"
         : (root.displayedVolume <= 35 ? "audio-output-low" : "audio-output-high")
 
-    function showState(volumePercent, muted) {
-        root.targetScreen = Services.DashboardService.focusedScreen();
-        root.displayedVolume = Math.max(0, Math.min(100, Math.round(Number(volumePercent) || 0)));
-        root.displayedMuted = !!muted;
-        hideTimer.restart();
-        exitAnimation.stop();
-
-        if (!root.shown) {
-            osdCard.opacity = 0;
-            osdCard.scale = 0.96;
-            root.shown = true;
-            entranceAnimation.restart();
-        } else {
-            osdCard.opacity = 1;
-            osdCard.scale = 1;
-        }
-    }
-
-    screen: root.targetScreen
-    visible: root.shown && root.targetScreen !== null
+    card: osdCard
     implicitWidth: 316
     implicitHeight: 86
-    color: "transparent"
-    focusable: false
-    aboveWindows: true
-    exclusionMode: ExclusionMode.Ignore
 
     anchors {
         bottom: true
@@ -59,14 +33,16 @@ PanelWindow {
     // qmllint enable missing-property
 
     WlrLayershell.namespace: "speshell-volume-osd"
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
     Connections {
         target: Services.AudioService
 
         function onOutputOsdRequested(volumePercent, muted) {
-            root.showState(volumePercent, muted);
+            root.targetScreen = Services.DashboardService.focusedScreen();
+            root.displayedVolume = Math.max(0, Math.min(100, Math.round(Number(volumePercent) || 0)));
+            root.displayedMuted = !!muted;
+            hideTimer.restart();
+            root.present();
         }
     }
 
@@ -74,40 +50,7 @@ PanelWindow {
         id: hideTimer
         interval: 1200
         repeat: false
-        onTriggered: exitAnimation.restart()
-    }
-
-    ParallelAnimation {
-        id: entranceAnimation
-
-        NumberAnimation {
-            target: osdCard
-            property: "opacity"
-            to: 1
-            duration: ThemeModule.Theme.animDuration
-            easing.type: ThemeModule.Theme.animEasing
-        }
-
-        NumberAnimation {
-            target: osdCard
-            property: "scale"
-            to: 1
-            duration: ThemeModule.Theme.animDuration
-            easing.type: Easing.OutBack
-        }
-    }
-
-    NumberAnimation {
-        id: exitAnimation
-        target: osdCard
-        property: "opacity"
-        to: 0
-        duration: ThemeModule.Theme.motion ? 140 : 0
-        easing.type: Easing.InCubic
-        onStopped: {
-            if (osdCard.opacity <= 0)
-                root.shown = false;
-        }
+        onTriggered: root.dismiss()
     }
 
     Item {

@@ -18,8 +18,6 @@ Singleton {
     property bool saveQueued: false
     property bool usageLoaded: false
     property bool savingUsage: false
-    property string writeUsageText: ""
-    property string saveError: ""
     property var pendingLaunches: ({})
     property string activationError: ""
     // "theme" or "wall" while browsing with that bang, else "".
@@ -41,10 +39,6 @@ Singleton {
         root.query = next;
         root.activationError = "";
         root.rebuild();
-    }
-
-    function clearQuery() {
-        root.setQuery("");
     }
 
     function rebuildAppIndex() {
@@ -158,15 +152,8 @@ Singleton {
             root.pendingLaunches = pending;
         }
 
-        var next = ({});
-        var keys = Object.keys(root.usage || ({}));
-        for (var i = 0; i < keys.length; i++)
-            next[keys[i]] = root.usage[keys[i]];
-        var current = next[appId];
-        var count = typeof current === "number"
-            ? current
-            : (current && typeof current === "object" ? Number(current.count) || 0 : 0);
-        next[appId] = { count: count + 1, lastUsed: new Date().toISOString() };
+        var next = Object.assign({}, root.usage);
+        next[appId] = { count: AppProvider.usageCount(next, appId) + 1, lastUsed: new Date().toISOString() };
         root.usage = next;
         root.saveUsage();
     }
@@ -262,10 +249,8 @@ Singleton {
             root.saveQueued = true;
             return;
         }
-        root.writeUsageText = JSON.stringify(root.usage || ({}));
         root.savingUsage = true;
-        root.saveError = "";
-        usageFile.setText(root.writeUsageText);
+        usageFile.setText(JSON.stringify(root.usage || ({})));
     }
 
     function finishUsageLoad(text) {
@@ -281,10 +266,10 @@ Singleton {
         var pendingIds = Object.keys(root.pendingLaunches);
         for (var i = 0; i < pendingIds.length; i++) {
             var id = pendingIds[i];
-            var current = loadedUsage[id];
-            var count = typeof current === "number" ? current
-                : (current && typeof current === "object" ? Number(current.count) || 0 : 0);
-            loadedUsage[id] = { count: count + root.pendingLaunches[id], lastUsed: new Date().toISOString() };
+            loadedUsage[id] = {
+                count: AppProvider.usageCount(loadedUsage, id) + root.pendingLaunches[id],
+                lastUsed: new Date().toISOString()
+            };
         }
         root.pendingLaunches = ({});
         root.usage = loadedUsage;
@@ -304,17 +289,12 @@ Singleton {
         onLoadFailed: root.finishUsageLoad("{}")
         onSaved: {
             root.savingUsage = false;
-            root.writeUsageText = "";
             if (root.saveQueued) {
                 root.saveQueued = false;
                 root.saveUsage();
             }
         }
-        onSaveFailed: {
-            root.savingUsage = false;
-            root.writeUsageText = "";
-            root.saveError = "Could not save launcher usage.";
-        }
+        onSaveFailed: root.savingUsage = false
     }
 
     Component.onCompleted: {

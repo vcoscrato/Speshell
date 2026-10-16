@@ -12,7 +12,6 @@ ShaderEffect {
     property color cBase: root.theme ? root.theme.bg : "#282828"
     property color cDeep: root.theme ? root.theme.crust : "#1b1b1b"
     property color cText: root.theme ? root.theme.text : "#ebdbb2"
-    property color cAccent: root.theme ? root.theme.accent : "#fe8019"
     property color cLight: root.theme ? root.theme.sky : "#83a598"
     fragmentShader: Qt.resolvedUrl("qsb/DashboardBackdrop.qsb")
 }

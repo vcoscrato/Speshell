@@ -24,10 +24,6 @@ layout(std140, binding = 0) uniform buf {
 } u;
 #include "../../lib/common.glsl"
 
-vec4 over(vec4 under, vec3 col, float a) {
-    return vec4(col, 1.0) * a + under * (1.0 - a);
-}
-
 vec4 drop(vec2 p, float R) {
     // Arriving, it stays whole until it lands, swelling in first if it falls from nowhere.
     float k = u.arrive > 0.5 && u.arrive < 1.5 ? smoothstep(0.0, 0.2, u.age) : 1.0;

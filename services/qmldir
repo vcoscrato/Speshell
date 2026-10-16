@@ -13,6 +13,7 @@ singleton FeatureSupport 1.0 FeatureSupport.qml
 singleton FocusTimerService 1.0 FocusTimerService.qml
 singleton LauncherService 1.0 LauncherService.qml
 singleton NetworkService 1.0 NetworkService.qml
+singleton VpnService 1.0 VpnService.qml
 singleton PowerService 1.0 PowerService.qml
 singleton ConfigService 1.0 ConfigService.qml
 singleton NotificationService 1.0 NotificationService.qml

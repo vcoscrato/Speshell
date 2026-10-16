@@ -11,6 +11,7 @@ Rectangle {
     property bool armed: false
 
     signal activated()
+
     function toneColor() {
         return ThemeModule.Theme.toneColor(root.tone);
     }
@@ -18,7 +19,7 @@ Rectangle {
     radius: height / 2
     implicitHeight: Math.max(22, chipContent.implicitHeight + ThemeModule.Theme.spacingSmall)
     height: implicitHeight
-    width: chipContent.width + 16
+    width: chipContent.width + ThemeModule.Theme.spacingSmall * 2
     opacity: enabled ? 1.0 : ThemeModule.Theme.disabledOpacity
     color: ThemeModule.Theme.alpha(root.toneColor(),
         (chipMouse.containsMouse ? ThemeModule.Theme.tintStrong : ThemeModule.Theme.tintSubtle)
@@ -62,8 +63,6 @@ Rectangle {
         hoverEnabled: true
         enabled: root.enabled
         cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-        onClicked: {
-            root.activated();
-        }
+        onClicked: root.activated()
     }
 }

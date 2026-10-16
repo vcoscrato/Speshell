@@ -11,7 +11,6 @@ layout(std140, binding = 0) uniform buf {
     float qt_Opacity;
     vec2 size;
     float progress;     // 0..1
-    float time;
     vec4 cCore;
     vec4 cGlow;
     vec4 cEdge;
@@ -21,12 +20,6 @@ layout(binding = 1) uniform sampler2D source;
 
 const float STRIKE = 0.35;      // share of the whole the bolt takes to reach the bottom
 const float SPREAD = 0.4;       // share each row takes to show across
-
-// Piecewise-linear noise: straight runs between random kinks.
-float zig(float x, float seed) {
-    float i = floor(x), f = fract(x);
-    return mix(hash(vec2(i, seed)), hash(vec2(i + 1.0, seed)), f) - 0.5;
-}
 
 float boltX(float y) {
     return u.size.x * (0.5 + 0.3 * zig(y / 110.0, 1.0) + 0.1 * zig(y / 28.0, 2.0));

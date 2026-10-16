@@ -17,10 +17,6 @@ Components.Card {
     Component.onCompleted: Services.MediaService.setViewPresented(root.presented)
     Component.onDestruction: Services.MediaService.setViewPresented(false)
 
-    // Show the widget: if we have a player show controls,
-    // otherwise show a "waiting" message so user can see the widget is alive
-    visible: true
-
     // ── No player fallback — compact one-liner ──
     Row {
         width: parent.width
@@ -141,7 +137,6 @@ Components.Card {
                     Components.IconButton {
                         anchors.verticalCenter: parent.verticalCenter
                         iconName: "media-previous"
-                        iconSize: ThemeModule.Theme.iconSizeMedium
                         tooltipText: "Previous track"
                         onClicked: { if (root.player) root.player.previous() }
                     }
@@ -164,7 +159,6 @@ Components.Card {
                     Components.IconButton {
                         anchors.verticalCenter: parent.verticalCenter
                         iconName: "media-next"
-                        iconSize: ThemeModule.Theme.iconSizeMedium
                         tooltipText: "Next track"
                         onClicked: { if (root.player) root.player.next() }
                     }

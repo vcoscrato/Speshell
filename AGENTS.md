@@ -6,12 +6,12 @@ git diff --check
 timeout 5s quickshell --no-color -p .
 ```
 
-`quickshell --reload` is not available in QuickShell v0.3. Use Speshell's Settings panel Reload button or restart the process.
+`quickshell --reload` is not available in QuickShell v0.3. Use the About panel's Reload (config) or Relaunch button, or restart the process.
 
 ## Architecture
 
 - `shell.qml` starts strict config loading, applies validated global settings, and gates either `Runtime` or `ConfigErrorWindow`.
-- `core/` contains the runtime composition, dashboard surfaces, widget registry/loading, special-workspace tracking, launcher, config-error, and toast windows.
+- `core/` contains the runtime composition, dashboard surfaces, widget registry/loading, special-workspace tracking, and the bar, launcher, wallpaper, OSD, config-error, and toast windows.
 - `widgets/` contains user-facing cards and panels.
 - `services/` contains singleton system integrations, config/launcher providers, and shared media, notification, and dashboard state.
 - `components/` contains reusable QML UI primitives.

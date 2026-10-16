@@ -12,7 +12,7 @@ Components.Card {
     iconName: "bell"
 
     property var notifList: Services.NotificationService.notificationHistory
-    property int maxVisibleNotifications: 3
+    readonly property int maxVisibleNotifications: 3
     property bool presented: false
     property int refreshTick: 0
     property string expandedNotificationId: ""
@@ -43,8 +43,7 @@ Components.Card {
         onTriggered: root.refreshTick++
     }
 
-    function listHeightForRows(rowCount) {
-        var rows = Math.max(0, rowCount);
+    function listHeightForRows(rows) {
         if (rows === 0) return 0;
         return root.notificationRowHeight * rows + ThemeModule.Theme.spacingTiny * (rows - 1);
     }
@@ -106,14 +105,11 @@ Components.Card {
 
         ListView {
             width: parent.width
-            readonly property int compactHeight: root.listHeightForRows(root.maxVisibleNotifications === -1
-                ? root.notifList.length
-                : Math.min(root.notifList.length, root.maxVisibleNotifications))
+            readonly property int compactHeight: root.listHeightForRows(
+                Math.min(root.notifList.length, root.maxVisibleNotifications))
             height: root.expandedNotificationId === ""
                 ? compactHeight
-                : (root.maxVisibleNotifications === -1
-                    ? contentHeight
-                    : Math.max(compactHeight, Math.min(contentHeight, 240)))
+                : Math.max(compactHeight, Math.min(contentHeight, 240))
             clip: true
             spacing: ThemeModule.Theme.spacingTiny
             boundsBehavior: Flickable.StopAtBounds
@@ -124,7 +120,7 @@ Components.Card {
             }
 
             T.ScrollBar.vertical: Components.StyledScrollBar {
-                policy: root.maxVisibleNotifications !== -1 && root.notifList.length > root.maxVisibleNotifications
+                policy: root.notifList.length > root.maxVisibleNotifications
                     ? T.ScrollBar.AsNeeded
                     : T.ScrollBar.AlwaysOff
             }

@@ -14,7 +14,6 @@ layout(std140, binding = 0) uniform buf {
     vec4 cBase;
     vec4 cDeep;
     vec4 cText;
-    vec4 cAccent;
     vec4 cLight;
 } u;
 #include "../../lib/common.glsl"

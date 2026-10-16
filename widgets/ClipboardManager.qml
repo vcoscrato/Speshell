@@ -88,9 +88,7 @@ Components.Card {
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: Services.ClipboardService.loading
-                        ? "Loading…"
-                        : "Search " + root.history.length + (root.history.length === 1 ? " item" : " items")
+                    text: "Search " + root.history.length + (root.history.length === 1 ? " item" : " items")
                     color: ThemeModule.Theme.overlay
                     font: searchInput.font
                     visible: searchInput.text === "" && !searchInput.preeditText
@@ -219,7 +217,7 @@ Components.Card {
         }
 
         Components.EmptyState {
-            visible: !Services.ClipboardService.loading && root.shownHistory.length === 0
+            visible: root.shownHistory.length === 0
             iconName: root.history.length > 0 ? "search" : "clipboard"
             title: !Services.ClipboardService.available
                 ? "Clipboard history is off"

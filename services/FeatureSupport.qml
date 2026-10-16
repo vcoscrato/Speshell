@@ -1,5 +1,5 @@
 pragma Singleton
-// qmllint disable signal-handler-parameters unresolved-type
+// qmllint disable unresolved-type
 
 import QtQuick
 import Quickshell
@@ -10,14 +10,11 @@ import Quickshell.Services.UPower
 Singleton {
     id: root
 
-    property bool hasBacklightDevice: false
     property bool brightnessHelperAvailable: false
     property bool hyprctlAvailable: false
     property bool curlAvailable: false
     property bool backlightProbeComplete: false
-    property bool brightnessProbeComplete: false
-    property bool hyprctlProbeComplete: false
-    property bool curlProbeComplete: false
+    property bool toolProbeComplete: false
     property var backlightDevices: []
     property string configuredBacklightDevice: ""
     readonly property string backlightDeviceName: {
@@ -32,16 +29,12 @@ Singleton {
         && root.battery.ready
         && root.battery.isLaptopBattery
         && root.battery.isPresent
-    readonly property bool supportsBrightness: root.hasBacklightDevice && root.brightnessHelperAvailable
-    readonly property bool supportsHyprland: root.hyprctlAvailable
+    readonly property bool supportsBrightness: root.backlightDevices.length > 0 && root.brightnessHelperAvailable
     readonly property bool supportsBluetooth: Bluetooth.defaultAdapter !== null
-    readonly property bool supportsDisplayControl: root.supportsHyprland
-    readonly property bool probesComplete: root.backlightProbeComplete
-        && root.brightnessProbeComplete
-        && root.hyprctlProbeComplete
-        && root.curlProbeComplete
+    readonly property bool supportsDisplayControl: root.hyprctlAvailable
     readonly property bool issuesReady: ConfigService.valid
-        && root.probesComplete
+        && root.backlightProbeComplete
+        && root.toolProbeComplete
         && !PowerService.lockerChecking
     readonly property var issues: {
         if (!root.issuesReady)
@@ -79,60 +72,30 @@ Singleton {
         return result;
     }
 
-    Component.onCompleted: {
-        backlightProbeProc.running = true;
-        brightnessctlProc.running = true;
-        hyprctlProc.running = true;
-        curlProc.running = true;
-    }
-
     Process {
-        id: backlightProbeProc
+        running: true
         command: ["ls", "-1", "/sys/class/backlight"]
-        running: false
-        property var detectedDevices: []
-        onRunningChanged: if (running) detectedDevices = []
-        stdout: SplitParser {
-            onRead: function(line) {
-                var trimmed = (line || "").trim();
-                if (trimmed !== "")
-                    backlightProbeProc.detectedDevices.push(trimmed);
-            }
-        }
+        stdout: StdioCollector { id: backlightOutput }
         onExited: {
-            root.backlightDevices = backlightProbeProc.detectedDevices.slice();
-            root.hasBacklightDevice = root.backlightDevices.length > 0;
+            root.backlightDevices = backlightOutput.text.split("\n")
+                .map(function(line) { return line.trim(); })
+                .filter(function(line) { return line !== ""; });
             root.backlightProbeComplete = true;
         }
     }
 
+    // The optional helpers that are installed, one per line.
     Process {
-        id: brightnessctlProc
-        command: ["which", "brightnessctl"]
-        running: false
-        onExited: function(exitCode) {
-            root.brightnessHelperAvailable = exitCode === 0;
-            root.brightnessProbeComplete = true;
-        }
-    }
-
-    Process {
-        id: hyprctlProc
-        command: ["which", "hyprctl"]
-        running: false
-        onExited: function(exitCode) {
-            root.hyprctlAvailable = exitCode === 0;
-            root.hyprctlProbeComplete = true;
-        }
-    }
-
-    Process {
-        id: curlProc
-        command: ["which", "curl"]
-        running: false
-        onExited: function(exitCode) {
-            root.curlAvailable = exitCode === 0;
-            root.curlProbeComplete = true;
+        running: true
+        command: ["sh", "-c", "for c; do command -v \"$c\" >/dev/null 2>&1 && echo \"$c\"; done", "sh",
+            "brightnessctl", "hyprctl", "curl"]
+        stdout: StdioCollector { id: toolOutput }
+        onExited: {
+            var installed = toolOutput.text.split("\n");
+            root.brightnessHelperAvailable = installed.indexOf("brightnessctl") >= 0;
+            root.hyprctlAvailable = installed.indexOf("hyprctl") >= 0;
+            root.curlAvailable = installed.indexOf("curl") >= 0;
+            root.toolProbeComplete = true;
         }
     }
 }

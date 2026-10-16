@@ -28,12 +28,9 @@ if ! "${capture[@]}" "$file" 2>/dev/null; then
 fi
 wl-copy --type image/png <"$file"
 
+saved="Saved as $(basename -- "$file")"
 if command -v swappy >/dev/null 2>&1; then
-  [[ "$(notify "Screenshot copied" "Saved as $(basename -- "$file")" "edit=Annotate")" == edit ]] \
-    && exec swappy -f "$file" -o "$file"
-elif command -v xdg-open >/dev/null 2>&1; then
-  [[ "$(notify "Screenshot copied" "Saved as $(basename -- "$file")" "open=Open")" == open ]] \
-    && open_with_default "$file"
+  [[ "$(notify "Screenshot copied" "$saved" "edit=Annotate")" == edit ]] && exec swappy -f "$file" -o "$file"
 else
-  notify "Screenshot copied" "Saved as $(basename -- "$file")"
+  notify_open "Screenshot copied" "$saved" "$file"
 fi

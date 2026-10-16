@@ -19,12 +19,9 @@ layout(std140, binding = 0) uniform buf {
     vec4 cOuter;
     vec4 cEdge;
     vec4 cSmoke;
+    vec4 cGlint;
 } u;
 #include "../../lib/common.glsl"
-
-vec4 over(vec4 under, vec3 col, float a) {
-    return vec4(col, 1.0) * a + under * (1.0 - a);
-}
 
 // Cel bands of a flame by how deep inside it a point is (0 at the edge, 1 at the heart).
 vec4 flameBands(float inside, float edgeDist) {
@@ -70,7 +67,7 @@ vec4 smoke(vec2 p, float R) {
     d += (vnoise(p / 3.0 + u.seed * 40.0) - 0.5) * 3.0;
     float fade = pow(1.0 - u.age, 1.4);
     vec4 c = over(vec4(0.0), u.cSmoke.rgb, cover(-d) * 0.4 * fade);
-    return over(c, mix(u.cSmoke.rgb, vec3(1.0), 0.15), cover(-d - R * 0.25) * 0.25 * fade);
+    return over(c, mix(u.cSmoke.rgb, u.cGlint.rgb, 0.15), cover(-d - R * 0.25) * 0.25 * fade);
 }
 
 vec4 scorch(vec2 p, float R) {

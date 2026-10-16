@@ -1,8 +1,8 @@
 #!/bin/sh
 # usage: lab/preview.sh EFFECT SCENE  (SCENE: launcher | wallpaper | dashboard | controls | picks)
 # Renders offscreen into ~/.cache/speshell-lab/EFFECT-SCENE.mp4 and EFFECT-SCENE-strip.png, and prints
-# the transition's lifecycle log. Env: CLOSE_AT, REOPEN_AT, SWITCH_AT, SPEED, WALL_A, WALL_B, SPESHELL_DIR,
-# KEEP_FRAMES=1 to keep the frames in ~/.cache/speshell-lab/EFFECT-SCENE/ (about 700 MB per run), and
+# the transition's lifecycle log. Env: CLOSE_AT, REOPEN_AT, SWITCH_AT, SPEED, WALL_A, WALL_B, THEME_INI,
+# SPESHELL_DIR, KEEP_FRAMES=1 to keep the frames in ~/.cache/speshell-lab/EFFECT-SCENE/ (about 700 MB per run), and
 # EVERY_FRAME=1 to capture at 60 fps instead of 30.
 set -e
 LAB=$(cd "$(dirname "$0")" && pwd)

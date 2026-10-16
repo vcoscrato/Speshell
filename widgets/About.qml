@@ -226,7 +226,6 @@ Components.Card {
     Process {
         id: quickshellVersionProc
         command: ["quickshell", "--version"]
-        running: false
 
         stdout: SplitParser {
             onRead: function(line) {
@@ -240,7 +239,6 @@ Components.Card {
     Process {
         id: hyprlandVersionProc
         command: ["hyprctl", "version"]
-        running: false
 
         stdout: SplitParser {
             onRead: function(line) {

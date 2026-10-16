@@ -80,7 +80,6 @@ QtObject {
     readonly property int fontSizeSmall:      Math.round(11 * root.textScale)
     readonly property int fontSizeSupporting: Math.round(12 * root.textScale)
     readonly property int fontSizeNormal:     Math.round(13 * root.textScale)
-    readonly property int fontSizeEmphasis:   Math.round(14 * root.textScale)
     readonly property int fontSizeLarge:      Math.round(16 * root.textScale)
     readonly property int fontSizeTitle:      Math.round(20 * root.textScale)
     readonly property int fontSizeHuge:       Math.round(40 * root.textScale)
@@ -137,7 +136,6 @@ QtObject {
     // ── Layout ──────────────────────────────────────────────
     readonly property int sidebarWidth:       60
     readonly property int sidebarIconSize:    52
-    readonly property int reservedBottomPanelHeight: 256
     readonly property int separatorThickness: 1
     readonly property color separator:        root.alpha(root.surface2, 0.72)
 

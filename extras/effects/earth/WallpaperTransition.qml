@@ -22,7 +22,6 @@ Item {
     readonly property real reach: Math.sqrt(Math.pow(width * 0.5, 2) + Math.pow(height * 0.55, 2)) + 120
 
     EffectClock {
-        id: clock
         onAdvanced: function(dt) {
             root.elapsed += dt;
             if (!root.done && root.elapsed >= root.crackTime + root.crumbleTime) {

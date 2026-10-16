@@ -21,8 +21,7 @@ if [[ ! -r "$app_dir/shell.qml" ]]; then
   exit 1
 fi
 
-install -d -m755 "$config_root" "$data_root"
-install -d -m755 "$config_dir" "$data_dir"
+install -d -m755 "$config_root" "$data_root" "$config_dir" "$data_dir"
 
 if [[ ! -e "$config_file" && ! -L "$config_file" ]]; then
   install -m644 "$app_dir/config.example.ini" "$config_file"

@@ -29,6 +29,7 @@ layout(std140, binding = 0) uniform buf {
     vec4 cShade;
     vec4 cOrbit;
     vec4 cGlow;
+    vec4 cGlint;
 } u;
 #include "../../lib/common.glsl"
 
@@ -51,16 +52,6 @@ vec3 planetColor(int i) {
     if (i == 2) return u.c2.rgb;
     if (i == 3) return u.c3.rgb;
     return u.c4.rgb;
-}
-
-vec2 rot(vec2 v, float a) {
-    float c = cos(a), s = sin(a);
-    return vec2(c * v.x - s * v.y, s * v.x + c * v.y);
-}
-
-// Premultiplied `src` over `dst`.
-vec4 over(vec4 dst, vec3 col, float a) {
-    return vec4(col * a, a) + dst * (1.0 - a);
 }
 
 float orbitA(int i) {
@@ -86,7 +77,7 @@ vec4 planet(vec4 dst, vec2 p, vec2 c, float r, vec3 col) {
     float lit = dot(d, l) + 0.35 * sqrt(max(0.0, 1.0 - dist * dist));
     vec3 shaded = mix(col, u.cShade.rgb, 0.62);
     vec3 surf = mix(shaded, col, band(lit, 0.18));
-    surf = mix(surf, mix(col, vec3(1.0), 0.45), band(lit, 0.9) * band(dist, 0.62));
+    surf = mix(surf, mix(col, u.cGlint.rgb, 0.45), band(lit, 0.9) * band(dist, 0.62));
     return over(dst, surf, a);
 }
 

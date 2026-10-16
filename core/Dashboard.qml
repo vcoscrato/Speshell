@@ -17,8 +17,10 @@ Item {
 
     property var config: null
     property bool presented: false
-    
+
     property string selectedPanel: ""
+    // The utility area is at least this tall, whichever of its panels shows.
+    readonly property int bottomPanelMinHeight: 256
     property string selectedBottomPanel: WidgetRegistry.defaultReservedBottomPanel
     readonly property string defaultPanel: WidgetRegistry.primaryPanel
     readonly property bool audioCombined: !dashboard.config || dashboard.config.audioPanelMode !== "separate"
@@ -76,17 +78,9 @@ Item {
         onTriggered: middleFlickable.contentY = 0
     }
 
-    function widgetSource(name) {
-        return WidgetRegistry.source(name);
-    }
-
     function isWidgetAvailable(name) {
-        return !!name && dashboard.widgetSource(name) !== ""
+        return !!name && WidgetRegistry.source(name) !== ""
             && Services.DashboardService.isPanelSupported(name);
-    }
-
-    function sidebarIcon(name) {
-        return WidgetRegistry.icon(name);
     }
 
     function isSidebarItemCurrent(widgetName) {
@@ -165,10 +159,10 @@ Item {
                         readonly property bool audioSplit: wName === "audioControl" && dashboard.audioCombined
 
                         widgetName: wName
-                        iconName: dashboard.sidebarIcon(wName)
+                        iconName: WidgetRegistry.icon(wName)
                         active: dashboard.isSidebarItemCurrent(wName)
                         statusText: Services.DashboardService.statusText(wName)
-                        secondaryIconName: audioSplit ? dashboard.sidebarIcon("audioInputControl") : ""
+                        secondaryIconName: audioSplit ? WidgetRegistry.icon("audioInputControl") : ""
                         secondaryStatusText: audioSplit ? Services.DashboardService.statusText("audioInputControl") : ""
 
                         onActivated: function(name) {
@@ -207,7 +201,7 @@ Item {
                         property string wName: modelData
 
                         widgetName: wName
-                        iconName: dashboard.sidebarIcon(wName)
+                        iconName: WidgetRegistry.icon(wName)
                         active: dashboard.isSidebarItemCurrent(wName)
                         statusText: Services.DashboardService.statusText(wName)
 
@@ -298,7 +292,7 @@ Item {
                     width: parent.width
                     height: reservedAreaDivider.height
                         + ThemeModule.Theme.spacingLarge
-                        + Math.max(ThemeModule.Theme.reservedBottomPanelHeight,
+                        + Math.max(dashboard.bottomPanelMinHeight,
                             reservedBottomPanelLoader.height)
 
                     Rectangle {

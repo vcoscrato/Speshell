@@ -124,6 +124,7 @@ Item {
                 property color cOuter: Flame.outer(root.theme)
                 property color cEdge: Flame.edge(root.theme)
                 property color cSmoke: root.theme ? root.theme.overlay : "#8a5048"
+                property color cGlint: root.theme ? root.theme.text : "#f3e3d3"
                 fragmentShader: Qt.resolvedUrl("qsb/Interactions.qsb")
             }
         }

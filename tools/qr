@@ -15,8 +15,8 @@ if [[ -z "$text" ]]; then
 fi
 printf '%s' "$text" | wl-copy
 
-if [[ "$text" =~ ^https?:// ]] && command -v xdg-open >/dev/null 2>&1; then
-  [[ "$(notify "Link copied" "$(preview "$text")" "open=Open")" == open ]] && open_with_default "$text"
+if [[ "$text" =~ ^https?:// ]]; then
+  notify_open "Link copied" "$(preview "$text")" "$text"
 else
   notify "Code copied" "$(preview "$text")"
 fi

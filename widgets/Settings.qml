@@ -168,7 +168,7 @@ Components.Card {
 
     function applyWeatherLocation() {
         if (root.weatherLocationEdit !== null)
-            Services.ConfigService.setWeatherLocation(root.weatherLocationEdit.trim());
+            Services.ConfigService.setProperty("Weather", "location", root.weatherLocationEdit.trim());
         locationInput.focus = false;
     }
 
@@ -313,7 +313,6 @@ Components.Card {
                 Accessible.onPressAction: root.activePage = tab.modelData.id
 
                 Row {
-                    id: tabContent
                     anchors.centerIn: parent
                     spacing: tab.current ? ThemeModule.Theme.spacingTiny : 0
 
@@ -411,7 +410,7 @@ Components.Card {
                         options: root.textScaleOptions
                         currentValue: root.configValue(root.settingsConfig, "textScale", 1.0)
                         fallbackLabel: Math.round(Number(currentValue) * 100) + "% · Custom"
-                        onValueSelected: function(value) { Services.ConfigService.setTextScale(value); }
+                        onValueSelected: function(value) { Services.ConfigService.setProperty("Appearance", "textScale", value); }
                     }
                 }
 
@@ -422,7 +421,7 @@ Components.Card {
                         options: root.panelWidthOptions
                         currentValue: root.configValue(root.settingsConfig, "panelWidth", 420)
                         fallbackLabel: currentValue + " px · Custom"
-                        onValueSelected: function(value) { Services.ConfigService.setPanelWidth(value); }
+                        onValueSelected: function(value) { Services.ConfigService.setProperty("Appearance", "panelWidth", value); }
                     }
                 }
 
@@ -437,7 +436,7 @@ Components.Card {
                     Components.SegmentedControl {
                         options: root.scrollStepOptions
                         currentValue: scrollStepRow.step
-                        onValueSelected: function(value) { Services.ConfigService.setAudioScrollStep(value); }
+                        onValueSelected: function(value) { Services.ConfigService.setProperty("Audio", "scrollStep", value); }
                     }
                 }
 
@@ -452,7 +451,7 @@ Components.Card {
                     Components.SegmentedControl {
                         options: root.notificationOptions
                         currentValue: toastsRow.count
-                        onValueSelected: function(value) { Services.ConfigService.setMaxVisibleNotification(value); }
+                        onValueSelected: function(value) { Services.ConfigService.setProperty("Notifications", "maxVisible", value); }
                     }
                 }
             }
@@ -469,7 +468,7 @@ Components.Card {
                     Components.ToggleSwitch {
                         checked: Services.ThemeService.wallpaperEnabled
                         tooltipText: "Draw wallpaper"
-                        onToggled: function(newState) { Services.ConfigService.setDrawWallpaper(newState); }
+                        onToggled: function(newState) { Services.ConfigService.setProperty("Appearance", "drawWallpaper", newState ? "true" : "false"); }
                     }
                 }
 
@@ -480,7 +479,7 @@ Components.Card {
                     Components.SelectMenu {
                         options: root.launchShuffleOptions
                         currentValue: Services.ThemeService.launchShuffle || "off"
-                        onValueSelected: function(value) { Services.ConfigService.setShuffleAtLaunch(value); }
+                        onValueSelected: function(value) { Services.ConfigService.setProperty("Appearance", "shuffleAtLaunch", value); }
                     }
                 }
 
@@ -493,7 +492,7 @@ Components.Card {
                     Components.SelectMenu {
                         options: root.powerModeOptions
                         currentValue: Services.PowerService.mode
-                        onValueSelected: function(value) { Services.ConfigService.setPowerMode(value); }
+                        onValueSelected: function(value) { Services.ConfigService.setProperty("Power", "mode", value); }
                     }
                 }
 
@@ -523,7 +522,7 @@ Components.Card {
                             to: 2
                             value: Services.EffectsService[speedSlider.modelData.surface + "Speed"]
                             format: root.speedLabel
-                            onCommitted: function(value) { Services.ConfigService.setTransitionSpeed(speedSlider.modelData.surface, value); }
+                            onCommitted: function(value) { Services.ConfigService.setProperty("Appearance", speedSlider.modelData.surface + "TransitionSpeed", value); }
                         }
                     }
                 }
@@ -541,7 +540,7 @@ Components.Card {
                     Components.SegmentedControl {
                         options: root.barPositionOptions
                         currentValue: root.configValue(root.barConfig, "position", "off")
-                        onValueSelected: function(value) { Services.ConfigService.setBar("position", value); }
+                        onValueSelected: function(value) { Services.ConfigService.setProperty("Bar", "position", value); }
                     }
                 }
 
@@ -580,7 +579,7 @@ Components.Card {
                                 options: barSize.modelData.options
                                 currentValue: barSize.current
                                 fallbackLabel: barSize.current + (barSize.modelData.key === "width" ? "%" : " px")
-                                onValueSelected: function(value) { Services.ConfigService.setBar(barSize.modelData.key, value); }
+                                onValueSelected: function(value) { Services.ConfigService.setProperty("Bar", barSize.modelData.key, value); }
                             }
                         }
                     }
@@ -594,7 +593,7 @@ Components.Card {
                     Components.ToggleSwitch {
                         checked: root.barConfig.outline === "full"
                         tooltipText: "Full outline"
-                        onToggled: function(newState) { Services.ConfigService.setBar("outline", newState ? "full" : "edges"); }
+                        onToggled: function(newState) { Services.ConfigService.setProperty("Bar", "outline", newState ? "full" : "edges"); }
                     }
                 }
             }
@@ -615,7 +614,7 @@ Components.Card {
                     Components.SegmentedControl {
                         options: root.launcherRowOptions
                         currentValue: resultsRow.rows
-                        onValueSelected: function(value) { Services.ConfigService.setLauncherRows(value); }
+                        onValueSelected: function(value) { Services.ConfigService.setProperty("Launcher", "visibleRows", value); }
                     }
                 }
 
@@ -626,7 +625,7 @@ Components.Card {
                         options: root.launcherWidthOptions
                         currentValue: root.configValue(root.launcherConfig, "width", 540)
                         fallbackLabel: currentValue + " px · Custom"
-                        onValueSelected: function(value) { Services.ConfigService.setLauncherWidth(value); }
+                        onValueSelected: function(value) { Services.ConfigService.setProperty("Launcher", "width", value); }
                     }
                 }
 
@@ -638,7 +637,7 @@ Components.Card {
                         options: root.searchEngineOptions
                         currentValue: root.launcherConfig.searchUrl || "https://duckduckgo.com/?q={query}"
                         fallbackLabel: "Custom URL"
-                        onValueSelected: function(value) { Services.ConfigService.setLauncherSearchUrl(value); }
+                        onValueSelected: function(value) { Services.ConfigService.setProperty("Launcher", "searchUrl", value); }
                     }
                 }
             }
@@ -655,7 +654,7 @@ Components.Card {
                     Components.ToggleSwitch {
                         checked: root.weatherEnabled
                         tooltipText: "Show weather"
-                        onToggled: function(newState) { Services.ConfigService.setWeatherEnabled(newState); }
+                        onToggled: function(newState) { Services.ConfigService.setProperty("Weather", "enabled", newState ? "true" : "false"); }
                     }
                 }
 

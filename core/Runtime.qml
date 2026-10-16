@@ -9,10 +9,6 @@ import "../services" as Services
 Scope {
     id: root
 
-    function openLauncher() {
-        launcherOverlay.openLauncher();
-    }
-
     property var config: null
     property bool startupAssessmentComplete: false
 
@@ -73,7 +69,7 @@ Scope {
     IpcHandler {
         target: "launcher"
 
-        function open() { root.openLauncher(); }
+        function open() { launcherOverlay.openLauncher(); }
         function close() { launcherOverlay.closeLauncher(); }
         function toggle() { launcherOverlay.toggleLauncher(); }
     }
@@ -95,7 +91,7 @@ Scope {
         }
 
         function clear(id: string): void { Services.ActivityService.clear("ipc", id); }
-        function list(): string { return Services.ActivityService.listJson(); }
+        function list(): string { return JSON.stringify(Services.ActivityService.activities); }
         function refresh(): void { processActivities.refresh(); }
     }
 

@@ -23,8 +23,6 @@ Item {
     property string edge: ""
     property color edgeColor: ThemeModule.Theme.accent
     property color fillColor: ThemeModule.Theme.bg
-    // The thin frame around the outline.
-    property bool outlined: true
 
     readonly property int topLeft: root.cutTopLeft ? root.cut : 0
     readonly property int topRight: root.cutTopRight ? root.cut : 0
@@ -95,7 +93,7 @@ Item {
 
         ShapePath {
             strokeWidth: 2
-            strokeColor: !root.outlined ? "transparent" : Qt.rgba(
+            strokeColor: Qt.rgba(
                 ThemeModule.Theme.surface2.r * 0.88 + ThemeModule.Theme.overlay.r * 0.12,
                 ThemeModule.Theme.surface2.g * 0.88 + ThemeModule.Theme.overlay.g * 0.12,
                 ThemeModule.Theme.surface2.b * 0.88 + ThemeModule.Theme.overlay.b * 0.12,

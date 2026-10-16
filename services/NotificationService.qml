@@ -124,47 +124,39 @@ Singleton {
         root.notificationHistory = [];
     }
 
+    // Puts `entry` first in the history, replacing an older one with its id.
+    function prependHistory(entry) {
+        var history = root.notificationHistory.filter(function(item) { return item.id !== entry.id; });
+        history.unshift(entry);
+        root.notificationHistory = history.slice(0, 50);
+    }
+
     // alwaysShow lets a notice the user asked for, like the focus timer, through Do Not Disturb.
     function addInternalNotification(id, summary, body, alwaysShow) {
-        var notificationId = "internal:" + String(id || "notice");
-        var receivedAt = new Date();
-        var history = [];
-        for (var i = 0; i < root.notificationHistory.length; i++) {
-            if (root.notificationHistory[i].id !== notificationId)
-                history.push(root.notificationHistory[i]);
-        }
-        history.unshift({
-            id: notificationId,
+        var entry = {
+            id: "internal:" + String(id || "notice"),
             desktopEntry: "",
             appName: "Speshell",
             appIcon: "",
             summary: String(summary || "Speshell notice"),
             body: String(body || ""),
             urgency: 1,
-            time: receivedAt
-        });
-        root.notificationHistory = history.slice(0, 50);
+            time: new Date()
+        };
+        root.prependHistory(entry);
 
         if (!alwaysShow && !root.showsPopup(1))
             return;
 
-        root.pushPopup({
+        root.pushPopup(Object.assign({}, entry, {
             popupId: root.popupCounter++,
-            id: notificationId,
-            desktopEntry: "",
-            appName: "Speshell",
-            appIcon: "",
             image: "",
-            summary: String(summary || "Speshell notice"),
-            body: String(body || ""),
-            urgency: 1,
-            time: receivedAt,
             notification: null,
             defaultAction: null,
             actions: [],
             resident: false,
             expiresAt: Date.now() + 8000
-        });
+        }));
     }
 
     function removeHistoryAt(index) {
@@ -273,15 +265,8 @@ Singleton {
 
         var receivedAt = new Date();
         var actions = root.notificationActions(notification);
-        if (!notification.transient) {
-            var history = [];
-            for (var historyIndex = 0; historyIndex < root.notificationHistory.length; historyIndex++) {
-                if (root.notificationHistory[historyIndex].id !== notification.id)
-                    history.push(root.notificationHistory[historyIndex]);
-            }
-            history.unshift(root.historyEntry(notification, receivedAt));
-            root.notificationHistory = history.slice(0, 50);
-        }
+        if (!notification.transient)
+            root.prependHistory(root.historyEntry(notification, receivedAt));
 
         if (!root.showsPopup(notification.urgency)) {
             if (notification.tracked)

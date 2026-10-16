@@ -53,8 +53,6 @@ Rectangle {
     }
 
     Rectangle {
-        id: indicator
-
         visible: root.currentIndex >= 0
         x: root.inset + Math.max(0, root.currentIndex) * root.segmentWidth
         y: root.inset

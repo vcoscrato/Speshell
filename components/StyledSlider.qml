@@ -6,10 +6,7 @@ import "../theme" as ThemeModule
 Controls.Slider {
     id: root
 
-    property color trackColor: ThemeModule.Theme.alpha(ThemeModule.Theme.surface2, 0.5)
     property color progressColor: ThemeModule.Theme.accent
-    property color handleColor: ThemeModule.Theme.bg
-    property color handleBorderColor: ThemeModule.Theme.accent
     property real trackHeight: 8
     property real handleSize: 18
     signal wheelAdjusted(real nextValue)
@@ -63,7 +60,7 @@ Controls.Slider {
         width: root.availableWidth
         height: root.trackHeight
         radius: height / 2
-        color: root.trackColor
+        color: ThemeModule.Theme.alpha(ThemeModule.Theme.surface2, 0.5)
         clip: true
 
         Rectangle {
@@ -88,9 +85,9 @@ Controls.Slider {
         width: sliderMouse.containsMouse || root.pressed ? 20 : root.handleSize
         height: sliderMouse.containsMouse || root.pressed ? 20 : root.handleSize
         radius: height / 2
-        color: knob.status === Loader.Ready ? "transparent" : root.handleColor
+        color: knob.status === Loader.Ready ? "transparent" : ThemeModule.Theme.bg
         border.width: knob.status === Loader.Ready ? 0 : 2
-        border.color: root.handleBorderColor
+        border.color: ThemeModule.Theme.accent
 
         Behavior on width {
             NumberAnimation { duration: ThemeModule.Theme.animDuration; easing.type: ThemeModule.Theme.animEasing }

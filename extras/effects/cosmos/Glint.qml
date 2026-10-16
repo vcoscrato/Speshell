@@ -11,10 +11,10 @@ ShaderEffect {
     property color cHot: "#fbf1c7"
     property color cGlow: "#fabd2f"
 
-    visible: k > 0.001
-    x: cx - size / 2
-    y: cy - size / 2
-    width: size
-    height: size
+    visible: root.k > 0.001
+    x: root.cx - root.size / 2
+    y: root.cy - root.size / 2
+    width: root.size
+    height: root.size
     fragmentShader: Qt.resolvedUrl("qsb/Glint.qsb")
 }

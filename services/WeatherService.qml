@@ -107,24 +107,10 @@ Singleton {
         id: weatherProc
         running: false
 
-        property string output: ""
-
-        onRunningChanged: {
-            if (running) {
-                weatherProc.output = "";
-            }
-        }
-
-        stdout: SplitParser {
-            onRead: function(data) {
-                weatherProc.output += data;
-            }
-        }
+        stdout: StdioCollector { id: weatherOutput }
 
         onExited: function(exitCode) {
-            var text = weatherProc.output.trim();
-            weatherProc.output = "";
-            var weather = exitCode === 0 ? root.parse(text) : null;
+            var weather = exitCode === 0 ? root.parse(weatherOutput.text) : null;
             if (weather) {
                 root.iconName = weather.icon;
                 root.temperature = weather.temperature;

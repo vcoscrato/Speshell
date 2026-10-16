@@ -54,7 +54,7 @@ PanelWindow {
 
     function openLauncher() {
         root.targetScreen = Services.DashboardService.focusedScreen();
-        Services.LauncherService.clearQuery();
+        Services.LauncherService.setQuery("");
         root.selectedIndex = 0;
         closeSafetyTimer.stop();
         if (!root.presenting)
@@ -79,7 +79,7 @@ PanelWindow {
             return;
         closeSafetyTimer.stop();
         root.presenting = false;
-        Services.LauncherService.clearQuery();
+        Services.LauncherService.setQuery("");
         root.selectedIndex = 0;
     }
 

@@ -5,10 +5,10 @@ import "../components" as Components
 import "../services" as Services
 import "../theme" as ThemeModule
 
-// The installed capture and input tools. A click closes the dashboard or dropdown and
-// runs one: dictation starts listening, the others take an area the user drags out, or
-// the whole screen from the row's screen button. A running dictation or recording shows
-// in its row, and another click finishes it.
+// The installed capture and input tools. A click closes the dropdown and runs one:
+// dictation closes the dashboard and starts listening, the others leave the dashboard
+// showing and take an area the user drags out, or the whole screen from the row's screen
+// button. A running dictation or recording shows in its row, and another click finishes it.
 Components.Card {
     id: root
 
@@ -176,7 +176,6 @@ Components.Card {
             anchors.rightMargin: ThemeModule.Theme.spacingSmall
             anchors.verticalCenter: parent.verticalCenter
             visible: tile.secondaryIcon !== ""
-            size: ThemeModule.Theme.controlHeight
             iconName: tile.secondaryIcon
             iconSize: ThemeModule.Theme.iconSizeSmall
             iconColor: secondary.containsMouse ? tile.toneColor : ThemeModule.Theme.subtextBright

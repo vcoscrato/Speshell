@@ -2,45 +2,31 @@ pragma ComponentBehavior: Bound
 // qmllint disable uncreatable-type unqualified unresolved-type
 
 import QtQuick
-import Quickshell
 import Quickshell.Wayland
 import "../components" as Components
 import "../services" as Services
 import "../theme" as ThemeModule
 
-PanelWindow {
+OsdWindow {
     id: root
 
-    property bool shown: false
     property var displayedActivities: []
-    property var targetScreen: null
     property double nowMs: Date.now()
 
     function syncActivities() {
         var active = Services.ActivityService.activities;
         if (active.length > 0) {
             root.displayedActivities = active.slice();
-            exitAnimation.stop();
-            if (!root.shown) {
-                root.targetScreen = Services.DashboardService.focusedScreen();
-                activityColumn.opacity = 0;
-                activityColumn.scale = 0.97;
-                root.shown = true;
-                entranceAnimation.restart();
-            }
-        } else if (root.shown) {
-            exitAnimation.restart();
+            root.present();
+        } else {
+            root.dismiss();
         }
     }
 
-    screen: root.targetScreen
-    visible: root.shown && root.targetScreen !== null
+    card: activityColumn
+    entranceScale: 0.97
     implicitWidth: 390
     implicitHeight: activityColumn.implicitHeight
-    color: "transparent"
-    focusable: false
-    aboveWindows: true
-    exclusionMode: ExclusionMode.Ignore
 
     anchors { top: true }
     // Quickshell's type info hides the fields of PanelWindow.margins.
@@ -49,10 +35,9 @@ PanelWindow {
     // qmllint enable missing-property
 
     WlrLayershell.namespace: "speshell-activity-osd"
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
     Component.onCompleted: root.syncActivities()
+    onHidden: root.displayedActivities = []
 
     Connections {
         target: Services.ActivityService
@@ -64,40 +49,6 @@ PanelWindow {
         repeat: true
         running: root.shown
         onTriggered: root.nowMs = Date.now()
-    }
-
-    ParallelAnimation {
-        id: entranceAnimation
-
-        NumberAnimation {
-            target: activityColumn
-            property: "opacity"
-            to: 1
-            duration: ThemeModule.Theme.animDuration
-            easing.type: ThemeModule.Theme.animEasing
-        }
-        NumberAnimation {
-            target: activityColumn
-            property: "scale"
-            to: 1
-            duration: ThemeModule.Theme.animDuration
-            easing.type: Easing.OutBack
-        }
-    }
-
-    NumberAnimation {
-        id: exitAnimation
-        target: activityColumn
-        property: "opacity"
-        to: 0
-        duration: ThemeModule.Theme.motion ? 140 : 0
-        easing.type: Easing.InCubic
-        onStopped: {
-            if (Services.ActivityService.activeCount === 0) {
-                root.shown = false;
-                root.displayedActivities = [];
-            }
-        }
     }
 
     Column {

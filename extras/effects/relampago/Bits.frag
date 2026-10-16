@@ -24,16 +24,6 @@ layout(std140, binding = 0) uniform buf {
 } u;
 #include "../../lib/common.glsl"
 
-vec4 over(vec4 under, vec3 col, float a) {
-    return vec4(col, 1.0) * a + under * (1.0 - a);
-}
-
-// Piecewise-linear noise: straight runs between random kinks.
-float zig(float x, float seed) {
-    float i = floor(x), f = fract(x);
-    return mix(hash(vec2(i, seed)), hash(vec2(i + 1.0, seed)), f) - 0.5;
-}
-
 vec4 spark(vec2 p, float R) {
     // A streak from its tail (-R) to its head, shortening as it cools.
     float len = R * (1.6 - 0.9 * u.age);

@@ -155,11 +155,9 @@ Singleton {
     }
 
     function primaryMonitorObject(source) {
-        var active = root.buildActiveMonitors(source || root.monitors);
-        if (active.length === 0) {
-            var fallback = source || root.monitors;
-            return fallback.length > 0 ? fallback[0] : null;
-        }
+        var active = root.buildActiveMonitors(source);
+        if (active.length === 0)
+            return source.length > 0 ? source[0] : null;
 
         for (var i = 0; i < active.length; i++) {
             if (active[i].focused) {
@@ -172,7 +170,7 @@ Singleton {
 
     // Mirrored when a display mirrors another or two share a position.
     function detectMirrored(source) {
-        var active = root.buildActiveMonitors(source || root.monitors);
+        var active = root.buildActiveMonitors(source);
         var occupiedPositions = {};
         for (var i = 0; i < active.length; i++) {
             var mirrorOf = String(active[i].mirrorOf || "");
@@ -188,7 +186,7 @@ Singleton {
     }
 
     function detectLayoutMode(source) {
-        if (root.buildActiveMonitors(source || root.monitors).length <= 1)
+        if (root.buildActiveMonitors(source).length <= 1)
             return "single";
         return root.detectMirrored(source) ? "mirror" : "extend";
     }
@@ -247,9 +245,8 @@ Singleton {
     }
 
     function ensureSelected() {
-        if (root.monitorByName(root.draftMonitors, root.selectedName)) {
+        if (root.selectedDraftMonitor())
             return;
-        }
 
         var primary = root.primaryMonitorObject(root.draftMonitors);
         root.selectedName = primary ? root.monitorName(primary) : "";
@@ -275,31 +272,23 @@ Singleton {
         root.ensureSelected();
     }
 
-    function luaQuote(value) {
-        return "\"" + String(value || "")
-            .replace(/\\/g, "\\\\")
-            .replace(/\"/g, "\\\"")
-            .replace(/\r/g, "\\r")
-            .replace(/\n/g, "\\n") + "\"";
-    }
-
     // The `hyprctl eval` Lua that applies a draft monitor.
     function commandForDraftMonitor(monitor) {
         var name = root.monitorName(monitor);
         if (name === "")
             return "";
         if (monitor.disabled)
-            return "hl.monitor({ output = " + root.luaQuote(name) + ", disabled = true })";
+            return "hl.monitor({ output = " + Shell.luaQuote(name) + ", disabled = true })";
         var mirrorTarget = String(monitor.mirrorOf || "");
         var position = mirrorTarget !== "" && mirrorTarget !== "none"
             ? "0x0"
             : Math.round(Number(monitor.x) || 0) + "x" + Math.round(Number(monitor.y) || 0);
-        var command = "hl.monitor({ output = " + root.luaQuote(name)
-            + ", mode = " + root.luaQuote(root.modeCommand(root.monitorModeString(monitor)))
-            + ", position = " + root.luaQuote(position)
+        var command = "hl.monitor({ output = " + Shell.luaQuote(name)
+            + ", mode = " + Shell.luaQuote(root.modeCommand(root.monitorModeString(monitor)))
+            + ", position = " + Shell.luaQuote(position)
             + ", scale = " + root.monitorScale(monitor);
         if (mirrorTarget !== "")
-            command += ", mirror = " + root.luaQuote(mirrorTarget);
+            command += ", mirror = " + Shell.luaQuote(mirrorTarget);
         return command + " })";
     }
 
@@ -584,7 +573,7 @@ Singleton {
     }
 
     function boundsFor(source) {
-        var active = root.buildActiveMonitors(source || []);
+        var active = root.buildActiveMonitors(source);
         if (active.length === 0) {
             return { minX: 0, minY: 0, maxX: 1, maxY: 1, width: 1, height: 1 };
         }
@@ -614,17 +603,6 @@ Singleton {
         };
     }
 
-    function activeMonitorIndex(source, monitor) {
-        var targetName = root.monitorName(monitor);
-        var active = root.buildActiveMonitors(source || []);
-        for (var i = 0; i < active.length; i++) {
-            if (root.monitorName(active[i]) === targetName) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
     function mapRect(monitor, canvasWidth, canvasHeight) {
         if (!monitor || monitor.disabled) {
             return { x: 0, y: 0, width: 0, height: 0 };
@@ -636,7 +614,7 @@ Singleton {
         var active = root.buildActiveMonitors(root.draftMonitors);
 
         if (root.detectLayoutMode(root.draftMonitors) === "mirror" && active.length > 1) {
-            var index = Math.max(0, root.activeMonitorIndex(active, monitor));
+            var index = Math.max(0, active.map(root.monitorName).indexOf(root.monitorName(monitor)));
             var slotWidth = availableWidth / active.length;
             var mirrorScale = Math.min(
                 Math.max(1, slotWidth - 6) / root.logicalWidth(monitor),

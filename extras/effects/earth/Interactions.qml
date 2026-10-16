@@ -92,6 +92,7 @@ Item {
                 property color cShade: root.theme ? root.theme.crust : "#0d0f0a"
                 property color cDust: root.theme ? root.theme.peach : "#d99a5a"
                 property color cJade: root.theme ? root.theme.accent : "#5fa57a"
+                property color cGlint: root.theme ? root.theme.text : "#e9e6d3"
                 fragmentShader: Qt.resolvedUrl("qsb/Interactions.qsb")
             }
         }

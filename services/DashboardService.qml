@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 import "../core/WidgetRegistry.js" as WidgetRegistry
+import "Shell.js" as Shell
 
 Singleton {
     id: root
@@ -20,57 +21,25 @@ Singleton {
     property string errorMessage: ""
     // A Settings page to show, for when Settings next loads or is showing; it clears this.
     property string settingsPage: ""
-    readonly property var availablePanelNames: root.filterAvailablePanels(
-        WidgetRegistry.navigationPanels,
-        FeatureSupport.supportsBattery,
-        FeatureSupport.supportsBluetooth,
-        FeatureSupport.supportsDisplayControl
-    )
+    readonly property var availablePanelNames: WidgetRegistry.navigationPanels.filter(function(panel) {
+        return root.isPanelSupported(panel);
+    })
     // Bar dropdowns open across the screens.
     property int openDropdowns: 0
     signal panelRequested(string panelName)
     // The bars close their dropdowns.
     signal dismissRequested()
 
-    function panelSupported(panelName, batterySupported, bluetoothSupported, displaySupported) {
+    function isPanelSupported(panelName) {
         if (panelName === "batteryStatus")
-            return batterySupported;
+            return FeatureSupport.supportsBattery;
         if (panelName === "bluetoothPanel")
-            return bluetoothSupported;
+            return FeatureSupport.supportsBluetooth;
         if (panelName === "displayControl")
-            return displaySupported;
+            return FeatureSupport.supportsDisplayControl;
         if (panelName === "tools")
             return ToolsService.available;
         return true;
-    }
-
-    function isPanelSupported(panelName) {
-        return root.panelSupported(
-            panelName,
-            FeatureSupport.supportsBattery,
-            FeatureSupport.supportsBluetooth,
-            FeatureSupport.supportsDisplayControl
-        );
-    }
-
-    function filterAvailablePanels(panelNames, batterySupported, bluetoothSupported, displaySupported) {
-        var result = [];
-        var seen = ({});
-        var configured = Array.isArray(panelNames) ? panelNames : [];
-        for (var i = 0; i < configured.length; i++) {
-            var panel = String(configured[i] || "");
-            if (!WidgetRegistry.has(panel)
-                    || Object.prototype.hasOwnProperty.call(seen, panel)
-                    || !root.panelSupported(panel, batterySupported, bluetoothSupported, displaySupported))
-                continue;
-            seen[panel] = true;
-            result.push(panel);
-        }
-        return result;
-    }
-
-    function isPanelAvailable(panelName) {
-        return root.availablePanelNames.indexOf(String(panelName || "")) >= 0;
     }
 
     // Screen for the focused Hyprland monitor, falling back to the first screen.
@@ -86,10 +55,6 @@ Singleton {
     function workspaceArgument() {
         var value = String(root.workspaceName || "special:term");
         return value.indexOf("special:") === 0 ? value.substring(8) : value;
-    }
-
-    function luaQuote(value) {
-        return "\"" + String(value).replace(/\\/g, "\\\\").replace(/\"/g, "\\\"") + "\"";
     }
 
     // A panel's state in a few words, for its rail or bar button's tooltip.
@@ -126,7 +91,7 @@ Singleton {
         if (openWorkspaceProc.running)
             return;
         var workspace = root.workspaceArgument();
-        var luaDispatcher = "hl.dsp.workspace.toggle_special(" + root.luaQuote(workspace) + ")";
+        var luaDispatcher = "hl.dsp.workspace.toggle_special(" + Shell.luaQuote(workspace) + ")";
         openWorkspaceProc.command = [
             "sh", "-c",
             "if hyprctl status 2>/dev/null | grep -q '^configProvider: lua$'; then "
@@ -139,12 +104,13 @@ Singleton {
         openWorkspaceProc.running = true;
     }
 
-    // Hides the dashboard and the bars' dropdowns, for a tool that captures or types
-    // into what's under them. Returns whether any was showing.
-    function dismissSurfaces() {
-        var shown = root.workspaceVisible || root.openDropdowns > 0;
+    // Hides the bars' dropdowns, and the dashboard unless `keepWorkspace`, for a tool
+    // that captures or types into what's under them. Returns whether any was showing.
+    function dismissSurfaces(keepWorkspace) {
+        var closesWorkspace = root.workspaceVisible && !keepWorkspace;
+        var shown = closesWorkspace || root.openDropdowns > 0;
         root.dismissRequested();
-        if (root.workspaceVisible)
+        if (closesWorkspace)
             root.toggleWorkspace();
         return shown;
     }
@@ -156,7 +122,7 @@ Singleton {
             root.errorMessage = "Unknown dashboard panel '" + supplied + "'.";
             return false;
         }
-        if (!root.isPanelAvailable(requested)) {
+        if (root.availablePanelNames.indexOf(requested) < 0) {
             root.errorMessage = "The " + requested + " panel is not available in the dashboard.";
             return false;
         }
@@ -187,7 +153,7 @@ Singleton {
         var margin = root.panelMargin;
         var left = margin + root.panelWidth + root.panelGap;
         var workspace = "special:" + root.workspaceArgument();
-        var luaRule = "hl.workspace_rule({ workspace = " + root.luaQuote(workspace)
+        var luaRule = "hl.workspace_rule({ workspace = " + Shell.luaQuote(workspace)
             + ", gaps_out = { top = " + margin + ", right = " + margin
             + ", bottom = " + margin + ", left = " + left + " } })";
         var legacyRule = workspace + ", gapsout:" + [margin, margin, margin, left].join(" ");

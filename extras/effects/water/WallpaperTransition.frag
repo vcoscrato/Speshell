@@ -44,6 +44,6 @@ void main() {
     float energy = max(front, trail);
     col.rgb = mix(col.rgb, u.cLight.rgb, cover(slope - 0.45) * 0.35 * energy);
     col.rgb = mix(col.rgb, u.cDark.rgb, cover(-slope - 0.45) * 0.3 * energy);
-    col.rgb = mix(col.rgb, vec3(1.0), cover(3.0 - abs(d + 4.0)) * 0.85);
+    col.rgb = mix(col.rgb, u.cLight.rgb, cover(3.0 - abs(d + 4.0)) * 0.85);
     fragColor = col * u.qt_Opacity;
 }

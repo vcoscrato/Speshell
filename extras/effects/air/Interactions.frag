@@ -20,16 +20,6 @@ layout(std140, binding = 0) uniform buf {
 } u;
 #include "../../lib/common.glsl"
 
-vec4 over(vec4 under, vec3 col, float a) {
-    return vec4(col, 1.0) * a + under * (1.0 - a);
-}
-
-float sdLeaf(vec2 p, float r, float d) {
-    p = abs(p);
-    float b = sqrt(r * r - d * d);
-    return ((p.y - b) * d > p.x * b) ? length(p - vec2(0.0, b)) : length(p - vec2(-d, 0.0)) - r;
-}
-
 vec4 wisp(vec2 p, float R) {
     float bend = (hash(vec2(u.seed, 1.0)) - 0.5) * 0.9;
     // Along the stroke from its tail (-R) to its head (R); the visible piece streams out

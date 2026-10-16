@@ -15,32 +15,8 @@ layout(std140, binding = 0) uniform buf {
     vec4 cText;
     vec4 cPaint;
     vec4 cGlow;
-    vec4 cEdge;
 } u;
 #include "../../lib/common.glsl"
-
-// Corner k of a bolt's zigzag, in px: corners about P apart along x, unevenly, and
-// alternating up and down by uneven amounts up to A.
-vec2 boltCorner(float k, float P, float A, float seed) {
-    return vec2((k + 0.4 * (hash(vec2(k, seed + 5.0)) - 0.5)) * P,
-                (mod(k, 2.0) * 2.0 - 1.0) * mix(0.3, 1.0, hash(vec2(k, seed))) * A);
-}
-
-float sdSeg(vec2 p, vec2 a, vec2 b) {
-    vec2 pa = p - a, ba = b - a;
-    return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0));
-}
-
-// Distance from q (x along the bolt, y across it, px) to its zigzag of straight runs.
-float boltDist(vec2 q, float P, float A, float seed) {
-    float i = floor(q.x / P);
-    float d = 1e3;
-    for (int k = -1; k <= 1; k++) {
-        float c = i + float(k);
-        d = min(d, sdSeg(q, boltCorner(c, P, A, seed), boltCorner(c + 1.0, P, A, seed)));
-    }
-    return d;
-}
 
 void main() {
     vec2 p = qt_TexCoord0 * u.size;

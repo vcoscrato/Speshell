@@ -1,8 +1,6 @@
 pragma ComponentBehavior: Bound
-// qmllint disable signal-handler-parameters
 
 import QtQuick
-import QtQml.Models
 import "../components" as Components
 import "../theme" as ThemeModule
 import "../services" as Services
@@ -193,12 +191,29 @@ Components.Card {
             spacing: ThemeModule.Theme.spacingSmall
             visible: root.multiple || root.noticeText() !== ""
 
-            Components.StatusBadge {
+            Rectangle {
                 id: layoutBadge
+                readonly property color toneColor: ThemeModule.Theme.toneColor(
+                    root.layoutTone(Services.DisplayService.draftLayoutMode))
+
                 visible: root.multiple
-                text: root.layoutLabel(Services.DisplayService.draftLayoutMode)
-                tone: root.layoutTone(Services.DisplayService.draftLayoutMode)
                 anchors.verticalCenter: parent.verticalCenter
+                width: badgeText.width + 14
+                height: Math.max(18, badgeText.implicitHeight + ThemeModule.Theme.spacingTiny)
+                radius: height / 2
+                color: ThemeModule.Theme.alpha(layoutBadge.toneColor, ThemeModule.Theme.tintStrong)
+                border.width: ThemeModule.Theme.borderWidth
+                border.color: ThemeModule.Theme.alpha(layoutBadge.toneColor, ThemeModule.Theme.tintOutline)
+
+                Text {
+                    id: badgeText
+                    anchors.centerIn: parent
+                    text: root.layoutLabel(Services.DisplayService.draftLayoutMode)
+                    font.pixelSize: ThemeModule.Theme.fontSizeCaption
+                    font.family: ThemeModule.Theme.fontFamily
+                    font.bold: true
+                    color: layoutBadge.toneColor
+                }
             }
 
             Text {
@@ -216,7 +231,6 @@ Components.Card {
         }
 
         Rectangle {
-
             width: parent.width
             visible: Services.DisplayService.confirming || Services.DisplayService.reverting
             implicitHeight: confirmationColumn.implicitHeight + ThemeModule.Theme.spacingMedium * 2
@@ -333,21 +347,16 @@ Components.Card {
                     Accessible.name: "Select " + Services.DisplayService.monitorName(displayTile.modelData)
                     Accessible.onPressAction: Services.DisplayService.setSelected(displayTile.modelData.name)
 
-                    Column {
+                    Text {
                         anchors.centerIn: parent
                         width: Math.max(0, parent.width - ThemeModule.Theme.spacingSmall)
-                        spacing: ThemeModule.Theme.spacingMicro
-
-                        Text {
-                            width: parent.width
-                            text: displayTile.modelData.name || "Display"
-                            horizontalAlignment: Text.AlignHCenter
-                            elide: Text.ElideRight
-                            font.pixelSize: ThemeModule.Theme.fontSizeCaption
-                            font.family: ThemeModule.Theme.fontFamily
-                            font.bold: true
-                            color: ThemeModule.Theme.text
-                        }
+                        text: displayTile.modelData.name || "Display"
+                        horizontalAlignment: Text.AlignHCenter
+                        elide: Text.ElideRight
+                        font.pixelSize: ThemeModule.Theme.fontSizeCaption
+                        font.family: ThemeModule.Theme.fontFamily
+                        font.bold: true
+                        color: ThemeModule.Theme.text
                     }
 
                     MouseArea {
@@ -497,7 +506,6 @@ Components.Card {
                         enabled: root.selectedMonitor !== null
                             && !root.busy
                             && (root.selectedMonitor.disabled || Services.DisplayService.activeDraftCount() > 1)
-                        activeColor: ThemeModule.Theme.accent
                         tooltipText: checked ? "Turn display off" : "Turn display on"
                         onToggled: function(state) {
                             Services.DisplayService.setSelectedEnabled(state);

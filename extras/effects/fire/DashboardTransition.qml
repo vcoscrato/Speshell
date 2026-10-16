@@ -81,7 +81,6 @@ Item {
     }
 
     Flames {
-
         theme: root.theme
         anchors.fill: parent
         // Gone by the last frame, so the panel underneath is all that shows.

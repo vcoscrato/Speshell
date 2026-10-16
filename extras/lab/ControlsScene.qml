@@ -4,7 +4,7 @@ import Quickshell
 // Mimics the dashboard's controls in THEME_INI's colors, played by a script: a slider
 // dragged and let go twice, another stepped by the wheel, an audio device and a
 // segment picked, a switch turned on and off, and a sidebar panel picked. The effects'
-// knob draws the thumbs, and their interactions get the calls core/Dashboard.qml makes.
+// knob draws the thumbs, and their interactions get the calls core/InteractionsLayer.qml makes.
 Item {
     id: root
     width: 1920

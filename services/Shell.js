@@ -5,6 +5,15 @@ function quote(value) {
     return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
 }
 
+// A Lua string literal, for `hyprctl eval` and Hyprland's Lua dispatchers.
+function luaQuote(value) {
+    return "\"" + String(value || "")
+        .replace(/\\/g, "\\\\")
+        .replace(/\"/g, "\\\"")
+        .replace(/\r/g, "\\r")
+        .replace(/\n/g, "\\n") + "\"";
+}
+
 // Shell function that runs "$@" in the user's terminal emulator. Returns 127
 // when no terminal is found so callers can fall back.
 var shellFunction = "speshell_terminal() { "

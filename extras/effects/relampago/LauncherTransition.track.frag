@@ -31,16 +31,6 @@ layout(std140, binding = 0) uniform buf {
 } u;
 #include "../../lib/common.glsl"
 
-vec4 over(vec4 under, vec3 col, float a) {
-    return vec4(col, 1.0) * a + under * (1.0 - a);
-}
-
-// Piecewise-linear noise: straight runs between random kinks.
-float zig(float x, float seed) {
-    float i = floor(x), f = fract(x);
-    return mix(hash(vec2(i, seed)), hash(vec2(i + 1.0, seed)), f) - 0.5;
-}
-
 // One depth of speed lines: dashes in some rows, streaming left, thickest at their
 // leading (left) end. Returns (coverage, outline coverage, 0..1 along from the head).
 vec3 speedLines(vec2 p, float k, float rowH, float density, float speed, float width) {

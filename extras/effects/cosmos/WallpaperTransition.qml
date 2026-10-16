@@ -33,7 +33,6 @@ Item {
     readonly property real eased: 1 - Math.pow(1 - sweep, 2.2)
 
     EffectClock {
-        id: clock
         onAdvanced: function(dt) {
             if (root.flare < 1) {
                 root.flare = Math.min(1, root.flare + dt / root.flareTime);

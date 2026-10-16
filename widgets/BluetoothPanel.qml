@@ -11,11 +11,9 @@ Components.Card {
     id: root
     title: "Bluetooth"
     iconName: "bluetooth"
-    collapsible: true
     visible: Services.FeatureSupport.supportsBluetooth
     property bool presented: false
 
-    // ── Native API helpers ──
     readonly property var adapter: Services.BluetoothService.adapter
     readonly property bool btOn: Services.BluetoothService.enabled
     readonly property bool scanning: Services.BluetoothService.scanning
@@ -75,12 +73,8 @@ Components.Card {
         Components.ToggleSwitch {
             enabled: root.adapter !== null
             checked: root.btOn
-            activeColor: ThemeModule.Theme.accent
             tooltipText: root.btOn ? "Turn Bluetooth off" : "Turn Bluetooth on"
-            onToggled: function(state) {
-                if (root.adapter)
-                    root.adapter.enabled = state;
-            }
+            onToggled: function(state) { Services.BluetoothService.setEnabled(state); }
         }
     }
 
@@ -146,7 +140,7 @@ Components.Card {
             detail: "Turn it on to connect headphones, controllers, and other devices."
             actionLabel: "Turn on Bluetooth"
             actionIconName: "bluetooth"
-            onActivated: root.adapter.enabled = true
+            onActivated: Services.BluetoothService.setEnabled(true)
         }
     ]
 

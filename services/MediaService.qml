@@ -19,14 +19,6 @@ Singleton {
         return Mpris.players && Mpris.players.values ? Mpris.players.values : [];
     }
 
-    function containsPlayer(values, candidate) {
-        for (var i = 0; i < values.length; i++) {
-            if (values[i] === candidate)
-                return true;
-        }
-        return false;
-    }
-
     function refreshPlayer() {
         var values = root.players();
         var selected = null;
@@ -36,7 +28,7 @@ Singleton {
                 break;
             }
         }
-        if (!selected && root.player && root.containsPlayer(values, root.player))
+        if (!selected && root.player && values.indexOf(root.player) >= 0)
             selected = root.player;
         if (!selected) {
             for (var j = 0; j < values.length; j++) {
@@ -48,10 +40,6 @@ Singleton {
         }
         if (root.player !== selected)
             root.player = selected;
-        root.syncPosition();
-    }
-
-    function syncPosition() {
         root.displayedPosition = root.player ? Number(root.player.position) || 0 : 0;
     }
 

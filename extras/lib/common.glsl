@@ -19,6 +19,17 @@ float fbm(vec2 p) {
     return s;
 }
 
+// Piecewise-linear noise in -0.5..0.5: straight runs between random kinks at whole x.
+float zig(float x, float seed) {
+    float i = floor(x), f = fract(x);
+    return mix(hash(vec2(i, seed)), hash(vec2(i + 1.0, seed)), f) - 0.5;
+}
+
+vec2 rot(vec2 v, float a) {
+    float c = cos(a), s = sin(a);
+    return vec2(c * v.x - s * v.y, s * v.x + c * v.y);
+}
+
 // Divergence-free swirl: the curl of a scalar noise potential.
 vec2 curl(vec2 p, float t) {
     float e = 0.05;
@@ -55,10 +66,45 @@ float sdRoundRect(vec2 p, vec2 halfSize, float r) {
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
 }
 
+float sdSeg(vec2 p, vec2 a, vec2 b) {
+    vec2 pa = p - a, ba = b - a;
+    return length(pa - ba * clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0));
+}
+
+// Pointed leaf along y: the lens between two circles of radius r set d apart.
+float sdLeaf(vec2 p, float r, float d) {
+    p = abs(p);
+    float b = sqrt(r * r - d * d);
+    return ((p.y - b) * d > p.x * b) ? length(p - vec2(0.0, b)) : length(p - vec2(-d, 0.0)) - r;
+}
+
+// Corner k of a lightning bolt's zigzag, in px: corners about P apart along x,
+// unevenly, alternating up and down by uneven amounts up to A.
+vec2 boltCorner(float k, float P, float A, float seed) {
+    return vec2((k + 0.4 * (hash(vec2(k, seed + 5.0)) - 0.5)) * P,
+                (mod(k, 2.0) * 2.0 - 1.0) * mix(0.3, 1.0, hash(vec2(k, seed))) * A);
+}
+
+// Distance from q (x along the bolt, y across it, px) to its zigzag of straight runs.
+float boltDist(vec2 q, float P, float A, float seed) {
+    float i = floor(q.x / P);
+    float d = 1e3;
+    for (int k = -1; k <= 1; k++) {
+        float c = i + float(k);
+        d = min(d, sdSeg(q, boltCorner(c, P, A, seed), boltCorner(c + 1.0, P, A, seed)));
+    }
+    return d;
+}
+
 // Anti-aliased hard step: the cel-shading primitive.
 float band(float v, float t) {
     float w = fwidth(v) * 0.75;
     return smoothstep(t - w, t + w, v);
+}
+
+// Premultiplied color: `col` at coverage `a` laid over `under`.
+vec4 over(vec4 under, vec3 col, float a) {
+    return vec4(col, 1.0) * a + under * (1.0 - a);
 }
 
 // Ragged distance from an ignition point. A front sits where burnField == radius;

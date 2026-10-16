@@ -12,8 +12,15 @@ float steps(float t, float n) {
     return k / (n - 1.0);
 }
 
-vec3 ramp3(vec3 a, vec3 b, vec3 c, float t) {
-    return t < 0.5 ? mix(a, b, t * 2.0) : mix(b, c, t * 2.0 - 1.0);
+// One star per grid cell (of `size`), shown for a fraction `keep` of the cells.
+float starField(vec2 q, float size, float keep, float seed, float maxR, float minR) {
+    vec2 g = floor(q / size);
+    vec2 h = hash2(g + seed);
+    if (hash(g + seed + 3.7) > keep)
+        return 0.0;
+    vec2 c = (g + 0.2 + 0.6 * h) * size;
+    float r = max(minR, maxR * mix(0.25, 1.0, h.x * h.y));
+    return cover(r - length(q - c)) * mix(0.45, 1.0, h.y);
 }
 
 // Coverage of the area below a skyline at height h.

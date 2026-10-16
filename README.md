@@ -17,7 +17,7 @@ A personal setup first, largely built with AI. Borrow whatever is useful.
 - Markdown notes and clipboard history
 - Media (MPRIS), audio output and input
 - Displays (extend or mirror) and brightness
-- Network, Bluetooth, battery, power, tray
+- Network (Wi-Fi, and NetworkManager's VPN and WireGuard profiles), Bluetooth, battery, power, tray
 - Notifications with history and Do Not Disturb
 - Launcher: apps, calculator, panels, web bangs
 - Tools: dictation, copy text from the screen (OCR), screenshots, screen recording, QR codes, color picker
@@ -31,11 +31,11 @@ Widgets for missing hardware or tools hide themselves.
 
 QuickShell ≥ 0.3, Hyprland, PipeWire/WirePlumber, NetworkManager, BlueZ, libnotify.
 
-Optional: `brightnessctl`, `curl` (weather), `hyprlock`, `matugen` (app themes), `cliphist`, `wl-clipboard`, `xdg-utils`, and the tools' programs below.
+Optional: `brightnessctl`, `curl` (weather), `openconnect` (OpenConnect VPN logins), `libsecret` (remembering VPN passwords in the keyring), `hyprlock`, `matugen` (app themes), `cliphist`, `wl-clipboard`, `xdg-utils`, and the tools' programs below.
 
 ## Tools
 
-The **Tools** panel, in the bar and the dashboard, runs each tool whose programs are installed; the others don't show. Areas are picked with a selection in the theme's colors, and results arrive as toasts.
+The **Tools** panel, in the bar and the dashboard, runs each tool whose programs are installed; the others don't show. Areas are picked with a selection in the theme's colors, and results arrive as toasts. The capture tools leave the dashboard open, so it can be captured too; dictation closes it to type into the window beneath.
 
 | Tool | Does | Needs |
 |---|---|---|

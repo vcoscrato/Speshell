@@ -25,9 +25,5 @@ Loader {
             widget.presented = Qt.binding(function() { return root.presented; });
         if (root.name === "audioControl")
             widget.mode = Qt.binding(function() { return root.audioSeparate ? "output" : "combined"; });
-        if ("collapsible" in widget) {
-            widget.collapsible = false;
-            widget.collapsed = false;
-        }
     }
 }

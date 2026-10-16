@@ -9,8 +9,7 @@ layout(std140, binding = 0) uniform buf {
     mat4 qt_Matrix;
     float qt_Opacity;
     float time;
-    vec4 rect;         // this item's rect on screen (px); the panel sits inset by `pad`
-    float pad;
+    vec4 rect;         // this item's rect on screen (px)
     vec4 panel;        // panel rect on screen (px)
     float radius;
     float grow;        // 0 nothing .. 1 the orb has filled the panel

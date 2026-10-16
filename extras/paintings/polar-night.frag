@@ -16,17 +16,6 @@ layout(std140, binding = 0) uniform buf {
 
 const float HORIZON = 0.34;
 
-// One star per grid cell (of `size`), shown for a fraction `keep` of the cells.
-float starField(vec2 q, float size, float keep, float seed, float maxR, float minR) {
-    vec2 g = floor(q / size);
-    vec2 h = hash2(g + seed);
-    if (hash(g + seed + 3.7) > keep)
-        return 0.0;
-    vec2 c = (g + 0.2 + 0.6 * h) * size;
-    float r = max(minR, maxR * mix(0.25, 1.0, h.x * h.y));
-    return cover(r - length(q - c)) * mix(0.45, 1.0, h.y);
-}
-
 // Aurora over the sky at q: rgb, and how strongly it shows (0..1).
 vec4 aurora(vec2 q, float aspect) {
     vec4 best = vec4(0.0);

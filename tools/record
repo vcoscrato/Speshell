@@ -38,8 +38,4 @@ if [[ ! -s "$file" ]]; then
   notify "Recording failed" "$(preview "$(tail -n1 "$log")")"
   exit "$((status > 0 ? status : 1))"
 fi
-if command -v xdg-open >/dev/null 2>&1; then
-  [[ "$(notify "Recording saved" "$(basename -- "$file")" "open=Open")" == open ]] && open_with_default "$file"
-else
-  notify "Recording saved" "$(basename -- "$file")"
-fi
+notify_open "Recording saved" "$(basename -- "$file")" "$file"

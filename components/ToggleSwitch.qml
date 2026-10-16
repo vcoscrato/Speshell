@@ -7,9 +7,7 @@ Rectangle {
     id: root
 
     property bool checked: false
-    property color activeColor: ThemeModule.Theme.accent
     property string tooltipText: ""
-    property int tooltipDelay: 300
 
     signal toggled(bool newState)
 
@@ -33,11 +31,11 @@ Rectangle {
     opacity: enabled ? 1.0 : ThemeModule.Theme.disabledOpacity
 
     color: root.on
-        ? root.activeColor
+        ? ThemeModule.Theme.accent
         : ThemeModule.Theme.alpha(ThemeModule.Theme.surface2, 0.4)
     border.width: ThemeModule.Theme.borderWidth
     border.color: root.on
-        ? root.activeColor
+        ? ThemeModule.Theme.accent
         : ThemeModule.Theme.controlBorder
 
     Behavior on color {
@@ -66,7 +64,6 @@ Rectangle {
         root.toggled(next);
     }
 
-    // Compact Thumb Handle
     Rectangle {
         id: thumb
         width: switchMouse.pressed ? 16 : 14
@@ -121,6 +118,5 @@ Rectangle {
     Components.Tooltip {
         visible: root.tooltipText !== "" && switchMouse.containsMouse
         text: root.tooltipText
-        delay: root.tooltipDelay
     }
 }

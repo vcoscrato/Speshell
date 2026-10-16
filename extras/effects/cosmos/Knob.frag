@@ -21,10 +21,6 @@ layout(std140, binding = 0) uniform buf {
 } u;
 #include "../../lib/common.glsl"
 
-vec4 over(vec4 under, vec3 col, float a) {
-    return vec4(col, 1.0) * a + under * (1.0 - a);
-}
-
 void main() {
     vec2 p = (qt_TexCoord0 - 0.5) * u.area;
     float R = u.size * 0.5 - 1.0;

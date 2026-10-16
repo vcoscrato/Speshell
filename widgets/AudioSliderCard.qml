@@ -11,252 +11,169 @@ Components.Card {
     // "output" = speaker, "input" = mic, "combined" = both speaker & mic in one card
     property string mode: "output"
 
-    Column {
-        width: parent.width
-        spacing: ThemeModule.Theme.spacingXL
+    // One direction's mute button, volume slider, and device list.
+    component Section: Column {
+        id: section
 
-        // ── OUTPUT CONTROL SECTION ────────────────────────
-        Column {
+        property bool output: true
+        property bool presented: false
+        readonly property string kind: section.output ? "output" : "input"
+        readonly property var device: section.output ? Services.AudioService.defaultSink : Services.AudioService.defaultSource
+        readonly property bool muted: section.output ? Services.AudioService.outputMuted : Services.AudioService.inputMuted
+        readonly property bool hasVolume: section.output ? Services.AudioService.hasOutputVolume : Services.AudioService.hasInputVolume
+        readonly property int volumePercent: section.output
+            ? Services.AudioService.outputVolumePercent
+            : Services.AudioService.inputVolumePercent
+
+        function setVolume(percent) {
+            if (section.output)
+                Services.AudioService.setOutputVolumePercent(Math.round(percent));
+            else
+                Services.AudioService.setInputVolumePercent(Math.round(percent));
+        }
+
+        function setDevice(node) {
+            if (section.output)
+                Services.AudioService.setDefaultSink(node);
+            else
+                Services.AudioService.setDefaultSource(node);
+        }
+
+        width: parent.width
+        spacing: ThemeModule.Theme.spacingSmall
+
+        Row {
             width: parent.width
             spacing: ThemeModule.Theme.spacingSmall
-            visible: root.mode === "output" || root.mode === "combined"
 
-            Row {
-                width: parent.width
-                spacing: ThemeModule.Theme.spacingSmall
-
-                Components.IconButton {
-                    iconName: Services.AudioService.outputMuted ? "audio-output-muted" : "audio-output"
-                    anchors.verticalCenter: parent.verticalCenter
-                    tooltipText: Services.AudioService.outputMuted ? "Unmute output" : "Mute output"
-                    onClicked: Services.AudioService.toggleOutputMute()
-                }
-
-                Components.StyledSlider {
-                    width: parent.width - 88
-                    anchors.verticalCenter: parent.verticalCenter
-                    value: Services.AudioService.hasOutputVolume ? Services.AudioService.outputVolumePercent : 0
-                    enabled: Services.AudioService.defaultSink && Services.AudioService.hasOutputVolume
-                    stepSize: Services.AudioService.scrollStep
-                    onMoved: {
-                        Services.AudioService.setOutputVolumePercent(Math.round(value));
-                    }
-                    onWheelAdjusted: function(nextValue) {
-                        Services.AudioService.setOutputVolumePercent(Math.round(nextValue));
-                    }
-                }
-
-                Text {
-                    text: !Services.AudioService.defaultSink ? "—" : (Services.AudioService.hasOutputVolume ? Services.AudioService.outputVolumePercent + "%" : "…")
-                    font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                    font.family: ThemeModule.Theme.fontFamily
-                    color: ThemeModule.Theme.subtext
-                    width: 40
-                    horizontalAlignment: Text.AlignRight
-                    anchors.verticalCenter: parent.verticalCenter
+            Components.IconButton {
+                iconName: section.output
+                    ? (section.muted ? "audio-output-muted" : "audio-output")
+                    : (section.muted ? "audio-input-muted" : "audio-input")
+                anchors.verticalCenter: parent.verticalCenter
+                tooltipText: (section.muted ? "Unmute " : "Mute ") + section.kind
+                onClicked: {
+                    if (section.output)
+                        Services.AudioService.toggleOutputMute();
+                    else
+                        Services.AudioService.toggleInputMute();
                 }
             }
 
-            // Output Devices List
-            Column {
-                width: parent.width
-                spacing: ThemeModule.Theme.spacingTiny
+            Components.StyledSlider {
+                width: parent.width - 88
+                anchors.verticalCenter: parent.verticalCenter
+                value: section.hasVolume ? section.volumePercent : 0
+                enabled: section.device && section.hasVolume
+                stepSize: Services.AudioService.scrollStep
+                onMoved: section.setVolume(value)
+                onWheelAdjusted: function(nextValue) { section.setVolume(nextValue); }
+            }
 
-                Repeater {
-                    model: root.presented ? Services.AudioService.devices(true) : []
+            Text {
+                text: !section.device ? "—" : (section.hasVolume ? section.volumePercent + "%" : "…")
+                font.pixelSize: ThemeModule.Theme.fontSizeSmall
+                font.family: ThemeModule.Theme.fontFamily
+                color: ThemeModule.Theme.subtext
+                width: 40
+                horizontalAlignment: Text.AlignRight
+                anchors.verticalCenter: parent.verticalCenter
+            }
+        }
 
-                    delegate: Rectangle {
-                        id: outDevDelegate
-                        required property var modelData
-                        readonly property bool selected: Services.AudioService.defaultSink === outDevDelegate.modelData.node
-                        width: parent.width
-                        height: ThemeModule.Theme.controlHeight
-                        radius: ThemeModule.Theme.borderRadiusSmall
-                        color: outDevDelegate.selected
-                            ? ThemeModule.Theme.selectedFill
-                            : (outDevMouse.containsMouse ? ThemeModule.Theme.controlFill : "transparent")
-                        border.width: ThemeModule.Theme.borderWidth
-                        border.color: outDevDelegate.selected ? ThemeModule.Theme.selectedBorder : "transparent"
+        Column {
+            width: parent.width
+            spacing: ThemeModule.Theme.spacingTiny
 
-                        Accessible.role: Accessible.Button
-                        Accessible.name: "Use " + outDevDelegate.modelData.label + " for audio output"
-                        Accessible.onPressAction: Services.AudioService.setDefaultSink(outDevDelegate.modelData.node)
-                        Row {
+            Repeater {
+                model: section.presented ? Services.AudioService.devices(section.output) : []
+
+                delegate: Rectangle {
+                    id: devDelegate
+                    required property var modelData
+                    readonly property bool selected: section.device === devDelegate.modelData.node
+                    width: parent.width
+                    height: ThemeModule.Theme.controlHeight
+                    radius: ThemeModule.Theme.borderRadiusSmall
+                    color: devDelegate.selected
+                        ? ThemeModule.Theme.selectedFill
+                        : (devMouse.containsMouse ? ThemeModule.Theme.controlFill : "transparent")
+                    border.width: ThemeModule.Theme.borderWidth
+                    border.color: devDelegate.selected ? ThemeModule.Theme.selectedBorder : "transparent"
+
+                    Accessible.role: Accessible.Button
+                    Accessible.name: "Use " + devDelegate.modelData.label + " for audio " + section.kind
+                    Accessible.onPressAction: section.setDevice(devDelegate.modelData.node)
+                    Row {
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: ThemeModule.Theme.spacingSmall
+                        spacing: ThemeModule.Theme.spacingSmall
+
+                        Rectangle {
+                            id: devDot
+                            width: 14; height: 14; radius: 7
                             anchors.verticalCenter: parent.verticalCenter
-                            anchors.left: parent.left
-                            anchors.leftMargin: ThemeModule.Theme.spacingSmall
-                            spacing: ThemeModule.Theme.spacingSmall
-
-                            Rectangle {
-                                id: outDevDot
-                                width: 14; height: 14; radius: 7
-                                anchors.verticalCenter: parent.verticalCenter
-                                border.width: 2
-                                border.color: ThemeModule.Theme.accent
-                                color: outDevDelegate.selected ? ThemeModule.Theme.accent : "transparent"
-                            }
-
-                            Text {
-                                text: outDevDelegate.modelData.label
-                                font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                                font.family: ThemeModule.Theme.fontFamily
-                                font.weight: outDevDelegate.selected ? Font.DemiBold : Font.Normal
-                                color: ThemeModule.Theme.text
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
+                            border.width: 2
+                            border.color: ThemeModule.Theme.accent
+                            color: devDelegate.selected ? ThemeModule.Theme.accent : "transparent"
                         }
 
-                        // A renamed device shows its hardware name on hover.
                         Text {
-                            anchors.right: parent.right
-                            anchors.rightMargin: ThemeModule.Theme.spacingSmall
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: Math.min(implicitWidth, parent.width * 0.5)
-                            visible: outDevDelegate.modelData.label !== outDevDelegate.modelData.rawLabel
-                            opacity: outDevMouse.containsMouse ? 1 : 0
-                            text: outDevDelegate.modelData.rawLabel
-                            font.pixelSize: ThemeModule.Theme.fontSizeCaption
+                            text: devDelegate.modelData.label
+                            font.pixelSize: ThemeModule.Theme.fontSizeSmall
                             font.family: ThemeModule.Theme.fontFamily
-                            color: ThemeModule.Theme.overlay
-                            elide: Text.ElideRight
+                            font.weight: devDelegate.selected ? Font.DemiBold : Font.Normal
+                            color: ThemeModule.Theme.text
+                            anchors.verticalCenter: parent.verticalCenter
                         }
+                    }
 
-                        MouseArea {
-                            id: outDevMouse
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            hoverEnabled: true
-                            onClicked: {
-                                if (Services.AudioService.defaultSink !== outDevDelegate.modelData.node)
-                                    Services.EffectsService.picked(outDevDot, outDevMouse);
-                                Services.AudioService.setDefaultSink(outDevDelegate.modelData.node);
-                            }
+                    // A renamed device shows its hardware name on hover.
+                    Text {
+                        anchors.right: parent.right
+                        anchors.rightMargin: ThemeModule.Theme.spacingSmall
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.min(implicitWidth, parent.width * 0.5)
+                        visible: devDelegate.modelData.label !== devDelegate.modelData.rawLabel
+                        opacity: devMouse.containsMouse ? 1 : 0
+                        text: devDelegate.modelData.rawLabel
+                        font.pixelSize: ThemeModule.Theme.fontSizeCaption
+                        font.family: ThemeModule.Theme.fontFamily
+                        color: ThemeModule.Theme.overlay
+                        elide: Text.ElideRight
+                    }
+
+                    MouseArea {
+                        id: devMouse
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+                        onClicked: {
+                            if (!devDelegate.selected)
+                                Services.EffectsService.picked(devDot, devMouse);
+                            section.setDevice(devDelegate.modelData.node);
                         }
                     }
                 }
             }
         }
+    }
 
-        // ── INPUT / MICROPHONE CONTROL SECTION ────────────────────────
-        Column {
-            width: parent.width
-            spacing: ThemeModule.Theme.spacingSmall
+    Column {
+        width: parent.width
+        spacing: ThemeModule.Theme.spacingXL
+
+        Section {
+            output: true
+            presented: root.presented
+            visible: root.mode === "output" || root.mode === "combined"
+        }
+
+        Section {
+            output: false
+            presented: root.presented
             visible: root.mode === "input" || root.mode === "combined"
-
-            Row {
-                width: parent.width
-                spacing: ThemeModule.Theme.spacingSmall
-
-                Components.IconButton {
-                    iconName: Services.AudioService.inputMuted ? "audio-input-muted" : "audio-input"
-                    anchors.verticalCenter: parent.verticalCenter
-                    tooltipText: Services.AudioService.inputMuted ? "Unmute input" : "Mute input"
-                    onClicked: Services.AudioService.toggleInputMute()
-                }
-
-                Components.StyledSlider {
-                    width: parent.width - 88
-                    anchors.verticalCenter: parent.verticalCenter
-                    value: Services.AudioService.hasInputVolume ? Services.AudioService.inputVolumePercent : 0
-                    enabled: Services.AudioService.defaultSource && Services.AudioService.hasInputVolume
-                    stepSize: Services.AudioService.scrollStep
-                    onMoved: {
-                        Services.AudioService.setInputVolumePercent(Math.round(value));
-                    }
-                    onWheelAdjusted: function(nextValue) {
-                        Services.AudioService.setInputVolumePercent(Math.round(nextValue));
-                    }
-                }
-
-                Text {
-                    text: !Services.AudioService.defaultSource ? "—" : (Services.AudioService.hasInputVolume ? Services.AudioService.inputVolumePercent + "%" : "…")
-                    font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                    font.family: ThemeModule.Theme.fontFamily
-                    color: ThemeModule.Theme.subtext
-                    width: 40
-                    horizontalAlignment: Text.AlignRight
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-
-            // Input Devices List
-            Column {
-                width: parent.width
-                spacing: ThemeModule.Theme.spacingTiny
-
-                Repeater {
-                    model: root.presented ? Services.AudioService.devices(false) : []
-
-                    delegate: Rectangle {
-                        id: inDevDelegate
-                        required property var modelData
-                        readonly property bool selected: Services.AudioService.defaultSource === inDevDelegate.modelData.node
-                        width: parent.width
-                        height: ThemeModule.Theme.controlHeight
-                        radius: ThemeModule.Theme.borderRadiusSmall
-                        color: inDevDelegate.selected
-                            ? ThemeModule.Theme.selectedFill
-                            : (inDevMouse.containsMouse ? ThemeModule.Theme.controlFill : "transparent")
-                        border.width: ThemeModule.Theme.borderWidth
-                        border.color: inDevDelegate.selected ? ThemeModule.Theme.selectedBorder : "transparent"
-
-                        Accessible.role: Accessible.Button
-                        Accessible.name: "Use " + inDevDelegate.modelData.label + " for audio input"
-                        Accessible.onPressAction: Services.AudioService.setDefaultSource(inDevDelegate.modelData.node)
-                        Row {
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.left: parent.left
-                            anchors.leftMargin: ThemeModule.Theme.spacingSmall
-                            spacing: ThemeModule.Theme.spacingSmall
-
-                            Rectangle {
-                                id: inDevDot
-                                width: 14; height: 14; radius: 7
-                                anchors.verticalCenter: parent.verticalCenter
-                                border.width: 2
-                                border.color: ThemeModule.Theme.accent
-                                color: inDevDelegate.selected ? ThemeModule.Theme.accent : "transparent"
-                            }
-
-                            Text {
-                                text: inDevDelegate.modelData.label
-                                font.pixelSize: ThemeModule.Theme.fontSizeSmall
-                                font.family: ThemeModule.Theme.fontFamily
-                                font.weight: inDevDelegate.selected ? Font.DemiBold : Font.Normal
-                                color: ThemeModule.Theme.text
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-                        }
-
-                        // A renamed device shows its hardware name on hover.
-                        Text {
-                            anchors.right: parent.right
-                            anchors.rightMargin: ThemeModule.Theme.spacingSmall
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: Math.min(implicitWidth, parent.width * 0.5)
-                            visible: inDevDelegate.modelData.label !== inDevDelegate.modelData.rawLabel
-                            opacity: inDevMouse.containsMouse ? 1 : 0
-                            text: inDevDelegate.modelData.rawLabel
-                            font.pixelSize: ThemeModule.Theme.fontSizeCaption
-                            font.family: ThemeModule.Theme.fontFamily
-                            color: ThemeModule.Theme.overlay
-                            elide: Text.ElideRight
-                        }
-
-                        MouseArea {
-                            id: inDevMouse
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            hoverEnabled: true
-                            onClicked: {
-                                if (Services.AudioService.defaultSource !== inDevDelegate.modelData.node)
-                                    Services.EffectsService.picked(inDevDot, inDevMouse);
-                                Services.AudioService.setDefaultSource(inDevDelegate.modelData.node);
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }

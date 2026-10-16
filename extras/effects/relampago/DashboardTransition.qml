@@ -22,7 +22,6 @@ Item {
     property bool done: false
 
     EffectClock {
-        id: clock
         onAdvanced: function(dt) {
             // Finish a tick after the settled panel has drawn, so nothing jumps when
             // the entrance goes.
@@ -52,7 +51,6 @@ Item {
         property var source: panelTex
         property size size: Qt.size(width, height)
         property real progress: root.progress
-        property real time: clock.clock
         property color cCore: Bolt.core(root.theme)
         property color cGlow: Bolt.glow(root.theme)
         property color cEdge: Bolt.edge(root.theme)

@@ -4,7 +4,7 @@ import "common/Colors.js" as Colors
 
 // Air wallpaper transition: a whirlwind eye opens in the middle of the screen and
 // widens until the old wallpaper is gone, wringing it into the spin as the wind
-// whirl out.
+// whirls out.
 Item {
     id: root
 
@@ -58,6 +58,7 @@ Item {
         property real spin: root.spin
         property color cRim: root.theme ? Colors.mix(root.theme.rosewater, root.theme.sky, 0.25) : "#cfe3f3"
         property color cHaze: root.theme ? root.theme.rosewater : "#e9f2fa"
+        property color cGlint: root.theme ? root.theme.text : "#f4ead8"
         fragmentShader: Qt.resolvedUrl("qsb/WallpaperTransition.qsb")
     }
 

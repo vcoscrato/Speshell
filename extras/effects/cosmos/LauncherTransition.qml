@@ -92,7 +92,6 @@ Item {
     }
 
     EffectClock {
-        id: clock
         onAdvanced: function(dt) {
             root.follow(dt);
             root.orbit(dt);
@@ -145,6 +144,7 @@ Item {
         property color cShade: root.theme ? root.theme.mantle : "#1d2021"
         property color cOrbit: root.theme ? Colors.alpha(root.theme.text, 0.34) : Qt.rgba(0.92, 0.86, 0.70, 0.34)
         property color cGlow: Colors.alpha(root.warm, 0.3)
+        property color cGlint: root.theme ? root.theme.text : "#ebdbb2"
         fragmentShader: Qt.resolvedUrl("qsb/LauncherTransition.qsb")
     }
 

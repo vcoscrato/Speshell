@@ -6,7 +6,6 @@ import "../theme" as ThemeModule
 
 Components.Card {
     id: root
-    title: ""
 
     visible: root.batteryReady && root.battery.isLaptopBattery && root.battery.isPresent
 

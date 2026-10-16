@@ -25,6 +25,7 @@ layout(std140, binding = 0) uniform buf {
     vec4 cLeafBack;
     vec4 cOutline;
     vec4 cDust;
+    vec4 cGlint;
 } u;
 #include "../../lib/common.glsl"
 
@@ -132,7 +133,7 @@ void main() {
             continue;
         vec3 face = flip > 0.0 ? u.cLeaf.rgb : u.cLeafBack.rgb;
         // Flat light on the upper half, and a dark midrib.
-        face = mix(face, mix(face, vec3(1.0), 0.28), cover(q.y * sign(flip) - W * 0.25 * (1.0 - x * x)));
+        face = mix(face, mix(face, u.cGlint.rgb, 0.28), cover(q.y * sign(flip) - W * 0.25 * (1.0 - x * x)));
         face = mix(face, u.cOutline.rgb, cover(0.8 - abs(q.y)) * step(abs(q.x), L * 0.85) * thin);
         vec3 leafCol = mix(u.cOutline.rgb, face, body);
         col = mix(col, vec4(leafCol, 1.0), outline);

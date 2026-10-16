@@ -12,22 +12,6 @@ layout(std140, binding = 0) uniform buf {
 #include "../lib/common.glsl"
 #include "landscape.glsl"
 
-vec2 rot(vec2 v, float a) {
-    float c = cos(a), s = sin(a);
-    return vec2(c * v.x - s * v.y, s * v.x + c * v.y);
-}
-
-// One star per grid cell (of `size`), shown for a fraction `keep` of the cells.
-float starField(vec2 q, float size, float keep, float seed, float maxR, float minR) {
-    vec2 g = floor(q / size);
-    vec2 h = hash2(g + seed);
-    if (hash(g + seed + 3.7) > keep)
-        return 0.0;
-    vec2 c = (g + 0.2 + 0.6 * h) * size;
-    float r = max(minR, maxR * mix(0.25, 1.0, h.x * h.y));
-    return cover(r - length(q - c)) * mix(0.45, 1.0, h.y);
-}
-
 // A bright star with four rays.
 float glint(vec2 q, vec2 c, float r) {
     vec2 d = abs(q - c);

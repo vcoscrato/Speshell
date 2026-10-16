@@ -22,12 +22,6 @@ layout(binding = 1) uniform sampler2D source;
 const float STRIKE = 0.1;       // the bolt reaching the bottom
 const float SPLIT = 0.16;       // the halves starting to move
 
-// Piecewise-linear noise: straight runs between random kinks.
-float zig(float x, float seed) {
-    float i = floor(x), f = fract(x);
-    return mix(hash(vec2(i, seed)), hash(vec2(i + 1.0, seed)), f) - 0.5;
-}
-
 float tearX(float y) {
     return u.resolution.x * (0.5 + 0.16 * zig(y / 150.0, 1.0) + 0.05 * zig(y / 40.0, 2.0) + 0.012 * zig(y / 11.0, 3.0));
 }

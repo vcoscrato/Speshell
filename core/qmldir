@@ -7,6 +7,7 @@ InteractionsLayer 1.0 InteractionsLayer.qml
 ConfigErrorWindow 1.0 ConfigErrorWindow.qml
 LauncherOverlay 1.0 LauncherOverlay.qml
 NotificationToastWindow 1.0 NotificationToastWindow.qml
+OsdWindow 1.0 OsdWindow.qml
 VolumeOsdWindow 1.0 VolumeOsdWindow.qml
 WallpaperView 1.0 WallpaperView.qml
 WallpaperWindow 1.0 WallpaperWindow.qml

@@ -12,7 +12,6 @@ layout(std140, binding = 0) uniform buf {
     vec2 size;
     vec4 cBase;
     vec4 cDeep;
-    vec4 cText;
     vec4 cAccent;
     vec4 cEmber;
     vec4 cFlame;

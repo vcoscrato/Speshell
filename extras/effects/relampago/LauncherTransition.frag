@@ -24,12 +24,6 @@ layout(std140, binding = 0) uniform buf {
 layout(binding = 1) uniform sampler2D source;
 #include "../../lib/common.glsl"
 
-// Piecewise-linear noise: straight runs between random kinks.
-float zig(float x, float seed) {
-    float i = floor(x), f = fract(x);
-    return mix(hash(vec2(i, seed)), hash(vec2(i + 1.0, seed)), f) - 0.5;
-}
-
 vec4 panelAt(vec2 local) {
     vec2 uv = local / u.rect.zw;
     vec4 c = texture(source, uv);

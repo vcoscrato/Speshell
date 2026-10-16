@@ -96,7 +96,6 @@ Item {
     }
 
     Flames {
-
         theme: root.theme
         anchors.fill: parent
         readonly property bool exiting: root.burn > 0 && !root.refill

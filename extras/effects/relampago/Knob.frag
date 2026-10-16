@@ -21,45 +21,12 @@ layout(std140, binding = 0) uniform buf {
     float time;
     vec4 cTire;
     vec4 cWall;
-    vec4 cRim;
-    vec4 cHub;
+    vec4 cPaint;
+    vec4 cGold;
     vec4 cCore;
     vec4 cEdge;
 } u;
 #include "../../lib/common.glsl"
-
-vec4 over(vec4 under, vec3 col, float a) {
-    return vec4(col, 1.0) * a + under * (1.0 - a);
-}
-
-// Piecewise-linear noise: straight runs between random kinks.
-float zig(float x, float seed) {
-    float i = floor(x), f = fract(x);
-    return mix(hash(vec2(i, seed)), hash(vec2(i + 1.0, seed)), f) - 0.5;
-}
-
-// Corner k of a bolt's zigzag, in px: corners about P apart along x, unevenly, and
-// alternating up and down by uneven amounts up to A.
-vec2 boltCorner(float k, float P, float A, float seed) {
-    return vec2((k + 0.4 * (hash(vec2(k, seed + 5.0)) - 0.5)) * P,
-                (mod(k, 2.0) * 2.0 - 1.0) * mix(0.3, 1.0, hash(vec2(k, seed))) * A);
-}
-
-float sdSeg(vec2 p, vec2 a, vec2 b) {
-    vec2 pa = p - a, ba = b - a;
-    return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0));
-}
-
-// Distance from q (x along the bolt, y across it, px) to its zigzag of straight runs.
-float boltDist(vec2 q, float P, float A, float seed) {
-    float i = floor(q.x / P);
-    float d = 1e3;
-    for (int k = -1; k <= 1; k++) {
-        float c = i + float(k);
-        d = min(d, sdSeg(q, boltCorner(c, P, A, seed), boltCorner(c + 1.0, P, A, seed)));
-    }
-    return d;
-}
 
 void main() {
     vec2 p = qt_TexCoord0 * u.area - u.center;
@@ -82,7 +49,7 @@ void main() {
         float A = u.size * 0.17;                    // px either side of the track's middle
         float w = u.size * mix(0.04, 0.085, smoothstep(0.0, 80.0, xs)) * fadeIn;
         float d = boltDist(vec2(xs, p.y / max(fadeIn, 0.05)), P, A, 7.0) * fadeIn - w;
-        vec3 dc = mix(u.cEdge.rgb, u.cHub.rgb, smoothstep(0.0, 60.0, xs));
+        vec3 dc = mix(u.cEdge.rgb, u.cGold.rgb, smoothstep(0.0, 60.0, xs));
         dc = mix(dc, u.cCore.rgb, smoothstep(-20.0, 0.0, p.x) * 0.7);
         o = over(o, u.cTire.rgb, cover(0.9 - d) * 0.8 * fadeIn * charge);
         o = over(o, dc, cover(-d) * fadeIn * charge);
@@ -94,7 +61,7 @@ void main() {
             float da = abs(p.y - y) / sqrt(1.0 + (y2 - y) * (y2 - y));
             float on = live * step(0.2, hash(vec2(slot, 4.0)));
             o = over(o, u.cEdge.rgb, cover(4.0 - da) * 0.35 * on);
-            o = over(o, u.cHub.rgb, cover(1.5 - da) * on);
+            o = over(o, u.cGold.rgb, cover(1.5 - da) * on);
             o = over(o, u.cCore.rgb, cover(0.7 - da) * on);
         }
     }
@@ -117,8 +84,8 @@ void main() {
     }
 
     // ── The wheel ──
-    vec3 rim = mix(u.cHub.rgb, u.cWall.rgb, 0.7 * u.dim);
-    vec3 hub = mix(u.cRim.rgb, u.cTire.rgb, 0.55 * u.dim);
+    vec3 rim = mix(u.cGold.rgb, u.cWall.rgb, 0.7 * u.dim);
+    vec3 hub = mix(u.cPaint.rgb, u.cTire.rgb, 0.55 * u.dim);
     vec3 col = u.cTire.rgb;
     float tread = step(0.5, fract(ar * 14.0 / 6.2831853)) * step(R * 0.86, r);
     col = mix(col, u.cWall.rgb, 0.55 * tread);

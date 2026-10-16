@@ -1,25 +1,25 @@
 .pragma library
 
 var entries = ({
-    about:              { source: "../widgets/About.qml",              icon: "info", capability: "",                 bang: "about",         label: "About" },
-    audioControl:       { source: "../widgets/AudioControl.qml",       icon: "audio-output", capability: "",          bang: "audio",         label: "Audio output" },
-    audioInputControl:  { source: "../widgets/AudioInputControl.qml",  icon: "audio-input", capability: "",           bang: "mic",           label: "Microphone" },
-    batteryStatus:      { source: "../widgets/BatteryStatus.qml",      icon: "battery", capability: "battery",        bang: "battery",       label: "Battery" },
-    bluetoothPanel:     { source: "../widgets/BluetoothPanel.qml",     icon: "bluetooth", capability: "bluetooth",    bang: "bluetooth",     label: "Bluetooth" },
-    calendar:           { source: "../widgets/Calendar.qml",           icon: "calendar", capability: "",              bang: "calendar",      label: "Calendar" },
-    clipboardManager:   { source: "../widgets/ClipboardManager.qml",   icon: "clipboard", capability: "",             bang: "clipboard",     label: "Clipboard" },
-    clock:              { source: "../widgets/Clock.qml",              icon: "timer", capability: "",                 bang: "clock",         label: "Clock and timer" },
-    displayControl:     { source: "../widgets/DisplayControl.qml",     icon: "display", capability: "display",         bang: "display",       label: "Displays" },
-    main:               { source: "../widgets/Main.qml",               icon: "dashboard", capability: "",             bang: "home",          label: "Home" },
-    networkPanel:       { source: "../widgets/NetworkPanel.qml",       icon: "wifi", capability: "",                  bang: "network",       label: "Network" },
-    notes:              { source: "../widgets/Notes.qml",              icon: "notes", capability: "",                 bang: "notes",         label: "Notes" },
-    notificationCenter: { source: "../widgets/NotificationCenter.qml", icon: "bell", capability: "",                  bang: "notifications", label: "Notifications" },
-    nowPlaying:         { source: "../widgets/NowPlaying.qml",         icon: "media", capability: "",                 bang: "media",         label: "Now playing" },
-    powerMenu:          { source: "../widgets/PowerMenu.qml",          icon: "power", capability: "",                 bang: "power",         label: "Power menu" },
-    settings:           { source: "../widgets/Settings.qml",           icon: "config", capability: "",                bang: "settings",      label: "Settings" },
-    themes:             { source: "../widgets/Themes.qml",             icon: "palette", capability: "",               bang: "themes",        label: "Themes" },
-    tools:              { source: "../widgets/Tools.qml",              icon: "tools", capability: "tools",            bang: "tools",         label: "Tools" },
-    workspaces:         { source: "../widgets/Workspaces.qml",         icon: "apps", capability: "",                  bang: "workspaces",    label: "Workspaces" }
+    about:              { source: "../widgets/About.qml",              icon: "info",         bang: "about",         label: "About" },
+    audioControl:       { source: "../widgets/AudioControl.qml",       icon: "audio-output", bang: "audio",         label: "Audio output" },
+    audioInputControl:  { source: "../widgets/AudioInputControl.qml",  icon: "audio-input",  bang: "mic",           label: "Microphone" },
+    batteryStatus:      { source: "../widgets/BatteryStatus.qml",      icon: "battery",      bang: "battery",       label: "Battery" },
+    bluetoothPanel:     { source: "../widgets/BluetoothPanel.qml",     icon: "bluetooth",    bang: "bluetooth",     label: "Bluetooth" },
+    calendar:           { source: "../widgets/Calendar.qml",           icon: "calendar",     bang: "calendar",      label: "Calendar" },
+    clipboardManager:   { source: "../widgets/ClipboardManager.qml",   icon: "clipboard",    bang: "clipboard",     label: "Clipboard" },
+    clock:              { source: "../widgets/Clock.qml",              icon: "timer",        bang: "clock",         label: "Clock and timer" },
+    displayControl:     { source: "../widgets/DisplayControl.qml",     icon: "display",      bang: "display",       label: "Displays" },
+    main:               { source: "../widgets/Main.qml",               icon: "dashboard",    bang: "home",          label: "Home" },
+    networkPanel:       { source: "../widgets/NetworkPanel.qml",       icon: "wifi",         bang: "network",       label: "Network" },
+    notes:              { source: "../widgets/Notes.qml",              icon: "notes",        bang: "notes",         label: "Notes" },
+    notificationCenter: { source: "../widgets/NotificationCenter.qml", icon: "bell",         bang: "notifications", label: "Notifications" },
+    nowPlaying:         { source: "../widgets/NowPlaying.qml",         icon: "media",        bang: "media",         label: "Now playing" },
+    powerMenu:          { source: "../widgets/PowerMenu.qml",          icon: "power",        bang: "power",         label: "Power menu" },
+    settings:           { source: "../widgets/Settings.qml",           icon: "config",       bang: "settings",      label: "Settings" },
+    themes:             { source: "../widgets/Themes.qml",             icon: "palette",      bang: "themes",        label: "Themes" },
+    tools:              { source: "../widgets/Tools.qml",              icon: "tools",        bang: "tools",         label: "Tools" },
+    workspaces:         { source: "../widgets/Workspaces.qml",         icon: "apps",         bang: "workspaces",    label: "Workspaces" }
 });
 
 var aliases = ({ configPanel: "settings" });

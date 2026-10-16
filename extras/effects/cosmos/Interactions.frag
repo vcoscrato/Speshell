@@ -20,10 +20,6 @@ layout(std140, binding = 0) uniform buf {
 } u;
 #include "../../lib/common.glsl"
 
-vec4 over(vec4 under, vec3 col, float a) {
-    return vec4(col, 1.0) * a + under * (1.0 - a);
-}
-
 vec4 mote(vec2 p, float R) {
     float twinkle = 0.55 + 0.45 * sin(u.age * 30.0 + u.seed * 50.0);
     float r = R * (0.45 + 0.4 * twinkle);
@@ -44,12 +40,6 @@ vec4 glint(vec2 p, float R) {
     o = over(o, u.cHot.rgb, max(core, ray * step(length(q), len * 0.45)) * k);
     o = over(o, u.cGlow.rgb, cover(R * 0.5 * k - length(p)) * 0.18 * k);
     return o;
-}
-
-float sdSeg(vec2 p, vec2 a, vec2 b) {
-    vec2 ab = b - a;
-    float h = clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-3), 0.0, 1.0);
-    return length(p - a - ab * h);
 }
 
 // A star of radius r and brightness b, with rays if it is a bright one.
